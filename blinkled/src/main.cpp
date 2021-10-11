@@ -4,10 +4,13 @@
 #include "hwpins.h"
 #include "cppinit.h"
 #include "clockcnt.h"
+#include "self_flashing.h"
 
 #if defined(BOARD_VRV153)
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
+THwSpi    spi;
+TSpiFlash spiflash;
 
 #define LED_COUNT 1
 
@@ -15,6 +18,13 @@ void setup_board()
 {
 	pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
 	//pin_led1.Setup(PINCFG_INPUT);
+
+	spi.speed = 8000000;
+	spi.Init(1); // flash
+
+	spiflash.spi = &spi;
+	spiflash.has4kerase = true;
+	spiflash.Init();
 }
 
 #endif
@@ -24,7 +34,7 @@ void setup_board()
 #endif
 
 // the C libraries require "_start" so we keep it as the entry point
-extern "C" __attribute__((noreturn)) void _start(void)
+extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required
 {
 	// after ram setup, region copy the cpu jumps here, with probably RC oscillator
 
@@ -65,6 +75,13 @@ extern "C" __attribute__((noreturn)) void _start(void)
 
 	// go on with the hardware initializations
 	setup_board();
+
+#if defined(BOARD_VRV153)
+	if (self_flashing)
+	{
+		spi_self_flashing(&spiflash, BOOTBLOCK_STADDR);
+	}
+#endif
 
 	mcu_enable_interrupts();
 
