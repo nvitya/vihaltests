@@ -78,6 +78,7 @@ extern "C" __attribute__((noreturn)) void _start(void)
 	// go on with the hardware initializations
 	setup_board();
 
+	TRACE("\r\n-----------------------------\r\n");
 	TRACE("VIHAL SPI Flash Test\r\n");
 
 	test_spi();
