@@ -20,6 +20,86 @@ extern const bootblock_header_t application_header;
 
 extern unsigned __app_image_end;
 
+class TSpiFlashWriter
+{
+public:
+  TSpiFlash *  spiflash;
+  uint8_t *    bufptr;
+  unsigned     buflen;
+  
+  unsigned     flashaddr = 0;
+  uint8_t *    srcptr = nullptr;
+  unsigned     srclen = 0;
+	unsigned     remaining = 0;
+	
+	bool   erased = true;
+	bool   match = true;
+
+  TSpiFlashWriter(TSpiFlash * aspiflash, uint8_t * abufptr, unsigned abuflen)
+  {
+    spiflash = aspiflash;
+    bufptr = abufptr;
+    buflen = abuflen;
+  }
+
+  bool SectorMatch()
+  {
+    
+  }
+
+  bool WriteToFlash(unsigned aflashaddr, uint8_t * asrc, unsigned alen)
+  {
+    flashaddr = aflashaddr;
+    srcptr = asrc;
+    srxlen = len;
+  }
+  
+};
+
+bool spi_sf_sector_match(TSpiFlash * spiflash, unsigned flashaddr, uint8_t * asrc, unsigned len, bool * rerased)
+{
+  // using smaller transfer buffer on stack therefore multiple steps required
+	uint8_t  localbuf[SELFFLASH_BUFSIZE] __attribute__((aligned(4)));
+	unsigned remaining = len;
+	
+	bool   erased = true;
+	bool   match = true;
+	
+	uint32_t * mdp32;
+	uint32_t * fdp32;
+	uint32_t * endptr;
+	
+	while (remaining > 0)
+	{
+		chunksize = remaining;
+		if (chunksize > sizeof(localbuf))  chunksize = sizeof(localbuf);
+
+		spiflash->StartReadMem(faddr, flasherbuf, chunksize);
+		spiflash->WaitForComplete();
+		
+		// compare memory
+		
+		mdp32  = (uint32_t *)(asrc);
+		fdp32  = (uint32_t *)&(localbuf[0]);
+		endptr = (uint32_t *)&(localbuf[chunksize]);
+
+		while (fdp32 < endptr)
+		{
+			if (*fdp32 != 0xFFFFFFFF)  erased = false;
+			if (*fdp32 != *mdp32)
+			{
+				match = false; // do not break for complete the erased check!
+			}
+
+			++fdp32;
+			++mdp32;
+		}
+		
+	}
+	
+  return true;
+}
+
 bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr)
 {
 	if (!spiflash->initialized)
@@ -28,7 +108,6 @@ bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr)
 	}
 
 	unsigned  len = unsigned(&__app_image_end) - unsigned(&application_header);
-	uint8_t   flasherbuf[SELFFLASH_BUFSIZE] __attribute__((aligned(4))); // buffer to read flash data
 	unsigned t0, t1;
 
 #if 0
@@ -53,11 +132,6 @@ bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr)
 	while (remaining > 0)
 	{
 		// read the flash first
-		chunksize = remaining;
-		if (chunksize > SELFFLASH_BUFSIZE)  chunksize = SELFFLASH_BUFSIZE;
-
-		spiflash->StartReadMem(faddr, flasherbuf, chunksize);
-		spiflash->WaitForComplete();
 
 		if (spiflash->errorcode != 0)
 		{
