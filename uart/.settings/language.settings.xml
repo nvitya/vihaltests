@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project>
     	
-    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036" name="BOARD_VRV153">
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345" name="BOARD_VRV1_104">
         		
         <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
             			
@@ -11,7 +11,117 @@
             			
             <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
             			
-            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="913536923991201660" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="981968837929677276" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+                				
+                <language-scope id="org.eclipse.cdt.core.gcc"/>
+                				
+                <language-scope id="org.eclipse.cdt.core.g++"/>
+                			
+            </provider>
+            		
+        </extension>
+        	
+    </configuration>
+    	
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345.1476592154" name="BOARD_VRV1_103">
+        		
+        <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+            			
+            <provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="896277669209598972" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+                				
+                <language-scope id="org.eclipse.cdt.core.gcc"/>
+                				
+                <language-scope id="org.eclipse.cdt.core.g++"/>
+                			
+            </provider>
+            		
+        </extension>
+        	
+    </configuration>
+    	
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345.126375389" name="BOARD_VRV1_241">
+        		
+        <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+            			
+            <provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="984207078398985884" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+                				
+                <language-scope id="org.eclipse.cdt.core.gcc"/>
+                				
+                <language-scope id="org.eclipse.cdt.core.g++"/>
+                			
+            </provider>
+            		
+        </extension>
+        	
+    </configuration>
+    	
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345.126375389.2045929502" name="BOARD_VRV1_543">
+        		
+        <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+            			
+            <provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="920633162585177084" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+                				
+                <language-scope id="org.eclipse.cdt.core.gcc"/>
+                				
+                <language-scope id="org.eclipse.cdt.core.g++"/>
+                			
+            </provider>
+            		
+        </extension>
+        	
+    </configuration>
+    	
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345.126375389.2045929502.2076575554" name="BOARD_VRV1_443">
+        		
+        <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+            			
+            <provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="957962072941702684" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
+                				
+                <language-scope id="org.eclipse.cdt.core.gcc"/>
+                				
+                <language-scope id="org.eclipse.cdt.core.g++"/>
+                			
+            </provider>
+            		
+        </extension>
+        	
+    </configuration>
+    	
+    <configuration id="ilg.gnumcueclipse.managedbuild.cross.riscv.config.elf.debug.2031073036.1204200345.126375389.2045929502.2076575554.1941482432" name="BOARD_VRV1_441">
+        		
+        <extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+            			
+            <provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
+            			
+            <provider class="org.eclipse.cdt.managedbuilder.language.settings.providers.GCCBuiltinSpecsDetector" console="false" env-hash="909545130222363228" id="ilg.gnumcueclipse.managedbuild.cross.riscv.GCCBuiltinSpecsDetector" keep-relative-paths="false" name="CDT RISC-V Cross GCC Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} ${cross_toolchain_flags} -E -P -v -dD &quot;${INPUTS}&quot;" prefer-non-shared="true">
                 				
                 <language-scope id="org.eclipse.cdt.core.gcc"/>
                 				

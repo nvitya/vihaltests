@@ -10,11 +10,11 @@
 
 #include "platform.h"
 
-#if defined(BOARD_VRV153)
+#if defined(MCUF_VRV100)
 
 #include "spiflash.h"
 
-bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr);
+bool spi_self_flashing(TSpiFlash * spiflash);
 
 #endif
 

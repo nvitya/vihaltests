@@ -6,7 +6,7 @@ extern unsigned __app_image_end;
 
 extern "C" void _reset_entry(void);
 
-#if defined(BOARD_VRV153)
+#if defined(MCUF_VRV100)
 
 extern const bootblock_header_t application_header;  // required so that the optimizer keeps this
 
@@ -18,9 +18,10 @@ const bootblock_header_t application_header =
 	.addr_load = unsigned(&application_header),
 	.addr_entry = (unsigned)_reset_entry,
 	._reserved10 = 0,
-	.compid = 0x01530001,
+	.compid = 0xEEEEEEEE,  // will be updated later
 	.csum_body = 0,
 	.csum_head = 0
 };
+
 
 #endif

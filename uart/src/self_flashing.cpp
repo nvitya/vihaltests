@@ -7,7 +7,7 @@
 
 #include "platform.h"
 
-#if defined(BOARD_VRV153)
+#if defined(MCUF_VRV100)
 
 #include "hwspi.h"
 #include "spiflash.h"
@@ -138,23 +138,28 @@ public:
 };
 
 // do self flashing using the flash writer
-bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr)
+bool spi_self_flashing(TSpiFlash * spiflash)
 {
   uint8_t   localbuf[SELFFLASH_BUFSIZE] __attribute__((aligned(8)));
 	unsigned  len = unsigned(&__app_image_end) - unsigned(&application_header);
+
+  bootrom_info_t * bootrom_info = (bootrom_info_t *)BOOTROM_INFO_ADDRESS;
+
+	bootblock_header_t * phead = (bootblock_header_t *)&application_header;
+	phead->compid = bootrom_info->compid;
 
 	// Using the flash writer to first compare the flash contents:
   TSpiFlashWriter  flashwriter(spiflash, localbuf, sizeof(localbuf));
 
   TRACE("Self-Flashing:\r\n");
-  TRACE("  mem = %08X -> flash = %08X, len = %u ...\r\n", unsigned(&application_header), flashaddr, len);
+  TRACE("  mem = %08X -> flash = %08X, len = %u ...\r\n", unsigned(&application_header), bootrom_info->bootblock_staddr, len);
 
   len = ((len + 7) & 0xFFFFFFF8); // length must be also dividible with 8 !
 
 	unsigned  t0, t1;
 	t0 = CLOCKCNT;
 
-	if (!flashwriter.WriteToFlash(flashaddr, (uint8_t *)&application_header, len))
+	if (!flashwriter.WriteToFlash(bootrom_info->bootblock_staddr, (uint8_t *)&application_header, len))
 	{
     TRACE("  ERROR!\r\n");
     return false;

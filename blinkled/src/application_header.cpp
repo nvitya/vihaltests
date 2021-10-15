@@ -8,6 +8,8 @@ extern "C" void _reset_entry(void);
 
 #if defined(BOARD_VRV153)
 
+extern const bootblock_header_t application_header;  // required so that the optimizer keeps this
+
 __attribute__((section(".application_header"),used))
 const bootblock_header_t application_header =
 {

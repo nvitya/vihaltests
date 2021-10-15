@@ -11,13 +11,14 @@
 #include "hwpins.h"
 #include "hwuart.h"
 #include "traces.h"
-#include "serialflash.h"
+#include "spiflash.h"
 #include "hwspi.h"
 #include "self_flashing.h"
 
 THwUart   conuart;  // console uart
 
-#if defined(BOARD_VRV153)
+#if defined(BOARD_VRV1_103) || defined(BOARD_VRV1_104) || defined(BOARD_VRV1_241) \
+    || defined(BOARD_VRV1_403) || defined(BOARD_VRV1_441)|| defined(BOARD_VRV1_443) || defined(BOARD_VRV1_543)
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
 THwSpi    spi;
@@ -88,12 +89,14 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	// go on with the hardware initializations
 	setup_board();
 
+	TRACE("\r\n--------------------------------------\r\n");
 	TRACE("Hello From VIHAL !\r\n");
+	TRACE("Board: %s\r\n", BOARD_NAME);
 
-#if defined(BOARD_VRV153)
+#if defined(MCUF_VRV100)
   if (self_flashing)
   {
-    spi_self_flashing(&spiflash, BOOTBLOCK_STADDR);
+    spi_self_flashing(&spiflash);
   }
 #endif
 

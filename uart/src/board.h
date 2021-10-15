@@ -9,11 +9,52 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-#define BOARD_VRV153
-#define BOARD_NAME "VRV153 on Cyclone IV"
-#define MCU_VRV153
+#if defined(BOARD_VRV1_103)
+
+#define BOARD_NAME "VRV1_103"
+#define MCU_VRV1_103
 #define MCU_FIXED_SPEED  100000000
 
-#define BOOTBLOCK_STADDR    0x00100000  // load the application from 1M
+#elif defined(BOARD_VRV1_104)
+
+#define BOARD_NAME "VRV1_104"
+#define MCU_VRV1_104
+#define MCU_FIXED_SPEED  100000000
+
+#elif defined(BOARD_VRV1_241)
+
+#define BOARD_NAME "VRV1_241"
+#define MCU_VRV1_241
+#define MCU_FIXED_SPEED  100000000
+
+#elif defined(BOARD_VRV1_401)
+
+#define BOARD_NAME "VRV1_401"
+#define MCU_VRV1_401
+#define MCU_FIXED_SPEED  100000000
+
+#elif defined(BOARD_VRV1_441)
+
+#define BOARD_NAME "VRV1_441"
+#define MCU_VRV1_441
+#define MCU_FIXED_SPEED  100000000
+
+#elif defined(BOARD_VRV1_443)
+
+#define BOARD_NAME "VRV1_443"
+#define MCU_VRV1_443
+#define MCU_FIXED_SPEED  100000000
+
+#elif defined(BOARD_VRV1_543)
+
+#define BOARD_NAME "VRV1_543"
+#define MCU_VRV1_543
+#define MCU_FIXED_SPEED  100000000
+
+#else
+
+  #error "unknown board"
+
+#endif
 
 #endif /* BOARD_H_ */

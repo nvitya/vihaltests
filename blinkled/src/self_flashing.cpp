@@ -20,20 +20,18 @@ extern const bootblock_header_t application_header;
 
 extern unsigned __app_image_end;
 
+// helper object to write memory contents into the SPI Flash memory
+// it compares the flash content with the memory so it tries to avoid unnecessary write and erase
+// It can operate with smaller temporary buffers, which can be allocated on the stack
 class TSpiFlashWriter
 {
 public:
   TSpiFlash *  spiflash;
   uint8_t *    bufptr;
   unsigned     buflen;
+  unsigned     sectorsize = 4096;
   
-  unsigned     flashaddr = 0;
-  uint8_t *    srcptr = nullptr;
-  unsigned     srclen = 0;
-	unsigned     remaining = 0;
-	
-	bool   erased = true;
-	bool   match = true;
+	bool         erased = true;
 
   TSpiFlashWriter(TSpiFlash * aspiflash, uint8_t * abufptr, unsigned abuflen)
   {
@@ -42,165 +40,117 @@ public:
     buflen = abuflen;
   }
 
-  bool SectorMatch()
+  bool FlashSectorDiffer(unsigned asectoraddr, unsigned sectorlen, uint8_t * memptr)  // address and length alignment of 4 bytes are required
   {
+    erased = true;
+
+  	bool      differ = false;
+    unsigned  remaining = sectorlen;
+    unsigned  faddr = asectoraddr;
+
+    while (remaining > 0)
+    {
+      unsigned chunksize = remaining;
+      if (chunksize > buflen)  chunksize = buflen;
+
+      spiflash->StartReadMem(faddr, bufptr, chunksize);
+      spiflash->WaitForComplete();
+
+      // compare memory
+
+      uint32_t * mdp32  = (uint32_t *)(memptr);
+      uint32_t * fdp32  = (uint32_t *)&(bufptr[0]);
+      uint32_t * endptr = (uint32_t *)&(bufptr[chunksize]);
+
+      while (fdp32 < endptr)
+      {
+        if (*fdp32 != 0xFFFFFFFF)
+        {
+          erased = false;
+        }
+
+        if (*fdp32 != *mdp32)
+        {
+          differ = false; // do not break for complete the erased check!
+        }
+
+        ++fdp32;
+        ++mdp32;
+      }
+
+      faddr += chunksize;
+      memptr += chunksize;
+      remaining -= chunksize;
+    }
     
+  	return differ;
   }
 
-  bool WriteToFlash(unsigned aflashaddr, uint8_t * asrc, unsigned alen)
+  bool WriteToFlash(unsigned aflashaddr, uint8_t * asrc, unsigned alen)  // the flash address must begin on sector boundary !
   {
-    flashaddr = aflashaddr;
-    srcptr = asrc;
-    srxlen = len;
+    if (!spiflash->initialized)
+    {
+      return false;
+    }
+
+    unsigned faddr = aflashaddr;
+    uint8_t * srcptr = asrc;
+    unsigned remaining = alen;
+
+    while (remaining > 0)
+    {
+      unsigned chunksize = remaining;
+      if (chunksize > sectorsize)  chunksize = sectorsize;
+
+      if (FlashSectorDiffer(faddr, chunksize, srcptr))
+      {
+        if (!erased)
+        {
+          spiflash->StartEraseMem(faddr, chunksize);
+          spiflash->WaitForComplete();
+        }
+        spiflash->StartWriteMem(faddr, srcptr, chunksize);
+        spiflash->WaitForComplete();
+      }
+
+      faddr += chunksize;
+      srcptr += chunksize;
+      remaining -= chunksize;
+    }
+
+    return true;
   }
   
 };
 
-bool spi_sf_sector_match(TSpiFlash * spiflash, unsigned flashaddr, uint8_t * asrc, unsigned len, bool * rerased)
-{
-  // using smaller transfer buffer on stack therefore multiple steps required
-	uint8_t  localbuf[SELFFLASH_BUFSIZE] __attribute__((aligned(4)));
-	unsigned remaining = len;
-	
-	bool   erased = true;
-	bool   match = true;
-	
-	uint32_t * mdp32;
-	uint32_t * fdp32;
-	uint32_t * endptr;
-	
-	while (remaining > 0)
-	{
-		chunksize = remaining;
-		if (chunksize > sizeof(localbuf))  chunksize = sizeof(localbuf);
-
-		spiflash->StartReadMem(faddr, flasherbuf, chunksize);
-		spiflash->WaitForComplete();
-		
-		// compare memory
-		
-		mdp32  = (uint32_t *)(asrc);
-		fdp32  = (uint32_t *)&(localbuf[0]);
-		endptr = (uint32_t *)&(localbuf[chunksize]);
-
-		while (fdp32 < endptr)
-		{
-			if (*fdp32 != 0xFFFFFFFF)  erased = false;
-			if (*fdp32 != *mdp32)
-			{
-				match = false; // do not break for complete the erased check!
-			}
-
-			++fdp32;
-			++mdp32;
-		}
-		
-	}
-	
-  return true;
-}
-
+// do self flashing using the flash writer
 bool spi_self_flashing(TSpiFlash * spiflash, unsigned flashaddr)
 {
-	if (!spiflash->initialized)
-	{
-		return false;
-	}
-
+  uint8_t   localbuf[256] __attribute__((aligned(8)));
 	unsigned  len = unsigned(&__app_image_end) - unsigned(&application_header);
-	unsigned t0, t1;
 
-#if 0
-	len = ((len + 7) & 0xFFFFFFF8); // length must be also dividible with 8 !
+	// Using the flash writer to first compare the flash contents:
+  TSpiFlashWriter  flashwriter(spiflash, localbuf, sizeof(localbuf));
 
-	TRACE("  mem = %08X -> flash = %08X, len = %u\r\n  ", memaddr, flashaddr, len);
+  TRACE("Self-Flashing:\r\n");
+  TRACE("  mem = %08X -> flash = %08X, len = %u\r\n  ", memaddr, flashaddr, len);
 
+  len = ((len + 7) & 0xFFFFFFF8); // length must be also dividible with 8 !
+
+	unsigned  t0, t1;
 	t0 = CLOCKCNT;
 
-	unsigned   remaining = len;
-	unsigned   chunksize = len;
-	unsigned   faddr = flashaddr;
-	uint8_t *  maddr = (uint8_t *)&application_header;
-	uint32_t * mdp32;
-	uint32_t * fdp32;
-	uint32_t * endptr;
-
-	uint32_t progresssize = 4096;
-	uint32_t curprogress = 0;
-	char progresschar = '.';
-
-	while (remaining > 0)
+	if (!flashwriter.WriteToFlash(flashaddr, (uint8_t *)&application_header, len))
 	{
-		// read the flash first
-
-		if (spiflash->errorcode != 0)
-		{
-			TRACE(" ERROR = %i\r\n", mainflash.errorcode);
-			return false;
-		}
-
-		// compare memory
-		bool   erased = true;
-		bool   match = true;
-		mdp32  = (uint32_t *)(maddr);
-		fdp32  = (uint32_t *)&(flasherbuf[0]);
-		endptr = (uint32_t *)&(flasherbuf[chunksize]);
-
-		while (fdp32 < endptr)
-		{
-			if (*fdp32 != 0xFFFFFFFF)  erased = false;
-			if (*fdp32 != *mdp32)
-			{
-				match = false; // do not break for complete the erased check!
-			}
-
-			++fdp32;
-			++mdp32;
-		}
-
-		if (!match)
-		{
-			// must be rewritten
-
-			if (!erased)
-			{
-				spiflash->StartEraseMem(faddr, chunksize);
-				spiflash->WaitForComplete();
-			}
-
-			spiflash->StartWriteMem(faddr, maddr, chunksize);
-			spiflash->WaitForComplete();
-		}
-
-		faddr += chunksize;
-		maddr += chunksize;
-		remaining -= chunksize;
-
-		// progress info
-		if (!match)
-		{
-			progresschar = 'W';
-		}
-
-		curprogress += chunksize;
-		if ((curprogress >= progresssize) || (remaining == 0))
-		{
-			// write progress dot
-			TRACE("%c", progresschar);
-
-			progresschar = '.';
-			curprogress = 0;
-		}
+    TRACE(" ERROR!\r\n", mainflash.errorcode);
+    return false;
 	}
-	// Compare the memory first
 
 	t1 = CLOCKCNT;
 
 	unsigned clocksperus = SystemCoreClock / 1000000;
 
 	TRACE("\r\n  Finished in %u us\r\n", (t1 - t0) / clocksperus);
-
-#endif
 
 	return true;
 }
