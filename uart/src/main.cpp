@@ -32,11 +32,11 @@ void setup_board()
 
 	conuart.Init(1); // UART1
 
-  spi.speed = 8000000;
+  spi.speed = 10000000;
   spi.Init(1); // flash
 
   spiflash.spi = &spi;
-  spiflash.has4kerase = true;
+  spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
   spiflash.Init();
 }
 
@@ -94,6 +94,16 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("Board: %s\r\n", BOARD_NAME);
 
 #if defined(MCUF_VRV100)
+
+  if (spiflash.initialized)
+  {
+    TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
+  }
+  else
+  {
+    TRACE("Error initializing SPI Flash !\r\n");
+  }
+
   if (self_flashing)
   {
     spi_self_flashing(&spiflash);

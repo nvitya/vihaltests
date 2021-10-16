@@ -145,6 +145,12 @@ bool spi_self_flashing(TSpiFlash * spiflash)
 
   bootrom_info_t * bootrom_info = (bootrom_info_t *)BOOTROM_INFO_ADDRESS;
 
+  if (bootrom_info->signature != BOOTROM_INFO_SIGNATURE)
+  {
+    TRACE("BootRom signature error: %08X = %08X\r\n", BOOTROM_INFO_ADDRESS, bootrom_info->signature);
+    return false;
+  }
+
 	bootblock_header_t * phead = (bootblock_header_t *)&application_header;
 	phead->compid = bootrom_info->compid;
 
