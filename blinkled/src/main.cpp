@@ -6,6 +6,23 @@
 #include "clockcnt.h"
 #include "self_flashing.h"
 
+#if defined(BOARD_LONGAN_NANO)
+
+TGpioPin  pin_led1(PORTNUM_C, 13, true);
+TGpioPin  pin_led2(PORTNUM_A,  1, true);
+TGpioPin  pin_led3(PORTNUM_A,  2, true);
+
+#define LED_COUNT 3
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+}
+
+#endif
+
 #if defined(BOARD_VRV153)
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
@@ -55,13 +72,19 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 #else
 
-  #error "Setup CPU clock!"
-	{
-		while (1)
-		{
-			// the external oscillator did not start.
-		}
-	}
+
+  #if 0
+    #error "Setup CPU clock!"
+    {
+      while (1)
+      {
+        // the external oscillator did not start.
+      }
+    }
+  #else
+    cpu_clock_speed = IRC8M_VALUE;
+  #endif
+
 #endif
 
 
@@ -83,7 +106,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	}
 #endif
 
-	mcu_enable_interrupts();
+	//mcu_enable_interrupts();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
@@ -91,8 +114,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	unsigned t0, t1;
 
 	t0 = CLOCKCNT;
-
-	volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
 
 	// Infinite loop
 	while (1)
@@ -102,9 +123,14 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
-			*hexnum = hbcounter;
 
-			pin_led1.Toggle();
+			pin_led1.SetTo(hbcounter & 1);
+      #if LED_COUNT > 1
+        pin_led2.SetTo((hbcounter >> 1) & 1);
+      #endif
+      #if LED_COUNT > 2
+        pin_led3.SetTo((hbcounter >> 2) & 1);
+      #endif
 
 			t0 = t1;
 
