@@ -5,6 +5,7 @@
 #include "cppinit.h"
 #include "clockcnt.h"
 #include "self_flashing.h"
+#include "hwclk.h"
 
 #if defined(BOARD_LONGAN_NANO)
 
@@ -64,32 +65,26 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	// Set the interrupt vector table offset, so that the interrupts and exceptions work
 	mcu_init_vector_table();
 
-	unsigned cpu_clock_speed;
 
 #if defined(MCU_FIXED_SPEED)
 
-	cpu_clock_speed = MCU_FIXED_SPEED;
+	SystemCoreClock = MCU_FIXED_SPEED;
 
 #else
 
-
-  #if 0
-    #error "Setup CPU clock!"
-    {
-      while (1)
-      {
-        // the external oscillator did not start.
-      }
-    }
-  #else
-    cpu_clock_speed = IRC8M_VALUE;
-  #endif
-
+#if 1
+	if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))
+	{
+	  while (1)
+	  {
+	    // error
+	  }
+	}
+#else
+  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
 #endif
 
-
-	// provide info to the system about the clock speed:
-	SystemCoreClock = cpu_clock_speed;
+#endif
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
