@@ -8,17 +8,19 @@
 #include "cppinit.h"
 #include "clockcnt.h"
 
+#include "hwclk.h"
 #include "hwpins.h"
 #include "hwuart.h"
 #include "traces.h"
-#include "spiflash.h"
-#include "hwspi.h"
-#include "self_flashing.h"
 
 THwUart   conuart;  // console uart
 
 #if defined(BOARD_VRV1_103) || defined(BOARD_VRV1_104) || defined(BOARD_VRV1_241) \
     || defined(BOARD_VRV1_403) || defined(BOARD_VRV1_441)|| defined(BOARD_VRV1_443) || defined(BOARD_VRV1_543)
+
+#include "spiflash.h"
+#include "hwspi.h"
+#include "self_flashing.h"
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
 THwSpi    spi;
@@ -42,6 +44,28 @@ void setup_board()
 
 #endif
 
+#if defined(BOARD_LONGAN_NANO)
+
+TGpioPin  pin_led1(PORTNUM_C, 13, true);
+TGpioPin  pin_led2(PORTNUM_A,  1, true);
+TGpioPin  pin_led3(PORTNUM_A,  2, true);
+
+#define LED_COUNT 3
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_0);
+  hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_0);
+  conuart.Init(0); // USART0
+}
+
+#endif
+
+
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
@@ -60,26 +84,21 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	// Set the interrupt vector table offset, so that the interrupts and exceptions work
 	mcu_init_vector_table();
 
-	unsigned cpu_clock_speed;
-
 #if defined(MCU_FIXED_SPEED)
 
-	cpu_clock_speed = MCU_FIXED_SPEED;
+  SystemCoreClock = MCU_FIXED_SPEED;
 
 #else
 
-  #error "Setup CPU clock!"
-	{
-		while (1)
-		{
-			// the external oscillator did not start.
-		}
-	}
+  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))
+  {
+    while (1)
+    {
+      // error
+    }
+  }
+
 #endif
-
-
-	// provide info to the system about the clock speed:
-	SystemCoreClock = cpu_clock_speed;
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
@@ -119,7 +138,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	t0 = CLOCKCNT;
 
-	volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
+	//volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
 
 	// Infinite loop
 	while (1)
@@ -129,9 +148,16 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
-			*hexnum = hbcounter;
 
-			pin_led1.Toggle();
+			//*hexnum = hbcounter;
+
+      pin_led1.SetTo(hbcounter & 1);
+      #if LED_COUNT > 1
+        pin_led2.SetTo((hbcounter >> 1) & 1);
+      #endif
+      #if LED_COUNT > 2
+        pin_led3.SetTo((hbcounter >> 2) & 1);
+      #endif
 
 			TRACE("hbcounter=%u\r\n", hbcounter);
 

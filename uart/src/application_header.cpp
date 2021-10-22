@@ -2,11 +2,11 @@
 
 #include "platform.h"
 
+#if defined(MCUF_VRV100)
+
 extern unsigned __app_image_end;
 
 extern "C" void _reset_entry(void);
-
-#if defined(MCUF_VRV100)
 
 extern const bootblock_header_t application_header;  // required so that the optimizer keeps this
 
