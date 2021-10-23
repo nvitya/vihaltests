@@ -122,6 +122,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	//SysTick_Config(SystemCoreClock / 50);  // slow tick for a few interrupt
 	//mcu_enable_interrupts();
 
+  pin_led1.Set1();
 	main(0, nullptr);
 
 	TRACE("\r\nStarting main cycle...\r\n");

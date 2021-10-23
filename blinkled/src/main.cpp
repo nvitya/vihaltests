@@ -1,11 +1,9 @@
 
 #include "platform.h"
-//#include "hwclkctrl.h"
+#include "hwclk.h"
 #include "hwpins.h"
 #include "cppinit.h"
 #include "clockcnt.h"
-#include "self_flashing.h"
-#include "hwclk.h"
 
 #if defined(BOARD_LONGAN_NANO)
 
@@ -24,11 +22,9 @@ void setup_board()
 
 #endif
 
-#if defined(BOARD_VRV153)
+#if defined(BOARD_VRV100_441)
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
-THwSpi    spi;
-TSpiFlash spiflash;
 
 #define LED_COUNT 1
 
@@ -36,35 +32,34 @@ void setup_board()
 {
 	pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
 	//pin_led1.Setup(PINCFG_INPUT);
-
-	spi.speed = 8000000;
-	spi.Init(1); // flash
-
-	spiflash.spi = &spi;
-	spiflash.has4kerase = true;
-	spiflash.Init();
 }
 
+#endif
+
+#if defined(BOARD_MIN_F103)
+
+TGpioPin  pin_led1(2, 13, false); // PC13
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+}
 #endif
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
 
-// the C libraries require "_start" so we keep it as the entry point
-extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required
+
+extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
-	// after ram setup, region copy the cpu jumps here, with probably RC oscillator
+	// after ram setup and region copy the cpu jumps here, with probably RC oscillator
 
-	// TODO: !!!
-  mcu_preinit_code(); // inline code for preparing the MCU, RAM regions. Without this even the stack does not work on some MCUs.
+  // Set the interrupt vector table offset, so that the interrupts and exceptions work
+  mcu_init_vector_table();
 
-	// run the C/C++ initialization:
+	// run the C/C++ initialization (variable initializations, constructors)
 	cppinit();
-
-	// Set the interrupt vector table offset, so that the interrupts and exceptions work
-	mcu_init_vector_table();
-
 
 #if defined(MCU_FIXED_SPEED)
 
@@ -72,17 +67,13 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 #else
 
-#if 1
-	if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))
+	if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
 	{
 	  while (1)
 	  {
 	    // error
 	  }
 	}
-#else
-  SystemCoreClock = MCU_INTERNAL_RC_SPEED;
-#endif
 
 #endif
 
@@ -93,15 +84,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	// go on with the hardware initializations
 	setup_board();
-
-#if defined(BOARD_VRV153)
-	if (self_flashing)
-	{
-		spi_self_flashing(&spiflash, BOOTBLOCK_STADDR);
-	}
-#endif
-
-	//mcu_enable_interrupts();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
