@@ -80,6 +80,21 @@ void setup_board()
 }
 #endif
 
+#if defined(BOARD_MIN_F401)
+
+TGpioPin  pin_led1(2, 13, false); // PC13
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+#endif
+
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
