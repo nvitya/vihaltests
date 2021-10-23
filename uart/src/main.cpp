@@ -15,8 +15,8 @@
 
 THwUart   conuart;  // console uart
 
-#if defined(BOARD_VRV1_103) || defined(BOARD_VRV1_104) || defined(BOARD_VRV1_241) \
-    || defined(BOARD_VRV1_403) || defined(BOARD_VRV1_441)|| defined(BOARD_VRV1_443) || defined(BOARD_VRV1_543)
+#if defined(BOARD_VRV100_103) || defined(BOARD_VRV100_104) || defined(BOARD_VRV100_241) \
+    || defined(BOARD_VRV100_403) || defined(BOARD_VRV100_441)|| defined(BOARD_VRV100_443) || defined(BOARD_VRV100_543)
 
 #include "spiflash.h"
 #include "hwspi.h"
@@ -65,24 +65,35 @@ void setup_board()
 
 #endif
 
+#if defined(BOARD_MIN_F103)
+
+TGpioPin  pin_led1(2, 13, false); // PC13
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_0 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+#endif
+
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
 
-// the C libraries require "_start" so we keep it as the entry point
-extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required
+extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
-	// after ram setup, region copy the cpu jumps here, with probably RC oscillator
+  // after ram setup and region copy the cpu jumps here, with probably RC oscillator
 
-	// TODO: !!!
-  mcu_preinit_code(); // inline code for preparing the MCU, RAM regions. Without this even the stack does not work on some MCUs.
+  // Set the interrupt vector table offset, so that the interrupts and exceptions work
+  mcu_init_vector_table();
 
-	// run the C/C++ initialization:
-	cppinit();
-
-	// Set the interrupt vector table offset, so that the interrupts and exceptions work
-	mcu_init_vector_table();
+  // run the C/C++ initialization (variable initializations, constructors)
+  cppinit();
 
 #if defined(MCU_FIXED_SPEED)
 
@@ -90,7 +101,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 #else
 
-  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))
+  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
   {
     while (1)
     {
@@ -112,7 +123,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("Hello From VIHAL !\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
 
-#if defined(MCUF_VRV100)
+#if SELF_FLASHING
 
   if (spiflash.initialized)
   {
