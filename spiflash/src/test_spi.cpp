@@ -7,15 +7,22 @@
 
 #include "platform.h"
 #include "hwspi.h"
+#include "hwdma.h"
+#include "hwpins.h"
 #include "clockcnt.h"
 #include "traces.h"
 #include "serialflash.h"
 #include "spiflash.h"
 
-#define TEST_START_ADDR  0x200000  // start at 2M, bitstream is about 512k
+#define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
+#define USE_DMA  1
 
 THwSpi     spi;
 TSpiFlash  spiflash;
+
+TGpioPin       spi_cs_pin;
+THwDmaChannel  spi_txdma;
+THwDmaChannel  spi_rxdma;
 
 uint8_t spi_id[4];
 uint8_t spi_buf[4096];
@@ -36,6 +43,7 @@ void show_mem(void * addr, unsigned len)
 	TRACE("\r\n");
 }
 
+#if defined(MCUF_VRV100)
 
 void test_spi_direct()
 {
@@ -76,6 +84,8 @@ void test_spi_direct()
 
   TRACE("JEDEC ID = %02X %02X %02X\r\n", spi_id[0], spi_id[1], spi_id[2]);
 }
+
+#endif
 
 void test_spi_vihal()
 {
@@ -158,8 +168,39 @@ void test_spi()
 {
 	TRACE("SPI test begin\r\n");
 
+#ifdef MCUSF_VRV100
 	spi.speed = 8000000;
 	spi.Init(1); // flash
+
+#elif defined(BOARD_MIN_F401)
+
+  //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_AF_5);  // SPI1_NSS (CS)
+  spi_cs_pin.Assign(PORTNUM_A, 4, false);
+  spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_AF_5);  // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_AF_5);  // SPI1_MISO
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_AF_5);  // SPI1_MOSI
+
+  spi.manualcspin = &spi_cs_pin;
+  spi.speed = 8000000;
+  spi.Init(1);
+
+#if USE_DMA
+
+  spi_txdma.Init(2, 5, 3);  // dma2/stream5/ch3
+  spi_rxdma.Init(2, 0, 3);  // dma2/stream0/ch3
+
+  spi.DmaAssign(true,  &spi_txdma);
+  spi.DmaAssign(false, &spi_rxdma);
+
+#endif
+
+#else
+
+  #error "Define board specific init"
+
+#endif
 
 	//test_spi_vihal();
 	test_spiflash();

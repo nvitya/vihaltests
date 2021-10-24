@@ -1,10 +1,12 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
-// created:  2021-10-03
-// authors:  nvitya
+/*
+ * file:     main.cpp (spiflash)
+ * brief:    VIHAL SPI Flash Test
+ * created:  2021-10-03
+ * authors:  nvitya
+*/
 
 #include "platform.h"
-//#include "hwclkctrl.h"
+#include "hwclk.h"
 #include "cppinit.h"
 #include "clockcnt.h"
 
@@ -16,7 +18,7 @@
 
 THwUart   conuart;  // console uart
 
-#if defined(BOARD_VRV153)
+#if defined(BOARD_VRV100_441)
 
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
 
@@ -31,44 +33,51 @@ void setup_board()
 
 #endif
 
+#if defined(BOARD_MIN_F401)
+
+TGpioPin  pin_led1(2, 13, false); // PC13
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+#endif
+
+
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
 
-// the C libraries require "_start" so we keep it as the entry point
-extern "C" __attribute__((noreturn)) void _start(void)
+extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
-	// after ram setup, region copy the cpu jumps here, with probably RC oscillator
+  // after ram setup and region copy the cpu jumps here, with probably RC oscillator
 
-	// TODO: !!!
-  mcu_preinit_code(); // inline code for preparing the MCU, RAM regions. Without this even the stack does not work on some MCUs.
+  // Set the interrupt vector table offset, so that the interrupts and exceptions work
+  mcu_init_vector_table();
 
-	// run the C/C++ initialization:
-	cppinit();
-
-	// Set the interrupt vector table offset, so that the interrupts and exceptions work
-	mcu_init_vector_table();
-
-	unsigned cpu_clock_speed;
+  // run the C/C++ initialization (variable initializations, constructors)
+  cppinit();
 
 #if defined(MCU_FIXED_SPEED)
 
-	cpu_clock_speed = MCU_FIXED_SPEED;
+  SystemCoreClock = MCU_FIXED_SPEED;
 
 #else
 
-  #error "Setup CPU clock!"
-	{
-		while (1)
-		{
-			// the external oscillator did not start.
-		}
-	}
+  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+  {
+    while (1)
+    {
+      // error
+    }
+  }
+
 #endif
-
-
-	// provide info to the system about the clock speed:
-	SystemCoreClock = cpu_clock_speed;
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
@@ -94,7 +103,7 @@ extern "C" __attribute__((noreturn)) void _start(void)
 
 	t0 = CLOCKCNT;
 
-	volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
+	//volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
 
 	// Infinite loop
 	while (1)
@@ -104,9 +113,15 @@ extern "C" __attribute__((noreturn)) void _start(void)
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
-			*hexnum = hbcounter;
+			//*hexnum = hbcounter;
 
-			pin_led1.Toggle();
+      pin_led1.SetTo(hbcounter & 1);
+      #if LED_COUNT > 1
+        pin_led2.SetTo((hbcounter >> 1) & 1);
+      #endif
+      #if LED_COUNT > 2
+        pin_led3.SetTo((hbcounter >> 2) & 1);
+      #endif
 
 			//TRACE("hbcounter=%u\r\n", hbcounter);
 
