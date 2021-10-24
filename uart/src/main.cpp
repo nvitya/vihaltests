@@ -111,12 +111,43 @@ void setup_board()
   pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
 
   // USART3: Stlink USB / Serial converter
-  hwpinctrl.PinSetup(3, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
-  hwpinctrl.PinSetup(3, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
   conuart.Init(3); // USART3
 }
 
 #endif
+
+#if defined(BOARD_MIBO48_STM32G473) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
+
+TGpioPin  pin_led1(PORTNUM_C, 13, false);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+#endif
+
+#if defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
+
+TGpioPin  pin_led1(PORTNUM_B, 1, false);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+#endif
+
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
@@ -139,6 +170,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 #else
 
   //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+  //if (!hwclk_init(0, 64000000))  // special for STM32F3, STM32F1
   if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
   {
     while (1)
@@ -160,6 +192,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("\r\n--------------------------------------\r\n");
 	TRACE("Hello From VIHAL !\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
+	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
 #if SELF_FLASHING
 
