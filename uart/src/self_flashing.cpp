@@ -7,10 +7,11 @@
 
 #include "platform.h"
 
-#if SELF_FLASHING
+#if SPI_SELF_FLASHING
 
 #include "hwspi.h"
 #include "spiflash.h"
+#include "spiflash_updater.h"
 #include "clockcnt.h"
 #include "traces.h"
 
@@ -19,123 +20,6 @@
 extern const bootblock_header_t application_header;
 
 extern unsigned __app_image_end;
-
-// helper object to write memory contents into the SPI Flash memory
-// it compares the flash content with the memory so it tries to avoid unnecessary write and erase
-// It can operate with smaller temporary buffers, which can be allocated on the stack
-class TSpiFlashWriter
-{
-public:
-  TSpiFlash *  spiflash;
-  uint8_t *    bufptr;
-  unsigned     buflen;
-  unsigned     sectorsize = 4096;
-  
-	bool         erased = true;
-
-	unsigned     samecnt = 0;
-	unsigned     erasecnt = 0;
-	unsigned     writecnt = 0;
-
-  TSpiFlashWriter(TSpiFlash * aspiflash, uint8_t * abufptr, unsigned abuflen)
-  {
-    spiflash = aspiflash;
-    bufptr = abufptr;
-    buflen = abuflen;
-  }
-
-  bool FlashSectorDiffer(unsigned asectoraddr, unsigned sectorlen, uint8_t * memptr)  // address and length alignment of 4 bytes are required
-  {
-    erased = true;
-
-  	bool      differ = false;
-    unsigned  remaining = sectorlen;
-    unsigned  faddr = asectoraddr;
-
-    while (remaining > 0)
-    {
-      unsigned chunksize = remaining;
-      if (chunksize > buflen)  chunksize = buflen;
-
-      spiflash->StartReadMem(faddr, bufptr, chunksize);
-      spiflash->WaitForComplete();
-
-      // compare memory
-
-      uint32_t * mdp32  = (uint32_t *)(memptr);
-      uint32_t * fdp32  = (uint32_t *)&(bufptr[0]);
-      uint32_t * endptr = (uint32_t *)&(bufptr[chunksize]);
-
-      while (fdp32 < endptr)
-      {
-        if (*fdp32 != 0xFFFFFFFF)
-        {
-          erased = false;
-        }
-
-        if (*fdp32 != *mdp32)
-        {
-          differ = true; // do not break for complete the erased check!
-        }
-
-        ++fdp32;
-        ++mdp32;
-      }
-
-      faddr += chunksize;
-      memptr += chunksize;
-      remaining -= chunksize;
-    }
-    
-  	return differ;
-  }
-
-  bool WriteToFlash(unsigned aflashaddr, uint8_t * asrc, unsigned alen)  // the flash address must begin on sector boundary !
-  {
-    if (!spiflash->initialized)
-    {
-      return false;
-    }
-
-    erasecnt = 0;
-    writecnt = 0;
-    samecnt = 0;
-
-    unsigned faddr = aflashaddr;
-    uint8_t * srcptr = asrc;
-    unsigned remaining = alen;
-
-    while (remaining > 0)
-    {
-      unsigned chunksize = remaining;
-      if (chunksize > sectorsize)  chunksize = sectorsize;
-
-      if (FlashSectorDiffer(faddr, chunksize, srcptr))
-      {
-        if (!erased)
-        {
-          spiflash->StartEraseMem(faddr, chunksize);
-          spiflash->WaitForComplete();
-          ++erasecnt;
-        }
-        spiflash->StartWriteMem(faddr, srcptr, chunksize);
-        spiflash->WaitForComplete();
-        ++writecnt;
-      }
-      else
-      {
-        ++samecnt;
-      }
-
-      faddr += chunksize;
-      srcptr += chunksize;
-      remaining -= chunksize;
-    }
-
-    return true;
-  }
-  
-};
 
 // do self flashing using the flash writer
 bool spi_self_flashing(TSpiFlash * spiflash)
@@ -155,7 +39,7 @@ bool spi_self_flashing(TSpiFlash * spiflash)
 	phead->compid = bootrom_info->compid;
 
 	// Using the flash writer to first compare the flash contents:
-  TSpiFlashWriter  flashwriter(spiflash, localbuf, sizeof(localbuf));
+	TSpiFlashUpdater  flashupdater(spiflash, localbuf, sizeof(localbuf));
 
   TRACE("Self-Flashing:\r\n");
   TRACE("  mem = %08X -> flash = %08X, len = %u ...\r\n", unsigned(&application_header), bootrom_info->bootblock_staddr, len);
@@ -165,7 +49,7 @@ bool spi_self_flashing(TSpiFlash * spiflash)
 	unsigned  t0, t1;
 	t0 = CLOCKCNT;
 
-	if (!flashwriter.WriteToFlash(bootrom_info->bootblock_staddr, (uint8_t *)&application_header, len))
+	if (!flashupdater.UpdateFlash(bootrom_info->bootblock_staddr, (uint8_t *)&application_header, len))
 	{
     TRACE("  ERROR!\r\n");
     return false;
@@ -174,8 +58,10 @@ bool spi_self_flashing(TSpiFlash * spiflash)
   t1 = CLOCKCNT;
   unsigned clocksperus = SystemCoreClock / 1000000;
 
-	TRACE("  %u sectors updated, %u matched, took %u us\r\n",
-	    flashwriter.writecnt, flashwriter.samecnt, (t1 - t0) / clocksperus);
+  unsigned ssize_k = flashupdater.sectorsize >> 10;
+
+	TRACE("  %u * %uk updated, %u * %uk matched, took %u us\r\n",
+	    flashupdater.writecnt, ssize_k, flashupdater.samecnt, ssize_k, (t1 - t0) / clocksperus);
 
 	return true;
 }

@@ -10,7 +10,7 @@
 
 #include "platform.h"
 
-#if defined(MCUF_VRV100)
+#if SPI_SELF_FLASHING
 
 #include "spiflash.h"
 

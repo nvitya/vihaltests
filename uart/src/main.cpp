@@ -18,15 +18,28 @@ THwUart   conuart;  // console uart
 #if defined(BOARD_VRV100_103) || defined(BOARD_VRV100_104) || defined(BOARD_VRV100_241) \
     || defined(BOARD_VRV100_403) || defined(BOARD_VRV100_441)|| defined(BOARD_VRV100_443) || defined(BOARD_VRV100_543)
 
-#include "spiflash.h"
-#include "hwspi.h"
-#include "self_flashing.h"
-
 TGpioPin  pin_led1(PORTNUM_A, 0, false);
-THwSpi    spi;
-TSpiFlash spiflash;
 
 #define LED_COUNT 1
+
+#if SPI_SELF_FLASHING
+
+  #include "spiflash.h"
+  #include "hwspi.h"
+  #include "self_flashing.h"
+
+  THwSpi    spi;
+  TSpiFlash spiflash;
+
+#endif
+
+void show_hexnum(unsigned ahexnum)
+{
+  volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
+  *hexnum = ahexnum;
+}
+
+#define HEXNUM_DISPLAY
 
 void setup_board()
 {
@@ -34,12 +47,16 @@ void setup_board()
 
 	conuart.Init(1); // UART1
 
-  spi.speed = 10000000;
-  spi.Init(1); // flash
+  #if SPI_SELF_FLASHING
 
-  spiflash.spi = &spi;
-  spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
-  spiflash.Init();
+    spi.speed = 10000000;
+    spi.Init(1); // flash
+
+    spiflash.spi = &spi;
+    spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
+    spiflash.Init();
+
+  #endif
 }
 
 #endif
@@ -153,6 +170,12 @@ void setup_board()
   #define LED_COUNT 1
 #endif
 
+#ifndef HEXNUM_DISPLAY
+void show_hexnum(unsigned ahexnum)
+{
+}
+#endif
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -194,7 +217,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-#if SELF_FLASHING
+#if SPI_SELF_FLASHING
 
   if (spiflash.initialized)
   {
@@ -220,8 +243,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	t0 = CLOCKCNT;
 
-	//volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
-
 	// Infinite loop
 	while (1)
 	{
@@ -231,8 +252,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		{
 			++hbcounter;
 
-			//*hexnum = hbcounter;
-
       pin_led1.SetTo(hbcounter & 1);
       #if LED_COUNT > 1
         pin_led2.SetTo((hbcounter >> 1) & 1);
@@ -240,6 +259,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
       #if LED_COUNT > 2
         pin_led3.SetTo((hbcounter >> 2) & 1);
       #endif
+
+      show_hexnum(hbcounter);
 
 			TRACE("hbcounter=%u\r\n", hbcounter);
 

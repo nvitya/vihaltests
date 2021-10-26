@@ -28,6 +28,14 @@ TGpioPin  pin_led1(PORTNUM_A, 0, false);
 
 #define LED_COUNT 1
 
+void show_hexnum(unsigned ahexnum)
+{
+  volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
+  *hexnum = ahexnum;
+}
+
+#define HEXNUM_DISPLAY
+
 void setup_board()
 {
 	pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
@@ -48,6 +56,15 @@ void setup_board()
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
+#endif
+
+#ifndef HEXNUM_DISPLAY
+
+void show_hexnum(unsigned ahexnum)
+{
+  // nothing
+}
+
 #endif
 
 
@@ -108,6 +125,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
       #if LED_COUNT > 2
         pin_led3.SetTo((hbcounter >> 2) & 1);
       #endif
+
+      show_hexnum(hbcounter);
 
 			t0 = t1;
 
