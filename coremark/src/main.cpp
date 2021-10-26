@@ -52,6 +52,28 @@ void setup_board()
 
 #endif
 
+#if defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
+
+TGpioPin  pin_led1(1, 0, false);
+TGpioPin  pin_led2(1, 7, false);
+TGpioPin  pin_led3(1, 14, false);
+
+#define LED_COUNT 3
+
+void setup_board()
+{
+  // nucleo board leds
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
+}
+
+#endif
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
@@ -101,8 +123,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
+	//mcu_enable_dcache(); // enable data cache if present
 
-  #if defined(CMCC)
+#if defined(CMCC)
 	// enable cache
 	CMCC->CTRL.bit.CEN = 1;
 #endif
@@ -116,6 +139,11 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("VIHAL Coremark\r\n");
 	TRACE("Board: \"%s\"\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
+
+	if (SystemCoreClock > 300000000)
+	{
+	  TRACE("WARNING: the system core clock is too high to track 10 seconds !\r\n");
+	}
 
 	TRACE("Executing the CoreMark...\r\n");
 
