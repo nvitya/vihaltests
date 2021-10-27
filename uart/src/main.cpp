@@ -188,6 +188,27 @@ void setup_board()
 }
 #endif
 
+#if defined(BOARD_XPLAINED_SAME70)
+
+TGpioPin  pin_led1(2, 8, false);  // C8
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART1 - EDBG
+  hwpinctrl.PinSetup(0, 21, PINCFG_INPUT | PINCFG_AF_0);  // USART1_RXD
+  MATRIX->CCFG_SYSIO |= (1 << 4); // select PB4 instead of TDI !!!!!!!!!
+  hwpinctrl.PinSetup(1,  4, PINCFG_OUTPUT | PINCFG_AF_3); // USART1_TXD
+  conuart.Init(0x101); // USART1
+
+  // UART3 - Arduino shield
+  //hwpinctrl.PinSetup(3, 28, PINCFG_INPUT | PINCFG_AF_0);  // UART3_RXD
+  //hwpinctrl.PinSetup(3, 30, PINCFG_OUTPUT | PINCFG_AF_0); // UART3_TXD
+  //uartx2.Init(3); // UART3
+}
+
+#endif
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
@@ -204,6 +225,7 @@ volatile unsigned hbcounter = 0;
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
+  mcu_disable_interrupts();
 
   // Set the interrupt vector table offset, so that the interrupts and exceptions work
   mcu_init_vector_table();
