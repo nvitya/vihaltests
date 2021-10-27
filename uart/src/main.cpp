@@ -114,9 +114,32 @@ void setup_board()
 
 #if defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
 
-TGpioPin  pin_led1(1, 0, false);
-TGpioPin  pin_led2(1, 7, false);
-TGpioPin  pin_led3(1, 14, false);
+TGpioPin  pin_led1(PORTNUM_B, 0, false);
+TGpioPin  pin_led2(PORTNUM_B, 7, false);
+TGpioPin  pin_led3(PORTNUM_B, 14, false);
+
+#define LED_COUNT 3
+
+void setup_board()
+{
+  // nucleo board leds
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
+}
+
+#endif
+
+#if defined(BOARD_NUCLEO_H723)
+
+TGpioPin  pin_led1(PORTNUM_B,  0, false);  // PB0 or PA5
+TGpioPin  pin_led2(PORTNUM_E,  1, false);
+TGpioPin  pin_led3(PORTNUM_B, 14, false);
 
 #define LED_COUNT 3
 
@@ -191,17 +214,19 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   SystemCoreClock = MCU_FIXED_SPEED;
 
 #else
-
-  //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
-  //if (!hwclk_init(0, 64000000))  // special for STM32F3, STM32F1
-  if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
-  {
-    while (1)
+  #if 0
+    SystemCoreClock = MCU_INTERNAL_RC_SPEED;
+  #else
+    //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+    //if (!hwclk_init(0, 64000000))  // special for STM32F3, STM32F1
+    if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     {
-      // error
+      while (1)
+      {
+        // error
+      }
     }
-  }
-
+  #endif
 #endif
 
 	mcu_enable_fpu();    // enable coprocessor if present
