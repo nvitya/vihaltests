@@ -210,6 +210,27 @@ void setup_board()
 
 #endif
 
+#if defined(BOARD_MIBO64_ATSAME5X)
+
+TGpioPin  pin_led1(PORTNUM_A, 1, false);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SERCOM0
+  hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_OUTPUT | PINCFG_AF_3);  // PAD[0] = TX
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_INPUT  | PINCFG_AF_3);  // PAD[1] = RX
+  conuart.Init(0);
+
+  // SERCOM2
+  //hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_AF_2);  // PAD[0] = TX
+  //hwpinctrl.PinSetup(PORTNUM_A, 13, PINCFG_AF_2);  // PAD[1] = RX
+  //conuart.Init(2);
+}
+#endif
+
+
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
