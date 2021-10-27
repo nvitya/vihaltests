@@ -199,6 +199,8 @@ void show_hexnum(unsigned ahexnum)
 }
 #endif
 
+volatile unsigned hbcounter = 0;
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -262,7 +264,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	mcu_enable_interrupts();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
-	unsigned hbcounter = 0;
 
 	unsigned t0, t1;
 
