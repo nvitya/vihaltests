@@ -230,6 +230,26 @@ void setup_board()
 }
 #endif
 
+#if defined(BOARD_XPRESSO_LPC54608)
+
+TGpioPin  pin_led1(2, 2, true);
+TGpioPin  pin_led2(3, 3, true);
+TGpioPin  pin_led3(3, 14, true);
+
+#define LED_COUNT 3
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
+  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
+  conuart.Init(0);
+}
+
+#endif
 
 #ifndef LED_COUNT
   #define LED_COUNT 1
