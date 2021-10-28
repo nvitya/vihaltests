@@ -7,6 +7,7 @@
 
 #include "platform.h"
 #include "hwspi.h"
+#include "hwqspi.h"
 #include "hwdma.h"
 #include "hwpins.h"
 #include "clockcnt.h"
@@ -18,6 +19,7 @@
 #define USE_DMA  1
 
 THwSpi     spi;
+THwQspi    qspi;
 TSpiFlash  spiflash;
 
 TGpioPin       spi_cs_pin;
@@ -111,7 +113,15 @@ void test_spiflash()
 {
 	int i;
 
-	spiflash.spi = &spi;
+	if (qspi.initialized)
+	{
+    spiflash.qspi = &qspi;
+	}
+	else
+	{
+	  spiflash.spi = &spi;
+	}
+
 	spiflash.has4kerase = true;
 	if (!spiflash.Init())
 	{
@@ -195,6 +205,21 @@ void test_spi()
   spi.DmaAssign(false, &spi_rxdma);
 
 #endif
+
+#elif defined(BOARD_MIBO48_STM32G473)
+
+  uint32_t qspipincfg = 0;
+
+  hwpinctrl.PinSetup(PORTNUM_B, 11, qspipincfg | PINCFG_AF_10);   // NCS
+  hwpinctrl.PinSetup(PORTNUM_B, 10, qspipincfg | PINCFG_AF_10);   // CLK
+
+  hwpinctrl.PinSetup(PORTNUM_B,  1, qspipincfg | PINCFG_AF_10);   // IO0
+  hwpinctrl.PinSetup(PORTNUM_B,  0, qspipincfg | PINCFG_AF_10);   // IO1
+  hwpinctrl.PinSetup(PORTNUM_A,  7, qspipincfg | PINCFG_AF_10);   // IO2
+  hwpinctrl.PinSetup(PORTNUM_A,  6, qspipincfg | PINCFG_AF_10);   // IO3
+
+  qspi.speed = 4000000;
+  qspi.Init();
 
 #else
 
