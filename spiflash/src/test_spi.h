@@ -9,7 +9,7 @@
 #define SRC_TEST_SPI_H_
 
 
-void test_spi();
+void test_spiflash();
 
 
 #endif /* SRC_TEST_SPI_H_ */

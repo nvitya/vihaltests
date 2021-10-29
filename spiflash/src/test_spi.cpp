@@ -5,6 +5,8 @@
  *      Author: vitya
  */
 
+#include "string.h"
+
 #include "platform.h"
 #include "hwspi.h"
 #include "hwqspi.h"
@@ -12,22 +14,16 @@
 #include "hwpins.h"
 #include "clockcnt.h"
 #include "traces.h"
-#include "serialflash.h"
 #include "spiflash.h"
+
+#include "board_pins.h"
 
 #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
 #define USE_DMA  1
 
-THwSpi     spi;
-THwQspi    qspi;
-TSpiFlash  spiflash;
-
-TGpioPin       spi_cs_pin;
-THwDmaChannel  spi_txdma;
-THwDmaChannel  spi_rxdma;
+TSpiFlash spiflash;
 
 uint8_t spi_id[4];
-uint8_t spi_buf[4096];
 
 unsigned readlen = 256;
 
@@ -45,190 +41,174 @@ void show_mem(void * addr, unsigned len)
 	TRACE("\r\n");
 }
 
-#if defined(MCUF_VRV100)
-
-void test_spi_direct()
+void test_spiflash_reliability()
 {
-	/*
-	DATA -> 0x00 :
-	  rxData -> R[7:0]
-	  rxOccupancy -> R[30:16] rx fifo occupancy (include the rxData in the amount)
-	  rxValid -> R[31] Inform that the readed rxData is valid
-	  When you read this register it pop an byte of the rx fifo and provide its value (via rxData)
+  TRACE("Reliability test begin\r\n");
 
-	  When you write this register, it push a command into the fifo. There is the commands that you can use :
-	    0x000000xx =>  Send byte xx
-	    0x010000xx =>  Send byte xx and also push the read data into the FIFO
-	    0x1100000X =>  Enable the SS line X
-	    0x1000000X =>  Disable the SS line X
-	*/
+  unsigned value;
+  const unsigned begin_value = 0xc35a7291 + 1;
+  const unsigned value_add = 33;
+  uint32_t * dp;
+  uint32_t * endp = (uint32_t *)&databuf[sizeof(databuf)];
 
-	spi.regs->DATA = 0x11000000; // enable the CS
-	spi.regs->DATA = 0x0000009F; // command: read JEDEC ID
-	spi.regs->DATA = 0x01000000; // send and read data
-	spi.regs->DATA = 0x01000000; // send and read data
-	spi.regs->DATA = 0x01000000; // send and read data
-	spi.regs->DATA = 0x10000000; // disable the CS
-
-	uint32_t d;
-	uint32_t cnt = 0;
-
-	do
-	{
-		d = spi.regs->DATA;
-		if (d & (1u << 31)) // data valid?
-		{
-			spi_id[cnt] = (d & 0xFF);
-			++cnt;
-		}
-	}
-	while (cnt < 3);
-
-  TRACE("JEDEC ID = %02X %02X %02X\r\n", spi_id[0], spi_id[1], spi_id[2]);
-}
-
-#endif
-
-void test_spi_vihal()
-{
-#if 1
-	spi.StartTransfer(0x9F, 0, SPITR_CMD1, 3, nullptr, &spi_id[0]);
-	spi.WaitFinish();
-
-  TRACE("JEDEC ID = %02X %02X %02X\r\n", spi_id[0], spi_id[1], spi_id[2]);
-#endif
+  const unsigned test_length = sizeof(databuf);
 
 #if 1
-  TRACE("Reading the first block...\r\n");
-  unsigned t0, t1;
-  t0 = CLOCKCNT;
-  spi.StartTransfer(0x03, 1024*1024, SPITR_CMD1 | SPITR_ADDR3 | SPITR_EXTRA0, 4096, nullptr, &spi_buf[0]);
-  spi.WaitFinish();
-  t1 = CLOCKCNT;
-  TRACE("Read finished in %u clocks.\r\n", t1 - t0);
+
+  TRACE("Erasing the first %u k...\r\n", test_length / 1024);
+  spiflash.StartEraseMem(TEST_START_ADDR, test_length);
+  spiflash.WaitForComplete();
+  TRACE("Erase complete.\r\n");
+
+
+  // fill the buffer:
+  dp = (uint32_t *)&databuf[0];
+  value = begin_value;
+  while (dp < endp)
+  {
+    *dp++ = value;
+    value += value_add;
+  }
+
+  TRACE("Writing blocks...\r\n");
+  spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.WaitForComplete();
+
 #endif
+
+  TRACE("Reading back...\r\n");
+  memset(&databuf[0], 0, sizeof(databuf));
+  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.WaitForComplete();
+
+  TRACE("Comparing...\r\n");
+
+  unsigned mismatch_cnt = 0;
+
+  value = begin_value;
+  dp = (uint32_t *)&databuf[0];
+  while (dp < endp)
+  {
+    if (*dp++ != value)
+    {
+      ++mismatch_cnt;
+    }
+    value += value_add;
+  }
+
+  if (mismatch_cnt)
+  {
+    TRACE("ERROR! Mismatch count: %u\r\n", mismatch_cnt);
+  }
+  else
+  {
+    TRACE("Content check ok.\r\n");
+  }
+
+  TRACE("Reliability Test Finished.\r\n");
 }
 
-void test_spiflash()
+void test_simple_rw()
 {
 	int i;
 
-	if (qspi.initialized)
-	{
-    spiflash.qspi = &qspi;
-	}
-	else
-	{
-	  spiflash.spi = &spi;
-	}
+	TRACE("Testing simple Read, Erase, Write\r\n");
 
-	spiflash.has4kerase = true;
-	if (!spiflash.Init())
-	{
-		TRACE("SPI Flash init failed!\r\n");
-		return;
-	}
-
-	TRACE("SPI Flash initialized, ID CODE = %06X, kbyte size = %u\r\n", spiflash.idcode, (spiflash.bytesize >> 10));
-
-#if 1
 	TRACE("Reading memory...\r\n");
 
-	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], readlen);
+	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
 
 	show_mem(&databuf[0], readlen);
-#endif
 
-#if 1
 	TRACE("Erase sector...\r\n");
-	spiflash.StartEraseMem(TEST_START_ADDR, readlen);
+	spiflash.StartEraseMem(TEST_START_ADDR, sizeof(databuf));
 	spiflash.WaitForComplete();
 	TRACE("Erase complete.\r\n");
-#endif
 
 	TRACE("Writing memory...\r\n");
 
 	for (i = 0; i < sizeof(databuf); ++i)
 	{
-		databuf[i] = 0xF0 + i;
+		databuf[i] = uint8_t(0xF0 + i);
 	}
 
 	spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 
-#if 1
 	TRACE("Reading memory...\r\n");
 
-	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], readlen);
+	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
 
-	show_mem(&databuf[0], readlen);
+  show_mem(&databuf[0], readlen);
 
-	//return;
-#endif
+	unsigned errorcnt = 0;
+  for (i = 0; i < sizeof(databuf); ++i)
+  {
+    if (databuf[i] != uint8_t(0xF0 + i))
+    {
+      ++errorcnt;
+    }
+  }
 
+  if (errorcnt)
+  {
+    TRACE("ERROR COUNT: %u\r\n", errorcnt);
+  }
+  else
+  {
+    TRACE("content ok.\r\n");
+  }
+
+  TRACE("Test finished.\r\n");
+  TRACE("\r\n");
 }
 
-void test_spi()
+void test_spiflash()
 {
 	TRACE("SPI test begin\r\n");
 
-#ifdef MCUSF_VRV100
-	spi.speed = 8000000;
-	spi.Init(1); // flash
+  unsigned spispeed = 0;
+  unsigned lanes = 1;
+  const char * driver = "SPI";
 
-#elif defined(BOARD_MIN_F401)
+  if (fl_qspi.initialized)
+  {
+    spiflash.qspi = &fl_qspi;
+    spispeed = fl_qspi.speed;
+    lanes = fl_qspi.multi_line_count;
+    driver = "QSPI";
+  }
+  else
+  {
+    spiflash.spi = &fl_spi;
+    spispeed = fl_spi.speed;
+  }
 
-  //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_AF_5);  // SPI1_NSS (CS)
-  spi_cs_pin.Assign(PORTNUM_A, 4, false);
-  spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  TRACE("driver = %s, speed = %u, lanes = %u\r\n", driver, spispeed, lanes);
 
-  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_AF_5);  // SPI1_SCK
-  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_AF_5);  // SPI1_MISO
-  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_AF_5);  // SPI1_MOSI
-
-  spi.manualcspin = &spi_cs_pin;
-  spi.speed = 8000000;
-  spi.Init(1);
-
-#if USE_DMA
-
-  spi_txdma.Init(2, 5, 3);  // dma2/stream5/ch3
-  spi_rxdma.Init(2, 0, 3);  // dma2/stream0/ch3
-
-  spi.DmaAssign(true,  &spi_txdma);
-  spi.DmaAssign(false, &spi_rxdma);
-
-#endif
-
-#elif defined(BOARD_MIBO48_STM32G473)
-
-  uint32_t qspipincfg = 0;
-
-  hwpinctrl.PinSetup(PORTNUM_B, 11, qspipincfg | PINCFG_AF_10);   // NCS
-  hwpinctrl.PinSetup(PORTNUM_B, 10, qspipincfg | PINCFG_AF_10);   // CLK
-
-  hwpinctrl.PinSetup(PORTNUM_B,  1, qspipincfg | PINCFG_AF_10);   // IO0
-  hwpinctrl.PinSetup(PORTNUM_B,  0, qspipincfg | PINCFG_AF_10);   // IO1
-  hwpinctrl.PinSetup(PORTNUM_A,  7, qspipincfg | PINCFG_AF_10);   // IO2
-  hwpinctrl.PinSetup(PORTNUM_A,  6, qspipincfg | PINCFG_AF_10);   // IO3
-
-  qspi.speed = 4000000;
-  qspi.Init();
-
+#ifdef MCUF_VRV100
+  spiflash.has4kerase = false;  // some FPGA config chips does not support 4k erase
 #else
-
-  #error "Define board specific init"
-
+  spiflash.has4kerase = true;
 #endif
+  if (!spiflash.Init())
+  {
+    TRACE("SPI Flash init failed!\r\n");
+    return;
+  }
 
-	//test_spi_vihal();
-	test_spiflash();
+  TRACE("SPI Flash initialized, ID CODE = %06X, kbyte size = %u\r\n", spiflash.idcode, (spiflash.bytesize >> 10));
+  TRACE("Test flash address: 0x%08X\r\n", TEST_START_ADDR);
+  TRACE("Test buffer size: %u\r\n", sizeof(databuf));
+
+	test_simple_rw();
+	test_spiflash_reliability();
 
 	TRACE("SPI test end\r\n");
 }

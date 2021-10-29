@@ -1,6 +1,6 @@
 /*
  * file:     main.cpp (spiflash)
- * brief:    VIHAL SPI Flash Test
+ * brief:    VIHAL SPI Flash Test Main
  * created:  2021-10-03
  * authors:  nvitya
 */
@@ -10,63 +10,10 @@
 #include "cppinit.h"
 #include "clockcnt.h"
 
-#include "hwpins.h"
-#include "hwuart.h"
+#include "board_pins.h"
 #include "traces.h"
 
 #include "test_spi.h"
-
-THwUart   conuart;  // console uart
-
-#if defined(BOARD_VRV100_441)
-
-TGpioPin  pin_led1(PORTNUM_A, 0, false);
-
-#define LED_COUNT 1
-
-void setup_board()
-{
-	pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-
-	conuart.Init(1); // UART1
-}
-
-#endif
-
-#if defined(BOARD_MIBO48_STM32G473) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
-
-TGpioPin  pin_led1(PORTNUM_C, 13, false);
-
-void setup_board()
-{
-  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-}
-#endif
-
-#if defined(BOARD_MIN_F401)
-
-TGpioPin  pin_led1(2, 13, false); // PC13
-
-void setup_board()
-{
-  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-}
-#endif
-
-
-#ifndef LED_COUNT
-  #define LED_COUNT 1
-#endif
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -100,14 +47,14 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	clockcnt_init();
 
 	// go on with the hardware initializations
-	setup_board();
+	board_pins_init();
 
 	TRACE("\r\n-----------------------------\r\n");
 	TRACE("VIHAL SPI Flash Test\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-	test_spi();
+	test_spiflash();
 
 	TRACE("Starting main cycle...\r\n");
 
@@ -132,13 +79,10 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 			++hbcounter;
 			//*hexnum = hbcounter;
 
-      pin_led1.SetTo(hbcounter & 1);
-      #if LED_COUNT > 1
-        pin_led2.SetTo((hbcounter >> 1) & 1);
-      #endif
-      #if LED_COUNT > 2
-        pin_led3.SetTo((hbcounter >> 2) & 1);
-      #endif
+			for (unsigned n = 0; n < pin_led_count; ++n)
+			{
+			  pin_led[n].SetTo((hbcounter >> n) & 1);
+			}
 
 			//TRACE("hbcounter=%u\r\n", hbcounter);
 
