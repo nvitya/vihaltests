@@ -154,6 +154,15 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_DISCOVERY_F746)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+}
+
 // ATSAM
 
 #elif defined(BOARD_ARDUINO_DUE)
@@ -171,6 +180,15 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO100_ATSAME70)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_D, 13, false);
   board_pins_init_leds();
 }
 
@@ -222,6 +240,15 @@ void board_pins_init()
   pin_led[0].Assign(2,  2, true);
   pin_led[1].Assign(3,  3, true);
   pin_led[2].Assign(3, 14, true);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO100_LPC546XX)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1,  3, false);
   board_pins_init_leds();
 }
 
