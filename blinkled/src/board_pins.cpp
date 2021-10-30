@@ -56,7 +56,7 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
-#elif defined(MCUSF_VRV100) // BOARD_VRV100_441
+#elif defined(MCUF_VRV100)
 
 #define HEXNUM_DISPLAY
 void board_show_hexnum(unsigned ahexnum)
@@ -88,6 +88,24 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 13, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_DISCOVERY_F072)
+
+TGpioPin  led1pin(PORTNUM_C, 6, false);
+TGpioPin  led2pin(PORTNUM_C, 8, false);
+TGpioPin  led3pin(PORTNUM_C, 9, false);
+TGpioPin  led4pin(PORTNUM_C, 7, false);
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_C, 6, false);
+  pin_led[1].Assign(PORTNUM_C, 8, false);
+  pin_led[2].Assign(PORTNUM_C, 9, false);
+  pin_led[3].Assign(PORTNUM_C, 7, false);
 
   board_pins_init_leds();
 }
@@ -125,6 +143,17 @@ void board_pins_init()
 
   board_pins_init_leds();
 }
+
+#elif defined(BOARD_ARDUINO_DUE)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 27, false);
+
+  board_pins_init_leds();
+}
+
 
 #elif defined(BOARD_XPLAINED_SAME70)
 
