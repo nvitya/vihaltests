@@ -78,6 +78,8 @@ void board_pins_init()
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
 
+// STM32
+
 #elif    defined(BOARD_MIN_F103) \
       || defined(BOARD_MIN_F401) \
       || defined(BOARD_MIBO48_STM32F303) \
@@ -88,16 +90,19 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
 
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
   board_pins_init_leds();
 }
 
 #elif defined(BOARD_DISCOVERY_F072)
-
-TGpioPin  led1pin(PORTNUM_C, 6, false);
-TGpioPin  led2pin(PORTNUM_C, 8, false);
-TGpioPin  led3pin(PORTNUM_C, 9, false);
-TGpioPin  led4pin(PORTNUM_C, 7, false);
 
 void board_pins_init()
 {
@@ -106,7 +111,15 @@ void board_pins_init()
   pin_led[1].Assign(PORTNUM_C, 8, false);
   pin_led[2].Assign(PORTNUM_C, 9, false);
   pin_led[3].Assign(PORTNUM_C, 7, false);
+  board_pins_init_leds();
+}
 
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
   board_pins_init_leds();
 }
 
@@ -116,7 +129,6 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_B, 1, false);
-
   board_pins_init_leds();
 }
 
@@ -128,7 +140,6 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_B,  0, false);
   pin_led[1].Assign(PORTNUM_B,  7, false);
   pin_led[2].Assign(PORTNUM_B, 14, false);
-
   board_pins_init_leds();
 }
 
@@ -140,9 +151,10 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_B,  0, false);  // PB0 or PA5
   pin_led[1].Assign(PORTNUM_E,  1, false);
   pin_led[2].Assign(PORTNUM_B, 14, false);
-
   board_pins_init_leds();
 }
+
+// ATSAM
 
 #elif defined(BOARD_ARDUINO_DUE)
 
@@ -150,10 +162,17 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_B, 27, false);
-
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_MIBO64_ATSAM4S)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+}
 
 #elif defined(BOARD_XPLAINED_SAME70)
 
@@ -161,19 +180,6 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 8, false);
-
-  board_pins_init_leds();
-}
-
-#elif defined(BOARD_XPRESSO_LPC54608)
-
-void board_pins_init()
-{
-  pin_led_count = 3;
-  pin_led[0].Assign(2,  2, true);
-  pin_led[1].Assign(3,  3, true);
-  pin_led[2].Assign(3, 14, true);
-
   board_pins_init_leds();
 }
 
@@ -183,7 +189,6 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_A, 1, false);
-
   board_pins_init_leds();
 }
 
@@ -193,7 +198,6 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_A, 29, false);
-
   board_pins_init_leds();
 }
 
@@ -205,7 +209,19 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_A, 20, true);
   pin_led[1].Assign(PORTNUM_D, 14, true);
   pin_led[2].Assign(PORTNUM_D, 13, true);
+  board_pins_init_leds();
+}
 
+// LPC
+
+#elif defined(BOARD_XPRESSO_LPC54608)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(2,  2, true);
+  pin_led[1].Assign(3,  3, true);
+  pin_led[2].Assign(3, 14, true);
   board_pins_init_leds();
 }
 

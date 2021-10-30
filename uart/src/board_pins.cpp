@@ -103,6 +103,8 @@ void board_pins_init()
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
 
+// STM32
+
 #elif defined(BOARD_MIN_F103)
 
 void board_pins_init()
@@ -137,11 +139,6 @@ void board_pins_init()
 
 #elif defined(BOARD_DISCOVERY_F072)
 
-TGpioPin  led1pin(PORTNUM_C, 6, false);
-TGpioPin  led2pin(PORTNUM_C, 8, false);
-TGpioPin  led3pin(PORTNUM_C, 9, false);
-TGpioPin  led4pin(PORTNUM_C, 7, false);
-
 void board_pins_init()
 {
   pin_led_count = 4;
@@ -149,6 +146,20 @@ void board_pins_init()
   pin_led[1].Assign(PORTNUM_C, 8, false);
   pin_led[2].Assign(PORTNUM_C, 9, false);
   pin_led[3].Assign(PORTNUM_C, 7, false);
+  board_pins_init_leds();
+
+  // USART1 - not availabe on the embedded debug probe
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
   board_pins_init_leds();
 
   // USART1 - not availabe on the embedded debug probe
@@ -203,6 +214,8 @@ void board_pins_init()
   conuart.Init(3); // USART3
 }
 
+// ATSAM
+
 #elif defined(BOARD_ARDUINO_DUE)
 
 void board_pins_init()
@@ -217,6 +230,18 @@ void board_pins_init()
   conuart.Init(0);  // UART
 }
 
+#elif defined(BOARD_MIBO64_ATSAM4S)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  conuart.Init(0);
+}
 
 #elif defined(BOARD_XPLAINED_SAME70)
 
@@ -236,21 +261,6 @@ void board_pins_init()
   //hwpinctrl.PinSetup(3, 28, PINCFG_INPUT | PINCFG_AF_0);  // UART3_RXD
   //hwpinctrl.PinSetup(3, 30, PINCFG_OUTPUT | PINCFG_AF_0); // UART3_TXD
   //uartx2.Init(3); // UART3
-}
-
-#elif defined(BOARD_XPRESSO_LPC54608)
-
-void board_pins_init()
-{
-  pin_led_count = 3;
-  pin_led[0].Assign(2,  2, true);
-  pin_led[1].Assign(3,  3, true);
-  pin_led[2].Assign(3, 14, true);
-  board_pins_init_leds();
-
-  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
-  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
-  conuart.Init(0);
 }
 
 #elif defined(BOARD_MIBO64_ATSAME5X)
@@ -299,6 +309,23 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
   conuart.baudrate = 115200;
+  conuart.Init(0);
+}
+
+// LPC
+
+#elif defined(BOARD_XPRESSO_LPC54608)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(2,  2, true);
+  pin_led[1].Assign(3,  3, true);
+  pin_led[2].Assign(3, 14, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
+  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
   conuart.Init(0);
 }
 
