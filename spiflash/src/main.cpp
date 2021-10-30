@@ -77,7 +77,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
-			//*hexnum = hbcounter;
 
 			for (unsigned n = 0; n < pin_led_count; ++n)
 			{

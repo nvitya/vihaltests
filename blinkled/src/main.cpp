@@ -1,72 +1,10 @@
 
 #include "platform.h"
 #include "hwclk.h"
-#include "hwpins.h"
 #include "cppinit.h"
 #include "clockcnt.h"
 
-#if defined(BOARD_LONGAN_NANO)
-
-TGpioPin  pin_led1(PORTNUM_C, 13, true);
-TGpioPin  pin_led2(PORTNUM_A,  1, true);
-TGpioPin  pin_led3(PORTNUM_A,  2, true);
-
-#define LED_COUNT 3
-
-void setup_board()
-{
-  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-}
-
-#endif
-
-#if defined(BOARD_VRV100_441)
-
-TGpioPin  pin_led1(PORTNUM_A, 0, false);
-
-#define LED_COUNT 1
-
-void show_hexnum(unsigned ahexnum)
-{
-  volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
-  *hexnum = ahexnum;
-}
-
-#define HEXNUM_DISPLAY
-
-void setup_board()
-{
-	pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-	//pin_led1.Setup(PINCFG_INPUT);
-}
-
-#endif
-
-#if defined(BOARD_MIN_F103)
-
-TGpioPin  pin_led1(2, 13, false); // PC13
-
-void setup_board()
-{
-  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-}
-#endif
-
-#ifndef LED_COUNT
-  #define LED_COUNT 1
-#endif
-
-#ifndef HEXNUM_DISPLAY
-
-void show_hexnum(unsigned ahexnum)
-{
-  // nothing
-}
-
-#endif
-
+#include "board_pins.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -99,8 +37,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	clockcnt_init();
 
-	// go on with the hardware initializations
-	setup_board();
+	// go on with the hardware initializations (board_pins.cpp)
+	board_pins_init();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
@@ -118,15 +56,12 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		{
 			++hbcounter;
 
-			pin_led1.SetTo(hbcounter & 1);
-      #if LED_COUNT > 1
-        pin_led2.SetTo((hbcounter >> 1) & 1);
-      #endif
-      #if LED_COUNT > 2
-        pin_led3.SetTo((hbcounter >> 2) & 1);
-      #endif
+      for (unsigned n = 0; n < pin_led_count; ++n)
+      {
+        pin_led[n].SetTo((hbcounter >> n) & 1);
+      }
 
-      show_hexnum(hbcounter);
+      board_show_hexnum(hbcounter);
 
 			t0 = t1;
 

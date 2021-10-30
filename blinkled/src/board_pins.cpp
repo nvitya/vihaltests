@@ -1,0 +1,195 @@
+/*
+ *  file:     board_pins.cpp (spiflash)
+ *  brief:    SPI Flash Test Board pins
+ *  version:  1.00
+ *  date:     2021-10-29
+ *  authors:  nvitya
+*/
+
+#include "board_pins.h"
+
+unsigned  pin_led_count = 1;
+
+// common LED array
+
+TGpioPin  pin_led[MAX_LEDS] =
+{
+  TGpioPin(),
+  TGpioPin(),
+  TGpioPin(),
+  TGpioPin()
+};
+
+/* NOTE:
+     for direct GPIO pin definitions is simpler to define with port and pin number:
+
+       TGpioPin  pin_mygpio(PORTNUM_C, 13, false);
+
+     but don't forget to initialize it in the setup code:
+
+       pin_mygpio.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+*/
+
+void board_pins_init_leds()
+{
+	for (unsigned n = 0; n < pin_led_count; ++n)
+	{
+		pin_led[n].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+	}
+}
+
+#if 0  // to use elif everywhere
+
+//-------------------------------------------------------------------------------
+// Risc-V (RV32I)
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_LONGAN_NANO)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_C, 13, true);
+  pin_led[1].Assign(PORTNUM_A,  1, true);
+  pin_led[2].Assign(PORTNUM_A,  2, true);
+
+  board_pins_init_leds();
+}
+
+#elif defined(MCUSF_VRV100) // BOARD_VRV100_441
+
+#define HEXNUM_DISPLAY
+void board_show_hexnum(unsigned ahexnum)
+{
+  volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
+  *hexnum = ahexnum;
+}
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 0, false);
+
+  board_show_hexnum(0);
+  board_pins_init_leds();
+}
+
+//-------------------------------------------------------------------------------
+// ARM Cortex-M
+//-------------------------------------------------------------------------------
+
+#elif    defined(BOARD_MIN_F103) \
+      || defined(BOARD_MIN_F401) \
+      || defined(BOARD_MIBO48_STM32F303) \
+		|| defined(BOARD_MIBO64_STM32F405) \
+		|| defined(BOARD_MIBO48_STM32G473)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 1, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_B,  0, false);
+  pin_led[1].Assign(PORTNUM_B,  7, false);
+  pin_led[2].Assign(PORTNUM_B, 14, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_NUCLEO_H723)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_B,  0, false);  // PB0 or PA5
+  pin_led[1].Assign(PORTNUM_E,  1, false);
+  pin_led[2].Assign(PORTNUM_B, 14, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_XPLAINED_SAME70)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 8, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_XPRESSO_LPC54608)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(2,  2, true);
+  pin_led[1].Assign(3,  3, true);
+  pin_led[2].Assign(3, 14, true);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO64_ATSAME5X)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_VERTIBO_A)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 29, false);
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_ENEBO_A)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_A, 20, true);
+  pin_led[1].Assign(PORTNUM_D, 14, true);
+  pin_led[2].Assign(PORTNUM_D, 13, true);
+
+  board_pins_init_leds();
+}
+
+#else
+  #error "Define board_pins_init here"
+#endif
+
+#ifndef HEXNUM_DISPLAY
+
+void board_show_hexnum(unsigned ahexnum)
+{
+  // nothing
+}
+
+#endif
+

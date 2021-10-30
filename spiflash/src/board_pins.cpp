@@ -19,16 +19,37 @@ TGpioPin  pin_led[MAX_LEDS] =
   TGpioPin()
 };
 
+/* NOTE:
+     for direct GPIO pin definitions is simpler to define with port and pin number:
+
+       TGpioPin  pin_mygpio(PORTNUM_C, 13, false);
+
+     but don't forget to initialize it in the setup code:
+
+       pin_mygpio.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+*/
+
+// one of these should be initialized:
 THwSpi    fl_spi;
 THwQspi   fl_qspi;
 
-#if defined(MCUSF_VRV100) //BOARD_VRV100_441)
+void board_pins_init_leds()
+{
+  for (unsigned n = 0; n < pin_led_count; ++n)
+  {
+    pin_led[n].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+  }
+}
+
+#if 0 // to use elif everywhere
+
+#elif defined(MCUSF_VRV100) //BOARD_VRV100_441)
 
 void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_A, 0, false);
-  pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  board_pins_init_leds();
 
   conuart.Init(1); // UART1
 
@@ -36,15 +57,13 @@ void board_pins_init()
   fl_spi.Init(1); // flash
 }
 
-#endif
-
-#if defined(BOARD_MIBO48_STM32G473) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
+#elif defined(BOARD_MIBO48_STM32G473) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
 
 void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 13, false);
-  pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  board_pins_init_leds();
 
   // USART1
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
@@ -65,9 +84,8 @@ void board_pins_init()
   fl_qspi.multi_line_count = 4;
   fl_qspi.Init();
 }
-#endif
 
-#if defined(BOARD_MIN_F401)
+#elif defined(BOARD_MIN_F401) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
 
 TGpioPin       fl_spi_cs_pin(PORTNUM_A, 4, false);
 THwDmaChannel  fl_spi_txdma;
@@ -77,7 +95,7 @@ void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 13, false);
-  pin_led[0].Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  board_pins_init_leds();
 
   // USART1
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
@@ -106,5 +124,54 @@ void board_pins_init()
   #endif
 
 }
+
+#elif defined(BOARD_VERTIBO_A)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 29, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  conuart.baudrate = 115200;
+  conuart.Init(0);
+
+  // at the ATSAM the pins and DMA initialization is done internally.
+  // You can select the used DMA chennels with the txdmachannel, rxdmachannel
+  fl_qspi.txdmachannel = 5;
+  fl_qspi.rxdmachannel = 6;
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 60000000;  // that's 240 MBit/s ...
+  fl_qspi.Init();
+}
+
+#elif defined(BOARD_ENEBO_A)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_A, 20, true);
+  pin_led[1].Assign(PORTNUM_D, 14, true);
+  pin_led[2].Assign(PORTNUM_D, 13, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  conuart.baudrate = 115200;
+  conuart.Init(0);
+
+  // at the ATSAM the pins and DMA initialization is done internally.
+  // You can select the used DMA chennels with the txdmachannel, rxdmachannel
+  fl_qspi.txdmachannel = 5;
+  fl_qspi.rxdmachannel = 6;
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 60000000;  // that's 240 MBit/s ...
+  fl_qspi.Init();
+}
+
+#else
+  #error "Define board_pins_init here"
 #endif
 
