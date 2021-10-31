@@ -78,60 +78,6 @@ void board_pins_init()
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
 
-// STM32
-
-#elif    defined(BOARD_MIN_F103) \
-      || defined(BOARD_MIN_F401) \
-      || defined(BOARD_MIBO48_STM32F303) \
-		|| defined(BOARD_MIBO64_STM32F405) \
-		|| defined(BOARD_MIBO48_STM32G473)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-}
-
-#elif defined(BOARD_MIBO64_STM32F070)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-}
-
-#elif defined(BOARD_DISCOVERY_F072)
-
-void board_pins_init()
-{
-  pin_led_count = 4;
-  pin_led[0].Assign(PORTNUM_C, 6, false);
-  pin_led[1].Assign(PORTNUM_C, 8, false);
-  pin_led[2].Assign(PORTNUM_C, 9, false);
-  pin_led[3].Assign(PORTNUM_C, 7, false);
-  board_pins_init_leds();
-}
-
-#elif defined(BOARD_MIBO64_STM32F070)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-}
-
-#elif defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_B, 1, false);
-  board_pins_init_leds();
-}
-
 #elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
 
 void board_pins_init()
@@ -154,12 +100,113 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_NUCLEO_G474RE)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A,  5, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_NUCLEO_G431KB)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B,  8, false);
+  board_pins_init_leds();
+}
+
 #elif defined(BOARD_DISCOVERY_F746)
 
 void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_DISCOVERY_F429)
+
+void board_pins_init()
+{
+  pin_led_count = 2;
+  pin_led[0].Assign(PORTNUM_G, 13, false);
+  pin_led[1].Assign(PORTNUM_G, 14, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_DISCOVERY_F072)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_C, 6, false);
+  pin_led[1].Assign(PORTNUM_C, 8, false);
+  pin_led[2].Assign(PORTNUM_C, 9, false);
+  pin_led[3].Assign(PORTNUM_C, 7, false);
+  board_pins_init_leds();
+}
+
+// STM32
+
+#elif    defined(BOARD_MIN_F103) \
+      || defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
+      || defined(BOARD_MIBO48_STM32F303) \
+   		|| defined(BOARD_MIBO64_STM32F405) \
+		  || defined(BOARD_MIBO48_STM32G473)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 1, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_DEV_STM32F407VG)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_E, 0, false);
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_DEV_STM32F407ZE)
+
+void board_pins_init()
+{
+  pin_led_count = 2;
+  pin_led[0].Assign(PORTNUM_F,  9, true);
+  pin_led[1].Assign(PORTNUM_F, 10, true);
   board_pins_init_leds();
 }
 

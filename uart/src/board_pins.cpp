@@ -105,83 +105,6 @@ void board_pins_init()
 
 // STM32
 
-#elif defined(BOARD_MIN_F103)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_0 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-}
-
-#elif defined(BOARD_MIN_F401) \
-      || defined(BOARD_MIBO48_STM32F303) \
-    || defined(BOARD_MIBO64_STM32F405) \
-    || defined(BOARD_MIBO48_STM32G473)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-}
-
-
-#elif defined(BOARD_DISCOVERY_F072)
-
-void board_pins_init()
-{
-  pin_led_count = 4;
-  pin_led[0].Assign(PORTNUM_C, 6, false);
-  pin_led[1].Assign(PORTNUM_C, 8, false);
-  pin_led[2].Assign(PORTNUM_C, 9, false);
-  pin_led[3].Assign(PORTNUM_C, 7, false);
-  board_pins_init_leds();
-
-  // USART1 - not availabe on the embedded debug probe
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
-  conuart.Init(1);
-}
-
-#elif defined(BOARD_MIBO64_STM32F070)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-
-  // USART1 - not availabe on the embedded debug probe
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
-  conuart.Init(1);
-}
-
-#elif defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_B, 1, false);
-  board_pins_init_leds();
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-}
-
 #elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
 
 void board_pins_init()
@@ -214,6 +137,48 @@ void board_pins_init()
   conuart.Init(3); // USART3
 }
 
+#elif defined(BOARD_NUCLEO_G474RE)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A,  5, false);
+  board_pins_init_leds();
+
+#if 0
+  // LPUART1: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_A, 2,  PINCFG_OUTPUT | PINCFG_AF_12);  // LPUART1.TX
+  hwpinctrl.PinSetup(PORTNUM_A, 3,  PINCFG_INPUT  | PINCFG_AF_12);  // LPUART1.RX
+  conuart.Init(0x101); // 0x101 = LPUART1, 0x001 = USART1
+#else
+  // USART2: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_A, 2,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2.TX
+  hwpinctrl.PinSetup(PORTNUM_A, 3,  PINCFG_INPUT  | PINCFG_AF_7);  // USART2.RX
+  conuart.Init(2);
+#endif
+}
+
+#elif defined(BOARD_NUCLEO_G431KB)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B,  8, false);
+  board_pins_init_leds();
+
+#if 0
+  // LPUART1: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_A, 2,  PINCFG_OUTPUT | PINCFG_AF_12);  // LPUART1.TX
+  hwpinctrl.PinSetup(PORTNUM_A, 3,  PINCFG_INPUT  | PINCFG_AF_12);  // LPUART1.RX
+  conuart.Init(0x101); // 0x101 = LPUART1, 0x001 = USART1
+#else
+  // USART2: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_A, 2,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2.TX
+  hwpinctrl.PinSetup(PORTNUM_A, 3,  PINCFG_INPUT  | PINCFG_AF_7);  // USART2.RX
+  conuart.Init(2);
+#endif
+}
+
 #elif defined(BOARD_DISCOVERY_F746)
 
 void board_pins_init()
@@ -225,6 +190,125 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
   hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
   conuart.Init(1); // USART1
+}
+
+#elif defined(BOARD_DISCOVERY_F429)
+
+void board_pins_init()
+{
+  pin_led_count = 2;
+  pin_led[0].Assign(PORTNUM_G, 13, false);
+  pin_led[1].Assign(PORTNUM_G, 14, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+}
+
+#elif defined(BOARD_DISCOVERY_F072)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_C, 6, false);
+  pin_led[1].Assign(PORTNUM_C, 8, false);
+  pin_led[2].Assign(PORTNUM_C, 9, false);
+  pin_led[3].Assign(PORTNUM_C, 7, false);
+  board_pins_init_leds();
+
+  // USART1 - not availabe on the embedded debug probe
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_MIN_F103)  // = blue pill
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_0 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif    defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
+      || defined(BOARD_MIBO48_STM32F303) \
+      || defined(BOARD_MIBO64_STM32F405) \
+      || defined(BOARD_MIBO48_STM32G473)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1 - not availabe on the embedded debug probe
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_MIBO20_STM32F030) || defined(BOARD_MIBO20_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 1, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_DEV_STM32F407VG)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_E, 0, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
+  conuart.Init(1);
+}
+
+#elif defined(BOARD_DEV_STM32F407ZE)
+
+void board_pins_init()
+{
+  pin_led_count = 2;
+  pin_led[0].Assign(PORTNUM_F,  9, true);
+  pin_led[1].Assign(PORTNUM_F, 10, true);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
+  conuart.Init(1);
 }
 
 // ATSAM
