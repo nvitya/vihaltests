@@ -171,6 +171,26 @@ void board_pins_init()
   fl_qspi.Init();
 }
 
+#elif defined(BOARD_XPRESSO_LPC54608)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(2,  2, true);
+  pin_led[1].Assign(3,  3, true);
+  pin_led[2].Assign(3, 14, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
+  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
+  conuart.Init(0);
+
+  // PIN and DMA setup is done internally in the Init(), because there are no alternavives
+  fl_qspi.multi_line_count = 2;  // in my board the original chip was replaced, to a small dual one
+  fl_qspi.speed = 30000000;
+  fl_qspi.Init();
+}
+
 #else
   #error "Define board_pins_init here"
 #endif

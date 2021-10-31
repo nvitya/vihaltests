@@ -18,7 +18,12 @@
 
 #include "board_pins.h"
 
-#define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
+#if defined(MCU_VRV100)
+  #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
+#else
+  #define TEST_START_ADDR  0x000000
+#endif
+
 #define USE_DMA  1
 
 TSpiFlash spiflash;
