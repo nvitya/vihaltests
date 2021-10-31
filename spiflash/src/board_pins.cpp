@@ -113,7 +113,7 @@ void board_pins_init()
   fl_spi.speed = 8000000;
   fl_spi.Init(1);
 
-  #if USE_DMA
+  #if FL_SPI_USE_DMA
 
     fl_spi_txdma.Init(2, 5, 3);  // dma2/stream5/ch3
     fl_spi_rxdma.Init(2, 0, 3);  // dma2/stream0/ch3
@@ -123,6 +123,50 @@ void board_pins_init()
 
   #endif
 
+}
+
+#elif defined(BOARD_MIBO64_ATSAM4S)
+
+TGpioPin       fl_spi_cs_pin(PORTNUM_A, 11, false);
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  conuart.Init(0);
+
+  // SPI0 setup
+
+  unsigned pinflags = PINCFG_OUTPUT | PINCFG_AF_A | PINCFG_PULLUP;
+
+  // the CS must be controlled manually
+  fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //hwpinctrl.PinSetup(PORTNUM_A, 11, pinflags);  // CS
+  hwpinctrl.PinSetup(PORTNUM_A, 13, pinflags);  // MOSI
+  hwpinctrl.PinSetup(PORTNUM_A, 12, pinflags);  // MISO
+  hwpinctrl.PinSetup(PORTNUM_A, 14, pinflags);  // SCK
+
+  fl_spi.manualcspin = &fl_spi_cs_pin;
+  fl_spi.speed = 30000000;
+  fl_spi.Init(0);
+
+  #if FL_SPI_USE_DMA
+
+    fl_spi.PdmaInit(true,  &fl_spi_txdma);
+    // alternative: fl_spi_txdma.InitPeriphDma(true,  fl_spi.regs, fl_spi.usartregs);
+    fl_spi.PdmaInit(false, &fl_spi_rxdma);
+    // alternative: fl_spi_rxdma.InitPeriphDma(false, fl_spi.regs, fl_spi.usartregs);
+
+    //fl_spi.DmaAssign(true,  &fl_spi_txdma);
+    //fl_spi.DmaAssign(false, &fl_spi_rxdma);
+
+  #endif
 }
 
 #elif defined(BOARD_VERTIBO_A)

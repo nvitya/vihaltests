@@ -348,8 +348,8 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_D, 13, false);
   board_pins_init_leds();
 
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   conuart.Init(0);
 }
 

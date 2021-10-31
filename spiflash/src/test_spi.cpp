@@ -24,8 +24,6 @@
   #define TEST_START_ADDR  0x000000
 #endif
 
-#define USE_DMA  1
-
 TSpiFlash spiflash;
 
 uint8_t spi_id[4];
