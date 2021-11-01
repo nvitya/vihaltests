@@ -125,6 +125,48 @@ void board_pins_init()
 
 }
 
+#elif defined(BOARD_ARDUINO_DUE)
+
+TGpioPin       fl_spi_cs_pin(PORTNUM_D, 0, false); // D25 = CS
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 27, false);
+  board_pins_init_leds();
+
+  // UART - On the Arduino programmer interface
+  hwpinctrl.PinSetup(PORTNUM_A, 8, PINCFG_INPUT | PINCFG_AF_0);  // UART_RXD
+  hwpinctrl.PinSetup(PORTNUM_A, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
+  conuart.Init(0);  // UART
+
+  // SPI0 setup
+
+  unsigned pinflags = PINCFG_OUTPUT | PINCFG_AF_A | PINCFG_PULLUP;
+
+  // the CS must be controlled manually
+  fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //hwpinctrl.PinSetup(PORTNUM_A, 14, pinflags);  // D23 = CS
+  hwpinctrl.PinSetup(PORTNUM_A, 25, pinflags);  // MOSI
+  hwpinctrl.PinSetup(PORTNUM_A, 26, pinflags);  // MISO
+  hwpinctrl.PinSetup(PORTNUM_A, 27, pinflags);  // SCK
+
+  fl_spi.manualcspin = &fl_spi_cs_pin;
+  fl_spi.speed = 4000000;
+  fl_spi.Init(0);
+
+  #if 1 //FL_SPI_USE_DMA
+
+    fl_spi_txdma.Init(3, 1);  // 1 = SPI0_TX
+    fl_spi_rxdma.Init(4, 2);  // 2 = SPI0_RX
+
+    fl_spi.DmaAssign(true,  &fl_spi_txdma);
+    fl_spi.DmaAssign(false, &fl_spi_rxdma);
+  #endif
+}
+
 #elif defined(BOARD_MIBO64_ATSAM4S)
 
 TGpioPin       fl_spi_cs_pin(PORTNUM_A, 11, false);

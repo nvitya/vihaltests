@@ -172,6 +172,71 @@ void test_simple_rw()
   TRACE("\r\n");
 }
 
+#if 0
+
+uint8_t tdmabuf[8];
+uint8_t rdmabuf[8];
+
+THwDmaTransfer txfer;
+THwDmaTransfer rxfer;
+
+void test_dma()
+{
+  TRACE("DMA Test\r\n");
+
+  if (!fl_spi.txdma || !fl_spi.rxdma)
+  {
+    TRACE("DMA channels are not assigned !\r\n");
+    return;
+  }
+
+  tdmabuf[0] = 0x9F;
+  tdmabuf[1] = 0x55;
+  tdmabuf[2] = 0x56;
+  tdmabuf[3] = 0x57;
+  tdmabuf[4] = 0x58;
+
+  rdmabuf[0] = 0x55;
+  rdmabuf[1] = 0x56;
+  rdmabuf[2] = 0x57;
+  rdmabuf[3] = 0x58;
+  rdmabuf[4] = 0x59;
+
+  fl_spi.manualcspin->Set0();
+
+  rxfer.dstaddr = &rdmabuf[0];
+  rxfer.bytewidth = 1;
+  rxfer.count = 5;
+  rxfer.flags = 0;
+
+  txfer.srcaddr = &tdmabuf[0];
+  txfer.bytewidth = 1;
+  txfer.count = 5;
+  txfer.flags = 0;
+
+  fl_spi.DmaStartRecv(&rxfer);
+  fl_spi.DmaStartSend(&txfer);
+
+  while (fl_spi.rxdma->Active() || fl_spi.txdma->Active())
+  {
+    // wait for the DMAs
+  }
+
+  delay_us(10);
+
+  fl_spi.manualcspin->Set1();
+
+  unsigned n;
+  TRACE("DMA test result:\r\n");
+  for (n = 0; n < 5; ++n)
+  {
+    TRACE(" %02X", rdmabuf[n]);
+  }
+  TRACE("\r\n");
+}
+
+#endif
+
 void test_spiflash()
 {
 	TRACE("SPI test begin\r\n");
@@ -194,6 +259,9 @@ void test_spiflash()
   }
 
   TRACE("driver = %s, speed = %u, lanes = %u\r\n", driver, spispeed, lanes);
+
+  //test_dma();
+  //return;
 
 #ifdef MCUF_VRV100
   spiflash.has4kerase = false;  // some FPGA config chips does not support 4k erase
