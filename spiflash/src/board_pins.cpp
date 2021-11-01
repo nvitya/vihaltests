@@ -127,7 +127,7 @@ void board_pins_init()
 
 #elif defined(BOARD_ARDUINO_DUE)
 
-TGpioPin       fl_spi_cs_pin(PORTNUM_D, 0, false); // D25 = CS
+TGpioPin       fl_spi_cs_pin(PORTNUM_A, 18, false); // D21/SCL = CS
 THwDmaChannel  fl_spi_txdma;
 THwDmaChannel  fl_spi_rxdma;
 
@@ -142,28 +142,50 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
   conuart.Init(0);  // UART
 
-  // SPI0 setup
-
-  unsigned pinflags = PINCFG_OUTPUT | PINCFG_AF_A | PINCFG_PULLUP;
-
   // the CS must be controlled manually
   fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  //hwpinctrl.PinSetup(PORTNUM_A, 14, pinflags);  // D23 = CS
-  hwpinctrl.PinSetup(PORTNUM_A, 25, pinflags);  // MOSI
-  hwpinctrl.PinSetup(PORTNUM_A, 26, pinflags);  // MISO
-  hwpinctrl.PinSetup(PORTNUM_A, 27, pinflags);  // SCK
 
-  fl_spi.manualcspin = &fl_spi_cs_pin;
-  fl_spi.speed = 4000000;
-  fl_spi.Init(0);
+  #define USE_USART0  1 // else SPI0
 
-  #if 1 //FL_SPI_USE_DMA
+  #if USE_USART0
+    // USART0 Setup
 
-    fl_spi_txdma.Init(3, 1);  // 1 = SPI0_TX
-    fl_spi_rxdma.Init(4, 2);  // 2 = SPI0_RX
+    hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_OUTPUT | PINCFG_AF_A);  // D18: USART0 TXD = MOSI
+    hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_A);  // D19: USART0 RXD = MISO
+    hwpinctrl.PinSetup(PORTNUM_A, 17, PINCFG_OUTPUT | PINCFG_AF_B);  // D20: USART0 SCK
 
-    fl_spi.DmaAssign(true,  &fl_spi_txdma);
-    fl_spi.DmaAssign(false, &fl_spi_rxdma);
+    fl_spi.manualcspin = &fl_spi_cs_pin;
+    fl_spi.speed = 20000000;
+    fl_spi.Init(0x100);  // + 0x100 means use the USARTx instead of SPIx
+
+    #if FL_SPI_USE_DMA
+      // the peripheral ids can be found in "Table 22-2." in the ATSAM3X8E Datasheet
+      fl_spi_txdma.Init(3, 11);  // perid 11 = USART0_TX
+      fl_spi_rxdma.Init(4, 12);  // perid 12 = USART0_RX
+
+      fl_spi.DmaAssign(true,  &fl_spi_txdma);
+      fl_spi.DmaAssign(false, &fl_spi_rxdma);
+    #endif
+
+  #else
+    // SPI0 setup
+
+    hwpinctrl.PinSetup(PORTNUM_A, 25, PINCFG_OUTPUT | PINCFG_AF_A);  // MOSI
+    hwpinctrl.PinSetup(PORTNUM_A, 26, PINCFG_INPUT  | PINCFG_AF_A);  // MISO
+    hwpinctrl.PinSetup(PORTNUM_A, 27, PINCFG_OUTPUT | PINCFG_AF_A);  // SCK
+
+    fl_spi.manualcspin = &fl_spi_cs_pin;
+    fl_spi.speed = 4000000;
+    fl_spi.Init(0);
+
+    #if FL_SPI_USE_DMA
+      // the peripheral ids can be found in "Table 22-2." in the ATSAM3X8E Datasheet
+      fl_spi_txdma.Init(3, 1);  // perid 1 = SPI0_TX
+      fl_spi_rxdma.Init(4, 2);  // perid 2 = SPI0_RX
+
+      fl_spi.DmaAssign(true,  &fl_spi_txdma);
+      fl_spi.DmaAssign(false, &fl_spi_rxdma);
+    #endif
   #endif
 }
 

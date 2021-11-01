@@ -30,7 +30,7 @@ uint8_t spi_id[4];
 
 unsigned readlen = 256;
 
-uint8_t  databuf[8192];
+uint8_t  databuf[8 * 1024];
 
 void show_mem(void * addr, unsigned len)
 {
@@ -142,6 +142,12 @@ void test_simple_rw()
 	spiflash.WaitForComplete();
 
 	TRACE("Reading memory...\r\n");
+
+	// set the memory contents to some invalid one
+  for (i = 0; i < sizeof(databuf); ++i)
+  {
+    databuf[i] = uint8_t(0x55 + i);
+  }
 
 	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
@@ -260,6 +266,7 @@ void test_spiflash()
 
   TRACE("driver = %s, speed = %u, lanes = %u\r\n", driver, spispeed, lanes);
 
+  //test_dma();
   //test_dma();
   //return;
 
