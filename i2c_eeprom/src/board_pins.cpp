@@ -53,35 +53,38 @@ void board_pins_init_leds()
 
 // STM32
 
-#elif defined(BOARD_MIN_F103)  // = blue pill
+#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
 
 void board_pins_init()
 {
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_B,  0, false);
+  pin_led[1].Assign(PORTNUM_B,  7, false);
+  pin_led[2].Assign(PORTNUM_B, 14, false);
   board_pins_init_leds();
 
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_0 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
 
-  // I2C1
-  // open drain mode have to be used, otherwise it won't work
-  // External pull-ups are required !
-  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_AF_0 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SCL
-  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_AF_0 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SDA
+  // I2C1, CN7[2,4]
+  hwpinctrl.PinSetup(PORTNUM_B, 8, PINCFG_AF_4 | PINCFG_OPENDRAIN);  // CN7[2] = I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B, 9, PINCFG_AF_4 | PINCFG_OPENDRAIN);  // CN7[4] = I2C1_SDA
+  i2c.speed = 100000; // 100 kHz
+  i2c.Init(1);
 
-  i2c.Init(1); // I2C1
+  #if 1
+    i2c_txdma.Init(1, 6, 1);  // dma1,stream6,ch1 = I2C1 TX
+    i2c_rxdma.Init(1, 5, 1);  // dma1,stream5,ch1 = I2C1 RX
 
-  i2c.txdma.Init(1, 6, 3);  // DMA1/CH6 = I2C1_TX
-  i2c.rxdma.Init(1, 7, 3);  // DMA1/CH7 = I2C1_RX
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
 }
 
-#elif    defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
-      || defined(BOARD_MIBO48_STM32F303) \
-      || defined(BOARD_MIBO64_STM32F405) \
-      || defined(BOARD_MIBO48_STM32G473)
+#elif defined(BOARD_MIN_F103)  \
+      || defined(BOARD_MIBO48_STM32F303)
 
 void board_pins_init()
 {
@@ -93,6 +96,51 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
   conuart.Init(1);
+
+  // I2C1
+  // open drain mode have to be used, otherwise it won't work
+  // External pull-ups are required !
+  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SDA
+  i2c.Init(1); // I2C1
+
+  #if 1
+    i2c_txdma.Init(1, 6, 0);  // dma1,ch6 = I2C1 TX
+    i2c_rxdma.Init(1, 7, 0);  // dma1,ch5 = I2C1 RX
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
+}
+
+#elif    defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
+      || defined(BOARD_MIBO64_STM32F405)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+
+  // I2C1
+  // open drain mode have to be used, otherwise it won't work
+  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
+  i2c.speed = 100000; // 100 kHz
+  i2c.Init(1); // I2C1
+
+  #if 0
+    i2c_txdma.Init(1, 6, 1);  // dma1,stream6,ch1 = I2C1 TX
+    i2c_rxdma.Init(1, 5, 1);  // dma1,stream5,ch1 = I2C1 RX
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
 }
 
 // ATSAM
