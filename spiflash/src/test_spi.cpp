@@ -31,7 +31,7 @@ uint8_t spi_id[4];
 unsigned readlen = 256;
 
 __attribute__((aligned(8)))
-uint8_t  databuf[256];
+uint8_t  databuf[8 * 1024];
 
 void show_mem(void * addr, unsigned len)
 {
@@ -62,9 +62,32 @@ void test_spiflash_reliability()
   TRACE("Erasing the first %u k...\r\n", test_length / 1024);
   spiflash.StartEraseMem(TEST_START_ADDR, test_length);
   spiflash.WaitForComplete();
-  TRACE("Erase complete.\r\n");
+  TRACE("Erase complete. Erase check...\r\n");
+  memset(&databuf[0], 0x55, sizeof(databuf));
+  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.WaitForComplete();
 
+  unsigned mismatch_cnt = 0;
 
+  dp = (uint32_t *)&databuf[0];
+  while (dp < endp)
+  {
+    if (*dp++ != 0xFFFFFFFF)
+    {
+      ++mismatch_cnt;
+    }
+  }
+
+  if (mismatch_cnt)
+  {
+    TRACE("Erase ERROR! Mismatch count: %u\r\n", mismatch_cnt);
+  }
+  else
+  {
+    TRACE("Erase ok.\r\n");
+  }
+
+  TRACE("Writing blocks...\r\n");
   // fill the buffer:
   dp = (uint32_t *)&databuf[0];
   value = begin_value;
@@ -73,8 +96,6 @@ void test_spiflash_reliability()
     *dp++ = value;
     value += value_add;
   }
-
-  TRACE("Writing blocks...\r\n");
   spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
   spiflash.WaitForComplete();
 
@@ -87,8 +108,7 @@ void test_spiflash_reliability()
 
   TRACE("Comparing...\r\n");
 
-  unsigned mismatch_cnt = 0;
-
+  mismatch_cnt = 0;
   value = begin_value;
   dp = (uint32_t *)&databuf[0];
   while (dp < endp)
@@ -132,6 +152,7 @@ void test_simple_rw()
 	spiflash.WaitForComplete();
 	TRACE("Erase complete.\r\n");
 
+#if 1
 	TRACE("Writing memory...\r\n");
 
 	for (i = 0; i < sizeof(databuf); ++i)
@@ -141,6 +162,7 @@ void test_simple_rw()
 
 	spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
+#endif
 
 	TRACE("Reading memory...\r\n");
 
