@@ -343,6 +343,10 @@ void board_pins_init()
 
 #elif defined(BOARD_XPRESSO_LPC54608)
 
+TGpioPin       fl_spi_cs_pin(4, 6, false);
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
 void board_pins_init()
 {
   pin_led_count = 3;
@@ -355,10 +359,36 @@ void board_pins_init()
   hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
   conuart.Init(0);
 
-  // PIN and DMA setup is done internally in the Init(), because there are no alternavives
-  fl_qspi.multi_line_count = 2;  // in my board the original chip was replaced, to a small dual one
-  fl_qspi.speed = 30000000;
-  fl_qspi.Init();
+  #define USE_QSPI 0
+  #if USE_QSPI
+    // PIN and DMA setup is done internally in the Init(), because there are no alternavives
+    fl_qspi.multi_line_count = 2;  // in my board the original chip was replaced, to a small dual only one
+    fl_qspi.speed = 30000000;
+    fl_qspi.Init();
+  #else
+
+    // Flexcomm9 - on the first row of the SLAVE PMOD connector
+
+    //hwpinctrl.PinSetup(4, 6, PINCFG_AF_2);  // FC9_CS
+    hwpinctrl.PinSetup(3, 20, PINCFG_AF_1);  // FC9_SCK
+    hwpinctrl.PinSetup(3, 21, PINCFG_AF_1);  // FC9_MOSI
+    hwpinctrl.PinSetup(3, 22, PINCFG_AF_1);  // FC9_MISO
+
+    fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+    fl_spi.manualcspin = &fl_spi_cs_pin;
+    //fl_spi.datasample_late = true;
+    fl_spi.speed = 20000000;
+    fl_spi.Init(9);
+
+    #if FL_SPI_USE_DMA
+      fl_spi_txdma.Init(23);
+      fl_spi_rxdma.Init(22);
+
+      fl_spi.DmaAssign(true,  &fl_spi_txdma);
+      fl_spi.DmaAssign(false, &fl_spi_rxdma);
+    #endif
+  #endif
 }
 
 #else
