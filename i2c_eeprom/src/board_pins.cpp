@@ -182,7 +182,35 @@ void board_pins_init()
     i2c.DmaAssign(true,  &i2c_txdma);
     i2c.DmaAssign(false, &i2c_rxdma);
   #endif
+}
 
+#elif defined(BOARD_MIBO64_STM32F070)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1 - not availabe on the embedded debug probe
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
+  conuart.Init(1);
+
+  // I2C1
+  // open drain mode have to be used, otherwise it won't work
+  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_AF_1 | PINCFG_OPENDRAIN); // I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_AF_1 | PINCFG_OPENDRAIN); // I2C1_SDA
+  i2c.speed = 100000; // 100 kHz
+  i2c.Init(1); // I2C1
+
+  #if 1
+    i2c_txdma.Init(1, 2, 0);  // dma1,ch2 = I2C1 TX
+    i2c_rxdma.Init(1, 3, 0);  // dma1,ch3 = I2C1 RX
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
 }
 
 
@@ -280,10 +308,18 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_INPUT  | PINCFG_AF_3);  // PAD[1] = RX
   conuart.Init(0);
 
-  // SERCOM2
-  //hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_AF_2);  // PAD[0] = TX
-  //hwpinctrl.PinSetup(PORTNUM_A, 13, PINCFG_AF_2);  // PAD[1] = RX
-  //conuart.Init(2);
+  // SERCOM4
+  hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_AF_D | PINCFG_PULLUP); // SERCOM4/PAD0 = SDA
+  hwpinctrl.PinSetup(PORTNUM_B,  9, PINCFG_AF_D | PINCFG_PULLUP); // SERCOM4/PAD1 = SCL
+  i2c.Init(4); // SERCOM4
+
+  #if 1
+    i2c_txdma.Init(14, SERCOM4_DMAC_ID_TX);
+    i2c_rxdma.Init(15, SERCOM4_DMAC_ID_RX);
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
 }
 
 #elif defined(BOARD_ENEBO_A)
