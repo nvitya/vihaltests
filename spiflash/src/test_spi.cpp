@@ -30,7 +30,8 @@ uint8_t spi_id[4];
 
 unsigned readlen = 256;
 
-uint8_t  databuf[8 * 1024];
+__attribute__((aligned(8)))
+uint8_t  databuf[256];
 
 void show_mem(void * addr, unsigned len)
 {

@@ -57,7 +57,7 @@ void board_pins_init()
   fl_spi.Init(1); // flash
 }
 
-#elif defined(BOARD_MIBO48_STM32G473) || defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO64_STM32F405)
+#elif defined(BOARD_MIBO48_STM32G473)
 
 void board_pins_init()
 {
@@ -233,6 +233,66 @@ void board_pins_init()
   #endif
 }
 
+#elif defined(BOARD_MIBO64_ATSAME5X)
+
+TGpioPin       fl_spi_cs_pin(PORTNUM_A, 18, false);
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+
+  // SERCOM0
+  hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_OUTPUT | PINCFG_AF_3);  // PAD[0] = TX
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_INPUT  | PINCFG_AF_3);  // PAD[1] = RX
+  conuart.Init(0);
+
+  #define USE_QSPI 1
+  #if USE_QSPI
+    // at the ATSAM_V2 the pins and DMA initialization is done internally:
+    //  A8  = DATA0
+    //  A9  = DATA1
+    //  A10 = DATA2
+    //  A11 = DATA3
+    //  B10 = SCK
+    //  B11 = CS
+    // You can select the used DMA chennels with the txdmachannel, rxdmachannel
+    fl_qspi.txdmachannel = 5;
+    fl_qspi.rxdmachannel = 6;
+    fl_qspi.multi_line_count = 1;
+    fl_qspi.speed = 4000000;
+    fl_qspi.Init();
+
+  #else
+    // SERCOM3
+
+    unsigned pinflags = PINCFG_AF_D | PINCFG_PULLUP | PINCFG_DRIVE_STRONG;
+
+    hwpinctrl.PinSetup(PORTNUM_A, 16, pinflags);  // SERCOM3_PAD1: SCK
+    hwpinctrl.PinSetup(PORTNUM_A, 17, pinflags);  // SERCOM3_PAD0: MOSI
+    //hwpinctrl.PinSetup(PORTNUM_A, 18, pinflags);  // SERCOM3_PAD2: CS
+    hwpinctrl.PinSetup(PORTNUM_A, 19, pinflags);  // SERCOM3_PAD3: MISO
+
+    fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+    fl_spi.manualcspin = &fl_spi_cs_pin;
+    //fl_spi.datasample_late = true;
+    fl_spi.speed = 20000000;
+    fl_spi.Init(3);
+
+    #if FL_SPI_USE_DMA
+      fl_spi_txdma.Init(14, SERCOM3_DMAC_ID_TX);
+      fl_spi_rxdma.Init(15, SERCOM3_DMAC_ID_RX);
+
+      fl_spi.DmaAssign(true,  &fl_spi_txdma);
+      fl_spi.DmaAssign(false, &fl_spi_rxdma);
+    #endif
+  #endif
+}
+
 #elif defined(BOARD_VERTIBO_A)
 
 void board_pins_init()
@@ -278,6 +338,8 @@ void board_pins_init()
   fl_qspi.speed = 60000000;  // that's 240 MBit/s ...
   fl_qspi.Init();
 }
+
+// LPC
 
 #elif defined(BOARD_XPRESSO_LPC54608)
 
