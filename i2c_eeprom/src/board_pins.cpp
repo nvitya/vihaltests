@@ -322,23 +322,37 @@ void board_pins_init()
   #endif
 }
 
-#elif defined(BOARD_ENEBO_A)
+// LPC
+
+#elif defined(BOARD_XPRESSO_LPC54608)
 
 void board_pins_init()
 {
   pin_led_count = 3;
-  pin_led[0].Assign(PORTNUM_A, 20, true);
-  pin_led[1].Assign(PORTNUM_D, 14, true);
-  pin_led[2].Assign(PORTNUM_D, 13, true);
+  pin_led[0].Assign(2,  2, true);
+  pin_led[1].Assign(3,  3, true);
+  pin_led[2].Assign(3, 14, true);
   board_pins_init_leds();
 
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
-  conuart.baudrate = 115200;
+  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
+  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
   conuart.Init(0);
+
+  // Flexcomm2 - on the secondt row of the SLAVE PMOD connector
+
+  hwpinctrl.PinSetup(3, 23, PINCFG_AF_1);  // FC2_SDA
+  hwpinctrl.PinSetup(3, 24, PINCFG_AF_1);  // FC2_SCL
+  i2c.Init(2);
+
+  #if 0
+    i2c_txdma.Init(???);
+    i2c_rxdma.Init(???);
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
 }
 
-// LPC
 
 #else
   #error "Define board_pins_init here"
