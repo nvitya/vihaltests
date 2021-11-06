@@ -135,6 +135,32 @@ bool TUartComm::InitHw()
   return true;
 }
 
+#elif defined(BOARD_MIBO64_ATSAME5X)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 1, false);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+  // SERCOM0
+  hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_OUTPUT | PINCFG_AF_3);  // PAD[0] = TX
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_INPUT  | PINCFG_AF_3);  // PAD[1] = RX
+  uart.Init(0);
+
+  // the DMA channel (first parameter) can be chosen freely
+  // the Trigger sources (second parameter) can be found in the DMA datasheet
+  // at the TRIGSRC[7:0] field definition
+  dma_tx.Init(0, 0x05);  // 0x05 = SERCOM0_TX
+  dma_rx.Init(1, 0x04);  // 0x04 = SERCOM0_RX
+
+  return true;
+}
+
+
 #else
   #error "Define board_pins_init here"
 #endif
