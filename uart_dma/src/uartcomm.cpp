@@ -36,29 +36,9 @@
 #include "uartcomm.h"
 #include "mp_printf.h"
 
-
 TUartComm g_uartcomm;
 
-#if 0
-
-#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
-
-bool TUartComm::InitHw()
-{
-  // USART3: Stlink USB / Serial converter
-  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
-  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
-  uart.Init(3); // USART3
-
-  dma_tx.Init(1, 3, 4);  // dma1, stream3, ch4 = USART3_TX
-  dma_rx.Init(1, 1, 4);  // dma1, stream1, ch4 = USART3_RX
-
-  return true;
-}
-
-#else
-  #error "Define board specific uart comm init here"
-#endif
+// the TUartComm::InitHw() are moved to the board_pins.cpp
 
 bool TUartComm::Init()
 {
@@ -160,6 +140,11 @@ void TUartComm::Run()
 {
   // RX processing
   uint16_t newrxdmapos = sizeof(rxdmabuf) - dma_rx.Remaining();
+  if (newrxdmapos >= sizeof(rxdmabuf))
+  {
+    // fix for Remaining() == 0 (sometimes the linked list operation is processed only later)
+    newrxdmapos = 0;
+  }
 
   while (rxdmapos != newrxdmapos)
   {

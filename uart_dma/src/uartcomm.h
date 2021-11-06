@@ -26,6 +26,9 @@
  *            These bytes are then collected into the rx message buffer (the messages
  *            might be chunked) for processing
  *            The responses are added to the Tx Buffer which will be sent using DMA
+ *
+ *            open a terminal to the board UART (baudrate 115200, 8 bit data, 1 stop bit)
+ *
  *  version:  1.00
  *  date:     2021-11-06
  *  authors:  nvitya

@@ -1,6 +1,6 @@
 /*
- *  file:     board_pins.h (spiflash)
- *  brief:    SPI Flash Test Board pins
+ *  file:     board_pins.h (uart_dma)
+ *  brief:    UART DMA DEMO board specific initializations
  *  version:  1.00
  *  date:     2021-10-29
  *  authors:  nvitya
