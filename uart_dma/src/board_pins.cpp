@@ -73,6 +73,41 @@ bool TUartComm::InitHw()
   return true;
 }
 
+// ATSAM
+
+#elif defined(BOARD_ARDUINO_DUE)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 27, false);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+#if 0
+  // UART - On the Arduino programmer interface
+  hwpinctrl.PinSetup(PORTNUM_A, 8, PINCFG_INPUT | PINCFG_AF_0);  // UART_RXD
+  hwpinctrl.PinSetup(PORTNUM_A, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
+  uart.Init(0);  // UART
+
+  // peripheral DMA only!
+  uart.PdmaInit(true,  &dma_tx);
+  uart.PdmaInit(false, &dma_rx);
+#else
+  // USART0 - D18=TX1, D19=RX1
+  hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT | PINCFG_AF_0);  // USART0_RXD
+  hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_OUTPUT | PINCFG_AF_0); // USART0_TXD
+  uart.Init(0x100);  // USART0 (+ 0x100 = use the USART unit instead of the UART)
+
+  dma_tx.Init(0, 11);  // perid: 11 = USART0_TX
+  dma_rx.Init(1, 12);  // perid: 12 = USART0_RX
+#endif
+
+  return true;
+}
+
 #elif defined(BOARD_XPLAINED_SAME70)
 
 void board_pins_init()
@@ -88,7 +123,7 @@ bool TUartComm::InitHw()
   hwpinctrl.PinSetup(PORTNUM_A, 21, PINCFG_INPUT | PINCFG_AF_0);  // USART1_RXD
   MATRIX->CCFG_SYSIO |= (1 << 4); // select PB4 instead of TDI !!!!!!!!!
   hwpinctrl.PinSetup(PORTNUM_B,  4, PINCFG_OUTPUT | PINCFG_AF_3); // USART1_TXD
-  uart.Init(0x101); // USART1
+  uart.Init(0x101); // USART1 (+ 0x100 = use the USART unit instead of the UART)
 
   // the DMA channel (first parameter) can be chosen freely
   dma_tx.Init(0,  9);  // perid:  9 = USART1_TX
