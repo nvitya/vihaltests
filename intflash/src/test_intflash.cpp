@@ -188,11 +188,19 @@ void test_intflash()
 		  TRACE("Reapeating Write Test\r\n");
 		}
 
-#if defined(MCUF_XMC)
-		test_intflash_addr(0x0C010000, testlen, pmem);
-#else
-		test_intflash_addr(hwintflash.start_address + hwintflash.bytesize / 2, testlen, pmem);
-#endif
+    #if defined(MCUF_XMC)
+      test_intflash_addr(0x0C010000, testlen, pmem);
+    #else
+
+      // run the test at the half of the flash
+      // some MCUs have two banks or controllers wich can be controlled independently (like the ATSAM3X on the Arduino Due)
+      // and they usually begin at the half size.
+      // otherwise the code execution would be blocked or run to hard fault, when this test code is running
+      // from the same Flash bank/controller
+      // The STM32 does not show an error, but the execution will be blocked longer.
+
+      test_intflash_addr(hwintflash.start_address + hwintflash.bytesize / 2, testlen, pmem);
+    #endif
 	}
 
 	if (pmem)
