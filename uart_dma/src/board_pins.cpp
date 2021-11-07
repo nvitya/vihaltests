@@ -73,6 +73,57 @@ bool TUartComm::InitHw()
   return true;
 }
 
+#elif defined(BOARD_MIN_F103)  // blue pill
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
+  // on this older silicon it must be configured as input and no Alternate Function:
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT | PINCFG_PULLUP);  // USART1_RX
+  uart.Init(1);
+
+  // the third parameter is ignored here
+  dma_tx.Init(1, 4, 4);  // dma1, ch4 = USART1_TX
+  dma_rx.Init(1, 5, 4);  // dma1, ch5 = USART1_RX
+
+  return true;
+}
+
+
+#elif    defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
+      || defined(BOARD_MIBO48_STM32F303) \
+      || defined(BOARD_MIBO64_STM32F405) \
+      || defined(BOARD_MIBO48_STM32G473)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  uart.Init(1);
+
+  dma_tx.Init(2, 7, 4);  // dma2, stream7, ch4 = USART1_TX
+  dma_rx.Init(2, 5, 4);  // dma2, stream5, ch4 = USART1_RX
+
+  return true;
+}
+
+
 // ATSAM
 
 #elif defined(BOARD_ARDUINO_DUE)
