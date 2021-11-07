@@ -266,7 +266,7 @@ void test_i2c_eeprom()
 	show_mem(&rxbuf[0], len);
 #endif
 
-#if 1  // multi page write + read
+#if 0  // multi page write + read
 	len = 1024;
 	addr = 0;
 

@@ -345,8 +345,8 @@ void board_pins_init()
   i2c.Init(2);
 
   #if 0
-    i2c_txdma.Init(???);
-    i2c_rxdma.Init(???);
+    i2c_txdma.Init();
+    i2c_rxdma.Init();
 
     i2c.DmaAssign(true,  &i2c_txdma);
     i2c.DmaAssign(false, &i2c_rxdma);
