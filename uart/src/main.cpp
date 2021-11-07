@@ -92,6 +92,12 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
+		char c;
+		if (conuart.TryRecvChar(&c))
+		{
+		  conuart.printf("you pressed \"%c\"\r\n", c);
+		}
+
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
@@ -103,7 +109,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
       board_show_hexnum(hbcounter);
 
-			TRACE("hbcounter=%u\r\n", hbcounter);
+			TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
 			t0 = t1;
 
