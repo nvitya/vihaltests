@@ -1,8 +1,8 @@
 /*
- *  file:     board_pins.cpp (uart)
- *  brief:    UART Test Board pins
+ *  file:     board_pins.cpp (intflash)
+ *  brief:    Internal Flash Write Test Board pins (just leds and uart console)
  *  version:  1.00
- *  date:     2021-10-29
+ *  date:     2021-11-07
  *  authors:  nvitya
 */
 
@@ -56,47 +56,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_0);
   hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_0);
   conuart.Init(0); // USART0
-}
-
-#elif defined(MCUF_VRV100)
-
-#define HEXNUM_DISPLAY
-void board_show_hexnum(unsigned ahexnum)
-{
-  volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
-  *hexnum = ahexnum;
-}
-
-#if SPI_SELF_FLASHING
-
-  #include "hwspi.h"
-  #include "spiflash.h"
-
-  THwSpi     fl_spi;
-  TSpiFlash  spiflash;
-
-#endif
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_A, 0, false);
-  board_pins_init_leds();
-
-  board_show_hexnum(0);
-
-  conuart.Init(1); // UART1
-
-  #if SPI_SELF_FLASHING
-
-    fl_spi.speed = 10000000;
-    fl_spi.Init(1); // flash
-
-    spiflash.spi = &fl_spi;
-    spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
-    spiflash.Init();
-
-  #endif
 }
 
 //-------------------------------------------------------------------------------
