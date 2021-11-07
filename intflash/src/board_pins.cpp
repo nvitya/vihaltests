@@ -284,6 +284,12 @@ void board_pins_init()
   hwpinctrl.PinSetup(0, 8, PINCFG_INPUT | PINCFG_AF_0);  // UART_RXD
   hwpinctrl.PinSetup(0, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
   conuart.Init(0);  // UART
+
+  // WARNING: the MCU has two Flash controllers
+  //          one flash controller does not support concurrent operation
+  //          also when the code runs from flash the same flash can not be written
+  //          Fortunately the flash is divided at the half and the test uses the second controller
+  //          Otherwise you have to copy the code to ram.
 }
 
 #elif defined(BOARD_MIBO64_ATSAM4S)
