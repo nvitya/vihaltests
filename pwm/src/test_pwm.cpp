@@ -36,15 +36,15 @@ THwPwmChannel      pwm[2];
 // STM32
 
 #elif defined(BOARD_MIN_F103) || defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
+    || defined(BOARD_MIBO48_STM32F303) \
     || defined(BOARD_MIBO64_STM32F405) \
     || defined(BOARD_MIBO48_STM32G473)
 
 void pwm_setup()
 {
   // PWMs using TIM2
-  hwpinctrl.PinSetup(PORTNUM_A,  0,  PINCFG_OUTPUT | PINCFG_AF_0);  // TIM2_CH1
-  hwpinctrl.PinSetup(PORTNUM_A,  1,  PINCFG_OUTPUT | PINCFG_AF_0);  // TIM2_CH2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_0);  // TIM2_CH3
+  hwpinctrl.PinSetup(PORTNUM_A,  0,  PINCFG_OUTPUT | PINCFG_AF_1);  // TIM2_CH1
+  hwpinctrl.PinSetup(PORTNUM_A,  1,  PINCFG_OUTPUT | PINCFG_AF_1);  // TIM2_CH2
 
   pwm[0].Init(2, 1, 0);
   pwm[1].Init(2, 2, 0);
@@ -52,11 +52,30 @@ void pwm_setup()
 
 #elif 0 //defined(BOARD_MIBO48_STM32F303)
 
-#elif 0 //defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743) || defined(BOARD_NUCLEO_H723)
+#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743) || defined(BOARD_NUCLEO_H723)
+
+void pwm_setup()
+{
+  // PWMs using TIM2
+  hwpinctrl.PinSetup(PORTNUM_B, 11,  PINCFG_OUTPUT | PINCFG_AF_1);  // TIM2_CH4
+  hwpinctrl.PinSetup(PORTNUM_B, 10,  PINCFG_OUTPUT | PINCFG_AF_1);  // TIM2_CH3
+
+  pwm[0].Init(2, 4, 0);
+  pwm[1].Init(2, 3, 0);
+}
 
 // ATSAM
 
-#elif 0 //defined(BOARD_ARDUINO_DUE) || defined(BOARD_MIBO64_ATSAM4S)
+#elif defined(BOARD_ARDUINO_DUE)
+
+void pwm_setup()
+{
+  hwpinctrl.PinSetup(PORTNUM_B, 12,  PINCFG_OUTPUT | PINCFG_AF_B);  // D20: PWMH0
+  hwpinctrl.PinSetup(PORTNUM_B, 13,  PINCFG_OUTPUT | PINCFG_AF_B);  // D21: PWMH1
+
+  pwm[0].Init(2, 4, 0);
+  pwm[1].Init(2, 3, 0);
+}
 
 #elif 0 //defined(BOARD_XPLAINED_SAME70)
 

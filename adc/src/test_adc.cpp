@@ -6,6 +6,7 @@
  *
  *  description:
  *    two ADC channels are continously measured and printed to the UART console
+ *    I was using an arduino analogue joystick board for the test.
 */
 
 #include "stdint.h"
