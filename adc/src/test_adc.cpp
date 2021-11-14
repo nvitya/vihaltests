@@ -52,7 +52,7 @@ uint8_t adc_shift = 6; // keep only the highest 10 bits
     || defined(BOARD_MIBO64_STM32F405) \
     || defined(BOARD_MIBO48_STM32G473)
 
-void adc_init()
+void adc_setup()
 {
   hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ch0
   hwpinctrl.PinSetup(PORTNUM_A, 1, PINCFG_INPUT | PINCFG_ANALOGUE); // ch1
@@ -64,7 +64,7 @@ void adc_init()
 
 #elif defined(BOARD_MIBO48_STM32F303)
 
-void adc_init()
+void adc_setup()
 {
   hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ch0
   hwpinctrl.PinSetup(PORTNUM_A, 1, PINCFG_INPUT | PINCFG_ANALOGUE); // ch1
@@ -77,7 +77,7 @@ void adc_init()
 
 #elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743) || defined(BOARD_NUCLEO_H723)
 
-void adc_init()
+void adc_setup()
 {
   hwpinctrl.PinSetup(PORTNUM_A, 3, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC123_in3
   hwpinctrl.PinSetup(PORTNUM_C, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC123_in10
@@ -91,7 +91,7 @@ void adc_init()
 
 #elif defined(BOARD_ARDUINO_DUE) || defined(BOARD_MIBO64_ATSAM4S)
 
-void adc_init()
+void adc_setup()
 {
   // The ATSAM does not require pin setup, the pins switched automatically to analogue mode on channel enabling
 
@@ -107,7 +107,7 @@ void adc_init()
 
 #elif defined(BOARD_XPLAINED_SAME70)
 
-void adc_init()
+void adc_setup()
 {
   // The ATSAM does not require pin setup, the pins switched automatically to analogue mode on channel enabling
 
@@ -116,13 +116,119 @@ void adc_init()
   adc_ch_y = 8;  // PA19 (AD3): AFE0_AD8
 }
 
-#elif 0 //defined(BOARD_MIBO64_ATSAME5X)
+#elif defined(BOARD_MIBO64_ATSAME5X)
 
+void adc_setup()
+{
+  hwpinctrl.PinSetup(PORTNUM_A, 2, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC0_AIN[0]
+  hwpinctrl.PinSetup(PORTNUM_A, 3, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC0_AIN[1]
+
+  adc_num = 0;
+  adc_ch_x = 0;
+  adc_ch_y = 1;
+}
 
 #else
   #error "ADC board specific setup is missing"
 #endif
 
+//------------------------------------------------------------------------------------------------------------
+
+void analyze_record()
+{
+  int i;
+  for (i = 0; i < ADC_ANALYZE_LEN; ++i)
+  {
+    adc_value_cnt[i] = 0;
+  }
+
+  // search min-max
+  uint16_t minval = 0xFFFF;
+  uint16_t maxval = 0;
+  for (i = 0; i < ADC_REC_LEN; ++i)
+  {
+    uint16_t v = (adc_rec_buffer[i] << HWADC_DATA_LSHIFT) >> 4; // 12 bit resolution
+    if (v < minval)  minval = v;
+    if (v > maxval)  maxval = v;
+  }
+
+  if (maxval - minval > ADC_ANALYZE_LEN)
+  {
+    TRACE("Min-Max range is out of analyze buffer: %i\r\n", maxval-minval);
+    return;
+  }
+
+  // collect counts
+
+  for (i = 0; i < ADC_REC_LEN; ++i)
+  {
+    uint16_t v = (adc_rec_buffer[i] << HWADC_DATA_LSHIFT) >> 4; // 12 bit resolution
+    int idx = v - minval;
+    ++adc_value_cnt[idx];
+  }
+
+  // displaying data
+  uint16_t maxcnt = 0;
+  uint16_t maxidx = 0;
+  TRACE(" min = %u, max = %u, diff = %u\r\n", minval, maxval, maxval - minval);
+  for (i = 0; i < maxval - minval; ++i)
+  {
+    TRACE("  %4u : %u\r\n", minval + i, adc_value_cnt[i]);
+    if (adc_value_cnt[i] > maxcnt)
+    {
+      maxcnt = adc_value_cnt[i];
+      maxidx = i;
+    }
+  }
+
+  TRACE(" modus = %u\r\n", minval + maxidx);
+}
+
+void test_adc_record(uint8_t achnum)
+{
+  TRACE("ADC record test for channel %i\r\n", achnum);
+
+  unsigned t0, t1;
+
+  int state = 0;
+
+  t0 = CLOCKCNT;
+  while (1)
+  {
+    if (0 == state)
+    {
+      pin_led[0].Toggle();
+
+      int i;
+      for (i = 0; i < ADC_REC_LEN; ++i)  adc_rec_buffer[i] = 0x1111 + i;
+
+      adc.StartRecord((1 << achnum), sizeof(adc_rec_buffer), &adc_rec_buffer[0]);
+      t0 = CLOCKCNT;
+      state = 1;
+    }
+    else if (1 == state)
+    {
+      if (adc.RecordFinished())
+      {
+        t1 = CLOCKCNT;
+        TRACE("Record finished in %u clocks\r\n", t1 - t0);
+        analyze_record();
+        t0 = CLOCKCNT;
+        state = 2; // wait
+      }
+    }
+    else if (2 == state)
+    {
+      t1 = CLOCKCNT;
+      if (t1 - t0 > SystemCoreClock / 1)
+      {
+        state = 0; // start again
+      }
+    }
+
+    //idle_task();
+  }
+}
 
 void adc_test_freerun()
 {
@@ -157,8 +263,6 @@ void adc_test_freerun()
 
       t0 = t1;
     }
-
-
   }
 }
 
@@ -166,7 +270,7 @@ void test_adc()
 {
   TRACE("Testing ADC\r\n");
 
-  adc_init();
+  adc_setup();
 
   adc.Init(adc_num, (1 << adc_ch_x) | (1 << adc_ch_y));
   //adc.Init(adc_num, (1 << adc_ch_x));
@@ -174,6 +278,9 @@ void test_adc()
   TRACE("ADC speed: %u conversions / s\r\n", adc.act_conv_rate);
 
   adc_test_freerun();  // does not return
+
+  //test_adc_record(adc_ch_x);
+  //test_adc_record(adc_ch_y);
 
   TRACE("ADC test finished.\r\n");
 }
