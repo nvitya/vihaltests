@@ -73,8 +73,10 @@ void pwm_setup()
   hwpinctrl.PinSetup(PORTNUM_B, 12,  PINCFG_OUTPUT | PINCFG_AF_B);  // D20: PWMH0
   hwpinctrl.PinSetup(PORTNUM_B, 13,  PINCFG_OUTPUT | PINCFG_AF_B);  // D21: PWMH1
 
-  pwm[0].Init(2, 4, 0);
-  pwm[1].Init(2, 3, 0);
+  pwm[0].inverted = true;
+  pwm[0].Init(0, 0);
+  pwm[1].inverted = true;
+  pwm[1].Init(0, 1);
 }
 
 #elif 0 //defined(BOARD_XPLAINED_SAME70)
