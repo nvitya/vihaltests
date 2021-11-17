@@ -92,8 +92,18 @@ void pwm_setup()
   pwm[1].Init(0, 2);
 }
 
-#elif 0 //defined(BOARD_MIBO64_ATSAME5X)
+#elif defined(BOARD_MIBO64_ATSAME5X)
 
+void pwm_setup()
+{
+  hwpinctrl.PinSetup(PORTNUM_A,  8,  PINCFG_OUTPUT | PINCFG_AF_F);  // TCC0-WO[0]
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_F);  // TCC0-WO[1]
+
+  //pwm[0].inverted = true;
+  pwm[0].Init(0, 0);
+  //pwm[1].inverted = true;
+  pwm[1].Init(0, 1);
+}
 
 #else
   #error "Board specific PWM setup is missing!"
