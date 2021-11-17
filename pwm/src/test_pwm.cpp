@@ -79,7 +79,18 @@ void pwm_setup()
   pwm[1].Init(0, 1);
 }
 
-#elif 0 //defined(BOARD_XPLAINED_SAME70)
+#elif defined(BOARD_XPLAINED_SAME70)
+
+void pwm_setup()
+{
+  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_A);  // arduino D7: PWM0_H1
+  hwpinctrl.PinSetup(PORTNUM_C, 19,  PINCFG_OUTPUT | PINCFG_AF_B);  // arduino D6: PWM0_H2
+
+  pwm[0].inverted = true;
+  pwm[0].Init(0, 1);
+  pwm[1].inverted = true;
+  pwm[1].Init(0, 2);
+}
 
 #elif 0 //defined(BOARD_MIBO64_ATSAME5X)
 
