@@ -1,9 +1,10 @@
 /*
- *  file:     board.h (uart)
+ *  file:     board.h
  *  brief:    Board / MCU definition
- *  version:  1.00
- *  date:     2021-10-02
+ *  created:  2021-11-18
  *  authors:  nvitya
+ *  notes:
+ *    the platform.h includes this very early, it must at least define the used MCU
 */
 
 #ifndef BOARD_H_
