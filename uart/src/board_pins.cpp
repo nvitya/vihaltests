@@ -206,6 +206,20 @@ void board_pins_init()
   conuart.Init(1); // USART1
 }
 
+#elif defined(BOARD_DISCOVERY_WB5M)
+
+void board_pins_init()
+{
+  // there is no simple MCU controlled LED here, so use the Arduino D0...
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C,  0, false);  // PC0 = Arduino D0
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_B, 6,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+}
+
 #elif defined(BOARD_DISCOVERY_F072)
 
 void board_pins_init()

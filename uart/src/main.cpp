@@ -38,7 +38,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   #else
     //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
-    //if (!hwclk_init(0, 64000000))  // special for STM32F3, STM32F1
+    //if (!hwclk_init(EXTERNAL_XTAL_HZ, 32000000))  // special for STM32F3, STM32F1
     if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     {
       while (1)
