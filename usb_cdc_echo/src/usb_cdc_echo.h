@@ -39,6 +39,25 @@ private:
 	typedef TUsbInterface super;
 
 public:
+
+  TUsbCdcDescCallUnionFunc  desc_cdc_union =
+  {
+    .length = 5,
+    .descriptor_type = 0x24,  // 0x24 = CS_INTERFACE
+    .descriptor_subtype = 6,  // 6 = union func
+    .master_interface = 0,    // will be set automatically
+    .slave_interface = 1      // will be set automatically
+  };
+
+  TUsbCdcDescCallManagement  desc_cdc_callmgmt =
+  {
+    .length = 5,
+    .descriptor_type = 0x24,  // 0x24 = CS_INTERFACE
+    .descriptor_subtype = 6,  // 6 = union func
+    .capabilities = 0,        // 0 = no call management
+    .data_interface = 0       // will be set automatically
+  };
+
 	TCdcLineCoding  linecoding;
 
 	TUsbEndpoint    ep_manage;
@@ -70,6 +89,16 @@ public: // mandatory functions
 	virtual bool    HandleTransferEvent(TUsbEndpoint * aep, bool htod);
 };
 
+class TUsbFuncCdcEcho : public TUsbFunction
+{
+public:
+  TUifCdcControl       uif_control;
+  TUifCdcData          uif_data;
+
+  virtual bool         InitFunction();
+};
+
+
 class TUsbDevCdcEcho : public TUsbDevice
 {
 private:
@@ -81,8 +110,8 @@ public: // mandatory functions
 
 };
 
-extern TUifCdcData     uif_cdc_data;
-extern TUsbDevCdcEcho  usbdev;
+extern TUsbFuncCdcEcho  cdc_echo;
+extern TUsbDevCdcEcho   usbdev;
 
 void usb_device_init();
 void usb_device_run();

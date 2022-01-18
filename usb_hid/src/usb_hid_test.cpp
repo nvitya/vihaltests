@@ -30,8 +30,8 @@
 #include "usbdevice.h"
 #include "hwusbctrl.h"
 
-TUsbDevice    usbdev;
-TUifHidTest   hidtest;
+TUsbDevice       usbdev;
+TUsbFuncHidTest  hidtest;
 
 #define HID_DESCRIPTOR_TYPE           0x21
 #define HID_REPORT_DESC               0x22
@@ -103,6 +103,7 @@ const uint8_t USBD_HID_Desc[] =
   0x00,
 };
 
+//-----------------------------------------------------------
 
 bool TUifHidTest::InitInterface()
 {
@@ -172,6 +173,25 @@ bool TUifHidTest::HandleTransferEvent(TUsbEndpoint * aep, bool htod)
 	}
 }
 
+//-----------------------------------------------------------
+
+bool TUsbFuncHidTest::InitFunction()
+{
+  funcdesc.function_class = 0;
+  funcdesc.function_sub_class = 0;
+  funcdesc.function_protocol = 0;
+
+  AddInterface(&uif);
+
+  return true;
+}
+
+void TUsbFuncHidTest::Run()
+{
+}
+
+//-----------------------------------------------------------
+
 void usb_hid_test_init()
 {
 	TRACE("Initializing USB HID Test\r\n");
@@ -182,7 +202,7 @@ void usb_hid_test_init()
 	usbdev.device_name = "VIHAL Example HID Joystick";
 	usbdev.device_serial_number = "VIHAL-HID-1";
 
-	usbdev.AddInterface(&hidtest);
+	usbdev.AddFunction(&hidtest);
 
 	if (!usbdev.Init()) // this must be the last one, when the interfaces added
 	{
@@ -194,12 +214,15 @@ void usb_hid_test_init()
 void usb_hid_test_run()
 {
 	usbdev.HandleIrq();
+
+	usbdev.Run();
 }
 
 void usb_hid_test_heartbeat()
 {
-	if (hidtest.configured)
+	if (hidtest.uif.configured)
 	{
-		hidtest.SendReport(2, 3);
+		hidtest.uif.SendReport(2, 3);
 	}
 }
+

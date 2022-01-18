@@ -30,7 +30,7 @@
 #ifndef SRC_USBDEV_MAIN_H_
 #define SRC_USBDEV_MAIN_H_
 
-#include <usbif_cdc_uart.h>
+#include <usbfunc_cdc_uart.h>
 #include "usbdevice.h"
 #include "hwuart.h"
 
@@ -46,6 +46,7 @@ public: // mandatory functions
 };
 
 extern TUsbDevMain        usbdev;
+extern TUsbFuncCdcUart    cdcuart;
 
 void usb_device_init();
 void usb_device_run();

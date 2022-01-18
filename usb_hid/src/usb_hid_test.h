@@ -61,7 +61,16 @@ public: // mandatory functions
 
 };
 
-extern TUifHidTest hidtest;
+class TUsbFuncHidTest : public TUsbFunction
+{
+public:
+  TUifHidTest          uif;
+
+  virtual bool         InitFunction();
+  virtual void         Run();
+};
+
+extern TUsbFuncHidTest  hidtest;
 
 void usb_hid_test_init();
 void usb_hid_test_run();

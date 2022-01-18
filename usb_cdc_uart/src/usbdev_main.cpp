@@ -37,9 +37,7 @@
 
 
 TUsbDevMain          usbdev;
-
-TUifCdcUartControl   uif_cdcuart;
-TUifCdcUartData      uif_cdcuart_data;
+TUsbFuncCdcUart      cdcuart;
 
 THwUart              usbuart;
 THwDmaChannel        usbuart_dma_tx;
@@ -188,18 +186,16 @@ void usb_device_init()
 		return;
 	}
 
-	TRACE("IF input endpoint: %02X\r\n", uif_cdcuart_data.ep_input.index);
-	TRACE("IF output endpoint: %02X\r\n", uif_cdcuart_data.ep_output.index);
+	TRACE("IF input endpoint: %02X\r\n", cdcuart.uif_data.ep_input.index);
+	TRACE("IF output endpoint: %02X\r\n", cdcuart.uif_data.ep_output.index);
 }
 
 void usb_device_run()
 {
 	usbdev.HandleIrq();
 
-	uif_cdcuart.Run();  // manage UART DMA transfers
+	usbdev.Run();
 }
-
-
 
 //------------------------------------------------
 
@@ -207,15 +203,13 @@ bool TUsbDevMain::InitDevice()
 {
 	devdesc.vendor_id = 0xDEAD;
 	devdesc.product_id = 0xCDC5;
-	devdesc.device_class = 0x02; // Communications and CDC Control
+
 	manufacturer_name = "github.com/vihal";
 	device_name = "VIHAL CDC UART Example";
 	device_serial_number = "VIHAL-CDC-UART-1";
 
-	uif_cdcuart.InitCdcUart(&uif_cdcuart_data, &usbuart, &usbuart_dma_tx, &usbuart_dma_rx);
-
-	AddInterface(&uif_cdcuart);
-	AddInterface(&uif_cdcuart_data);
+	cdcuart.AssignUart(&usbuart, &usbuart_dma_tx, &usbuart_dma_rx);
+	AddFunction(&cdcuart);
 
 	return true;
 }

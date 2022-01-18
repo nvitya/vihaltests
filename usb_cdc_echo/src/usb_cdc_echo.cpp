@@ -33,9 +33,9 @@
 #include "usbdevice.h"
 #include "hwusbctrl.h"
 
+
+TUsbFuncCdcEcho  cdc_echo;
 TUsbDevCdcEcho   usbdev;
-TUifCdcControl   uif_cdc_control;
-TUifCdcData      uif_cdc_data;
 
 void usb_device_init()
 {
@@ -47,8 +47,8 @@ void usb_device_init()
 		return;
 	}
 
-	TRACE("IF input endpoint: %02X\r\n", uif_cdc_data.ep_input.index);
-	TRACE("IF output endpoint: %02X\r\n", uif_cdc_data.ep_output.index);
+	TRACE("IF input endpoint: %02X\r\n", cdc_echo.uif_data.ep_input.index);
+	TRACE("IF output endpoint: %02X\r\n", cdc_echo.uif_data.ep_output.index);
 }
 
 void usb_device_run()
@@ -68,10 +68,14 @@ bool TUifCdcControl::InitInterface()
 
 	// some other descriptors are required
 
+  desc_cdc_callmgmt.data_interface = index + 1;  // the following interface must be the data interface
+  desc_cdc_union.master_interface = index;
+  desc_cdc_union.slave_interface = index + 1;
+
 	AddConfigDesc((void *)&cdc_desc_header_func[0],     true);
-	AddConfigDesc((void *)&cdc_desc_call_management[0], true);
+	AddConfigDesc((void *)&desc_cdc_callmgmt, true);
 	AddConfigDesc((void *)&cdc_desc_call_acm_func[0],   true);
-	AddConfigDesc((void *)&cdc_desc_call_union_func[0], true);
+	AddConfigDesc((void *)&desc_cdc_union, true);
 
 	// endpoints
 
@@ -186,17 +190,31 @@ bool TUifCdcData::HandleTransferEvent(TUsbEndpoint * aep, bool htod)
 
 //------------------------------------------------
 
+bool TUsbFuncCdcEcho::InitFunction()
+{
+  funcdesc.function_class = 2;
+  funcdesc.function_sub_class = 2;
+  funcdesc.function_protocol = 1;
+
+  AddInterface(&uif_control);
+  AddInterface(&uif_data);
+
+  return true;
+}
+
+//------------------------------------------------
+
 bool TUsbDevCdcEcho::InitDevice()
 {
 	devdesc.vendor_id = 0xDEAD;
 	devdesc.product_id = 0xCDCE;
-	devdesc.device_class = 0x02; // Communications and CDC Control
+
 	manufacturer_name = "github.com/vihal";
 	device_name = "VIHAL CDC Echo Example";
 	device_serial_number = "VIHAL-CDC-Echo-1";
 
-	AddInterface(&uif_cdc_control);
-	AddInterface(&uif_cdc_data);
+	AddFunction(&cdc_echo);
 
 	return true;
 }
+
