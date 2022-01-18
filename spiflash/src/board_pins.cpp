@@ -43,7 +43,7 @@ void board_pins_init_leds()
 
 #if 0 // to use elif everywhere
 
-#elif defined(MCUSF_VRV100) //BOARD_VRV100_441)
+#elif defined(MCUF_VRV100) //BOARD_VRV100_441)
 
 void board_pins_init()
 {
