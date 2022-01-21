@@ -178,8 +178,6 @@ void usb_device_init()
 {
 	TRACE("Initializing USB Device\r\n");
 
-	init_usb_uart();
-
 	if (!usbdev.Init()) // calls InitDevice first which sets up the device
 	{
 		TRACE("Error initializing USB device!\r\n");
@@ -208,7 +206,12 @@ bool TUsbDevMain::InitDevice()
 	device_name = "VIHAL CDC UART Example";
 	device_serial_number = "VIHAL-CDC-UART-1";
 
-	cdcuart.AssignUart(&usbuart, &usbuart_dma_tx, &usbuart_dma_rx);
+  init_usb_uart();
+
+  usbuart.DmaAssign(true,  &usbuart_dma_tx);
+  usbuart.DmaAssign(false, &usbuart_dma_rx);
+
+	cdcuart.AssignUart(&usbuart);
 	AddFunction(&cdcuart);
 
 	return true;
