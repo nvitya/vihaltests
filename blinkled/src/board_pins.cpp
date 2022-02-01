@@ -41,7 +41,7 @@ void board_pins_init_leds()
 #if 0  // to use elif everywhere
 
 //-------------------------------------------------------------------------------
-// Risc-V (RV32I)
+// Risc-V: RV32I
 //-------------------------------------------------------------------------------
 
 #elif defined(BOARD_LONGAN_NANO)
@@ -71,6 +71,40 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_A, 0, false);
 
   board_show_hexnum(0);
+  board_pins_init_leds();
+}
+
+//-------------------------------------------------------------------------------
+// Risc-V: RV64G
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_MAIX_BIT)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+#warning "adjust me !"
+  pin_led[0].Assign(PORTNUM_A,  1, true);
+
+  board_pins_init_leds();
+}
+
+//-------------------------------------------------------------------------------
+// Xtensa (ESP32)
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_ESP32_DEVKIT)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 2, false);  // GPIO2 = on board led
+
+  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
   board_pins_init_leds();
 }
 
