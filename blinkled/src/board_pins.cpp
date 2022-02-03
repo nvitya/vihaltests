@@ -44,6 +44,17 @@ void board_pins_init_leds()
 // Risc-V: RV32I
 //-------------------------------------------------------------------------------
 
+#elif defined(BOARD_NANO_ESP32C3)
+
+void board_pins_init()
+{
+  // warning the board has only a WS2812B intelligent RGB led (single pin time pattern control)
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 8, true);
+
+  board_pins_init_leds();
+}
+
 #elif defined(BOARD_LONGAN_NANO)
 
 void board_pins_init()
@@ -55,6 +66,7 @@ void board_pins_init()
 
   board_pins_init_leds();
 }
+
 
 #elif defined(MCUF_VRV100)
 
