@@ -99,6 +99,24 @@ void board_pins_init()
   #endif
 }
 
+#elif defined(BOARD_NODEMCU_ESP32C3)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(0, 3, false);
+  pin_led[1].Assign(0, 4, false);
+  pin_led[2].Assign(0, 5, false);
+  board_pins_init_leds();
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+}
+
+
+
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
