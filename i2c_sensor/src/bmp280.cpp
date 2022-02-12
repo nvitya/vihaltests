@@ -65,7 +65,7 @@ bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
   buf[0] = (0
     | (0  <<  0)  // spi3w_en:
     | (8  <<  2)  // filter(3): time constant for the IIR filter
-    | (2  <<  5)  // t_sb(3): 2 = 125us, 3 = 250 us, 4 = 500 us, 5 = 1000 us
+    | (3  <<  5)  // t_sb(3): 2 = 125us, 3 = 250 us, 4 = 500 us, 5 = 1000 us
   );
   pi2cmgr->AddWrite(&tra, addr, 0xF5 | I2CEX_1, &buf[0], 1);
   pi2cmgr->WaitFinish(&tra);
@@ -78,8 +78,8 @@ bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
   // start, set F4 CTRL:
   buf[0] = (0
     | (3  <<  0)  // mode(2): 3 = normal mode
-    | (4  <<  2)  // osrs_p(3): 3 = 4x oversampling (pressure), 4 = 8x oversampling
-    | (4  <<  5)  // osrs_t(3): 3 = 4x oversampling (temp), 4 = 8x oversampling
+    | (7  <<  2)  // osrs_p(3): 3 = 4x oversampling (pressure), 4 = 8x oversampling, 7 = 16x oversampling
+    | (7  <<  5)  // osrs_t(3): 3 = 4x oversampling (temp), 4 = 8x oversampling, 7 = 16x oversampling
   );
   pi2cmgr->AddWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
   pi2cmgr->WaitFinish(&tra);
@@ -91,6 +91,7 @@ bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
 
   state = 0;
   measure_count = 0;
+  prev_measure_count = 0;
   measure_iv_clocks = SystemCoreClock;  // 1s
 
   initialized = true;
@@ -151,33 +152,42 @@ void TBmp280::Run()  // non-blocking I2C state machine
 
   if (0 == state)  // start the measurement
   {
-    // burst read results always consistent reading:
+    // burst read results always consistent reading, no status check is necessary.
+
     pi2cmgr->AddRead(&tra, addr, 0xF3 | I2CEX_1, &buf[3], 10);  // index corresponds to the register address
     state = 1;
   }
   else if (1 == state) // wait for the I2C transaction finish
   {
-    if (tra.completed)
+    if (!tra.completed)
     {
-      // process the results
-
-      ic_status = buf[3];
-      ic_control = buf[4];
-      ic_config = buf[5];
-
-      p_raw = (buf[9] >> 4) | (buf[8] << 4) | (buf[7] << 12);
-      t_raw = (buf[12] >> 4) | (buf[11] << 4) | (buf[10] << 12);
-
-      t_celsius_x100 = CalculateTemp(t_raw);
-      p_pascal_Q24 = CalculatePressure(p_raw);
-      p_pascal = (p_pascal_Q24 >> 8);
-
-      last_measure = CLOCKCNT;
-
-      ++measure_count;
-
-      state = 10;
+      return;
     }
+
+    if (tra.errorcode != 0)
+    {
+      state = 0; // repeat the read.
+      return;
+    }
+
+    // process the results
+
+    ic_status = buf[3];
+    ic_control = buf[4];
+    ic_config = buf[5];
+
+    p_raw = (buf[9] >> 4) | (buf[8] << 4) | (buf[7] << 12);
+    t_raw = (buf[12] >> 4) | (buf[11] << 4) | (buf[10] << 12);
+
+    t_celsius_x100 = CalculateTemp(t_raw);
+    p_pascal_Q24 = CalculatePressure(p_raw);
+    p_pascal = (p_pascal_Q24 >> 8);
+
+    last_measure = CLOCKCNT;
+
+    ++measure_count;
+
+    state = 10; // wait for the next measurement
   }
   else if (10 == state) // delay
   {

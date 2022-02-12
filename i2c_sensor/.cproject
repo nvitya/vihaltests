@@ -1105,6 +1105,7 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="BOARD_XPRESSO_LPC54608"/>
 		<configuration configurationName="BOARD_MIN_F401"/>
 		<configuration configurationName="BOARD_MIBO48_STM32G473"/>
 		<configuration configurationName="BOARD_MIN_F103"/>

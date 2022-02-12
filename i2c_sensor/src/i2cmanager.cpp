@@ -88,7 +88,7 @@ void TI2cManager::Run()
   }
 }
 
-void TI2cManager::AddWrite(TI2cTransaction * atra, uint8_t aaddr, unsigned aextra, void * dataptr, unsigned len)
+void TI2cManager::AddWrite(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len)
 {
   atra->iswrite = 1;
   atra->address = aaddr;
@@ -99,7 +99,7 @@ void TI2cManager::AddWrite(TI2cTransaction * atra, uint8_t aaddr, unsigned aextr
   AddTransaction(atra);
 }
 
-void TI2cManager::AddRead(TI2cTransaction * atra, uint8_t aaddr, unsigned aextra, void * dataptr, unsigned len)
+void TI2cManager::AddRead(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len)
 {
   atra->iswrite = 0;
   atra->address = aaddr;

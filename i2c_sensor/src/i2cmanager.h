@@ -46,8 +46,8 @@ public:
   bool               Init(THwI2c * ai2c);
   void               Run();
 
-  void AddWrite(TI2cTransaction * atra, uint8_t aaddr, unsigned aextra, void * dataptr, unsigned len);
-  void AddRead(TI2cTransaction * atra, uint8_t aaddr, unsigned aextra, void * dataptr, unsigned len);
+  void AddWrite(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
+  void AddRead(TI2cTransaction * atra, uint8_t aaddr, uint32_t aextra, void * dataptr, unsigned len);
 
   void WaitFinish(TI2cTransaction * atra);
 

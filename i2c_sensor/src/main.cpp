@@ -35,16 +35,17 @@ void sensor_run()  // runs from idle, not from heartbeat !
 {
   i2cmgr.Run();
 
-  bmp280.Run();
+#if 1
   aht10.Run();
-
   if (aht10.measure_count != aht10.prev_measure_count)
   {
     TRACE("AHT10 ST=%02X, T = %u, RH = %u\r\n", aht10.ic_status, aht10.t_deg_x100, aht10.rh_percent_x100);
 
     aht10.prev_measure_count = aht10.measure_count;
   }
+#endif
 
+  bmp280.Run();
   if (bmp280.measure_count != bmp280.prev_measure_count)
   {
     TRACE("BMP280 ST=%02X, CTRL=%02X, CFG=%02X", bmp280.ic_status, bmp280.ic_control, bmp280.ic_config);

@@ -87,7 +87,7 @@ void TAht10::Run()
 
     if (tra.errorcode)
     {
-      state = 10;
+      state = 100;  // go to initialization on I2C error for the case the sensor was disconnected
       return;
     }
 
