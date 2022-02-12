@@ -8,9 +8,9 @@
 #include <bmp280.h>
 #include "traces.h"
 
-bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
+bool TBmp280::Init(TI2cManager * ai2cmgr, uint8_t aaddr)
 {
-  pi2c = ai2c;
+  pi2cmgr = ai2cmgr;
   addr = aaddr;
 
   initialized = false;
@@ -18,9 +18,9 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
   TRACE("Initializing BMP280\r\n");
 
   // read id:
-  pi2c->StartReadData(addr, 0xD0 | I2CEX_1, &id, 1);
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddRead(&tra, addr, 0xD0 | I2CEX_1, &id, 1);
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error reading BMP-280 ID!\r\n");
     return false;
@@ -30,9 +30,9 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
 
   // read status and config
 
-  pi2c->StartReadData(addr, 0xF3 | I2CEX_1, &buf[0], 3);
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddRead(&tra, addr, 0xF3 | I2CEX_1, &buf[0], 3);
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error reading BMP-280 status!\r\n");
     return false;
@@ -43,9 +43,9 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
   TRACE(" F5 CONFIG = %02X\r\n", buf[2]);
 
   // reading calibration / "dig" values
-  pi2c->StartReadData(addr, 0x88 | I2CEX_1, &dig, sizeof(dig));
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddRead(&tra, addr, 0x88 | I2CEX_1, &dig, sizeof(dig));
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error reading BMP-280 calibration data!\r\n");
     return false;
@@ -53,9 +53,9 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
 
   // stop first
   buf[0] = 0;
-  pi2c->StartWriteData(addr, 0xF4 | I2CEX_1, &buf[0], 1);
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error writing BMP-280 CTRL!\r\n");
     return false;
@@ -67,9 +67,9 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
     | (8  <<  2)  // filter(3): time constant for the IIR filter
     | (2  <<  5)  // t_sb(3): 2 = 125us, 3 = 250 us, 4 = 500 us, 5 = 1000 us
   );
-  pi2c->StartWriteData(addr, 0xF5 | I2CEX_1, &buf[0], 1);
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddWrite(&tra, addr, 0xF5 | I2CEX_1, &buf[0], 1);
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error writing BMP-280 CONFIG!\r\n");
     return false;
@@ -81,15 +81,16 @@ bool TBmp280::Init(THwI2c * ai2c, uint8_t aaddr)
     | (4  <<  2)  // osrs_p(3): 3 = 4x oversampling (pressure), 4 = 8x oversampling
     | (4  <<  5)  // osrs_t(3): 3 = 4x oversampling (temp), 4 = 8x oversampling
   );
-  pi2c->StartWriteData(addr, 0xF4 | I2CEX_1, &buf[0], 1);
-  pi2c->WaitFinish();
-  if (pi2c->error)
+  pi2cmgr->AddWrite(&tra, addr, 0xF4 | I2CEX_1, &buf[0], 1);
+  pi2cmgr->WaitFinish(&tra);
+  if (tra.errorcode)
   {
     TRACE("Error writing BMP-280 config!\r\n");
     return false;
   }
 
   state = 0;
+  measure_count = 0;
   measure_iv_clocks = SystemCoreClock;  // 1s
 
   initialized = true;
@@ -136,6 +137,13 @@ uint32_t TBmp280::CalculatePressure(int32_t adc_P)
 
 void TBmp280::Run()  // non-blocking I2C state machine
 {
+  if (!pi2cmgr)
+  {
+    return;
+  }
+
+  pi2cmgr->Run();
+
   if (!initialized)
   {
     return;
@@ -144,28 +152,30 @@ void TBmp280::Run()  // non-blocking I2C state machine
   if (0 == state)  // start the measurement
   {
     // burst read results always consistent reading:
-    pi2c->StartReadData(addr, 0xF3 | I2CEX_1, &buf[3], 10);  // index corresponds to the register address
+    pi2cmgr->AddRead(&tra, addr, 0xF3 | I2CEX_1, &buf[3], 10);  // index corresponds to the register address
     state = 1;
   }
   else if (1 == state) // wait for the I2C transaction finish
   {
-    if (pi2c->Finished())
+    if (tra.completed)
     {
       // process the results
+
+      ic_status = buf[3];
+      ic_control = buf[4];
+      ic_config = buf[5];
 
       p_raw = (buf[9] >> 4) | (buf[8] << 4) | (buf[7] << 12);
       t_raw = (buf[12] >> 4) | (buf[11] << 4) | (buf[10] << 12);
 
-      t_celsius_01 = CalculateTemp(t_raw);
+      t_celsius_x100 = CalculateTemp(t_raw);
       p_pascal_Q24 = CalculatePressure(p_raw);
       p_pascal = (p_pascal_Q24 >> 8);
 
-      TRACE("ST=%02X, CTRL=%02X, CFG=%02X", buf[3], buf[4], buf[5]);
-      TRACE(",  P_RAW=%i, T_RAW=%i", p_raw, t_raw);
-      TRACE(",  T=%i, P=%i", t_celsius_01, p_pascal);
-      TRACE("\r\n");
-
       last_measure = CLOCKCNT;
+
+      ++measure_count;
+
       state = 10;
     }
   }

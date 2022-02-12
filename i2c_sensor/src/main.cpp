@@ -15,30 +15,44 @@
 #include "board_pins.h"
 #include "bmp280.h"
 #include "aht10.h"
+#include "i2cmanager.h"
 
 volatile unsigned hbcounter = 0;
 
 TBmp280  bmp280;
 TAht10   aht10;
 
+TI2cManager  i2cmgr;
+
 void sensor_init()
 {
-  //bmp280.Init(&i2c, 0x76);
+  bmp280.Init(&i2cmgr, 0x76);
 
-  aht10.Init(&i2c, 0x38);
+  aht10.Init(&i2cmgr, 0x38);
 }
 
 void sensor_run()  // runs from idle, not from heartbeat !
 {
-  //bmp280.Run();
+  i2cmgr.Run();
 
+  bmp280.Run();
   aht10.Run();
 
-  if (aht10.measurement_count != aht10.prev_measurement_count)
+  if (aht10.measure_count != aht10.prev_measure_count)
   {
     TRACE("AHT10 ST=%02X, T = %u, RH = %u\r\n", aht10.ic_status, aht10.t_deg_x100, aht10.rh_percent_x100);
 
-    aht10.prev_measurement_count = aht10.measurement_count;
+    aht10.prev_measure_count = aht10.measure_count;
+  }
+
+  if (bmp280.measure_count != bmp280.prev_measure_count)
+  {
+    TRACE("BMP280 ST=%02X, CTRL=%02X, CFG=%02X", bmp280.ic_status, bmp280.ic_control, bmp280.ic_config);
+    TRACE(",  P_RAW=%i, T_RAW=%i", bmp280.p_raw, bmp280.t_raw);
+    TRACE(",  T=%i, P=%i", bmp280.t_celsius_x100, bmp280.p_pascal);
+    TRACE("\r\n");
+
+    bmp280.prev_measure_count = bmp280.measure_count;
   }
 }
 
@@ -74,6 +88,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	// go on with the hardware initializations
 	board_pins_init();
+
+	i2cmgr.Init(&i2c);
 
 	TRACE("\r\n--------------------------------------\r\n");
 	TRACE("VIHAL I2C Sensor Test\r\n");

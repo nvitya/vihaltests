@@ -10,13 +10,14 @@
 
 #include "stdint.h"
 #include "hwi2c.h"
+#include "i2cmanager.h"
 
 class TAht10
 {
 public:
   bool      initialized = false;
   uint8_t   addr = 0x77;
-  THwI2c *  pi2c = nullptr;
+  TI2cManager * pi2cmgr = nullptr;
 
   int       t_deg_x100 = 0;
   uint32_t  rh_percent_x100 = 0;
@@ -26,10 +27,10 @@ public:
 
   uint8_t   ic_status = 0;
 
-  uint32_t  measurement_count = 0; // incremented after every successful measurement
-  uint32_t  prev_measurement_count = 0; // variable provided for the application
+  uint32_t  measure_count = 0; // incremented after every successful measurement
+  uint32_t  prev_measure_count = 0; // variable provided for the application
 
-  bool      Init(THwI2c * ai2c, uint8_t aaddr);
+  bool      Init(TI2cManager * ai2cmgr, uint8_t aaddr);
   void      Run();
 
 protected:
@@ -41,6 +42,7 @@ protected:
 
   uint8_t   buf[8];  // internaly used
 
+  TI2cTransaction tra;
 };
 
 #endif /* SRC_AHT10_H_ */

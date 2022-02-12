@@ -8,15 +8,15 @@
 #include <aht10.h>
 #include "clockcnt.h"
 
-bool TAht10::Init(THwI2c * ai2c, uint8_t aaddr)
+bool TAht10::Init(TI2cManager * ai2c, uint8_t aaddr)
 {
   initialized = false;
 
-  pi2c = ai2c;
+  pi2cmgr = ai2c;
   addr = aaddr;
 
   state = 0;
-  measurement_count = 0;
+  measure_count = 0;
   measure_iv_clocks = SystemCoreClock * 3;  // 3s
   command_delay_clocks = 100 * (SystemCoreClock / 1000);
   last_measure = CLOCKCNT;
@@ -27,6 +27,13 @@ bool TAht10::Init(THwI2c * ai2c, uint8_t aaddr)
 
 void TAht10::Run()
 {
+  if (!pi2cmgr)
+  {
+    return;
+  }
+
+  pi2cmgr->Run();
+
   if (0 == state) // wait a little for the initialization
   {
     if (CLOCKCNT - last_measure > SystemCoreClock / 10) // wait 100ms
@@ -40,17 +47,17 @@ void TAht10::Run()
     buf[1] = 0x33; // start measurement control
     buf[2] = 0x00; // nop
 
-    pi2c->StartWriteData(addr, 0, &buf[0], 3);
+    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 3);
     state = 2;
   }
   else if (2 == state) // wait for i2c transaction end
   {
-    if (!pi2c->Finished())
+    if (!tra.completed)
     {
       return;
     }
 
-    if (pi2c->error)
+    if (tra.errorcode)
     {
       state = 10;
       return;
@@ -68,17 +75,17 @@ void TAht10::Run()
     }
 
     // read status and data
-    pi2c->StartReadData(addr, 0, &buf[0], 6);
+    pi2cmgr->AddRead(&tra, addr, 0, &buf[0], 6);
     state = 4;
   }
   else if (4 == state)
   {
-    if (!pi2c->Finished())
+    if (!tra.completed)
     {
       return;
     }
 
-    if (pi2c->error)
+    if (tra.errorcode)
     {
       state = 10;
       return;
@@ -101,7 +108,7 @@ void TAht10::Run()
     rh_percent_x100 = (10000 * (rh_raw >> 4)) >> 16;
     t_deg_x100 = ((20000 * (t_raw >> 4)) >> 16) - 5000;
 
-    ++measurement_count;
+    ++measure_count;
 
     state = 10; // delay for the next measurement
   }
@@ -126,18 +133,18 @@ void TAht10::Run()
   else if (100 == state) // start initialziation
   {
     buf[0] = 0xBA; // soft reset register
-    pi2c->StartWriteData(addr, 0, &buf[0], 1);
+    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 1);
     state = 101;
     last_measure = CLOCKCNT;
   }
   else if (101 == state) // wait reset complete
   {
-    if (!pi2c->Finished())
+    if (!tra.completed)
     {
       return;
     }
 
-    if (pi2c->error)
+    if (tra.errorcode)
     {
       state = 100; // repeat write
       return;
@@ -158,17 +165,17 @@ void TAht10::Run()
     buf[1] = 0x08; // normal mode, calibration on
     buf[2] = 0x00; // nop
 
-    pi2c->StartWriteData(addr, 0, &buf[0], 3);
+    pi2cmgr->AddWrite(&tra, addr, 0, &buf[0], 3);
     state = 103;
   }
   else if (103 == state) // wait for mode complete
   {
-    if (!pi2c->Finished())
+    if (!tra.completed)
     {
       return;
     }
 
-    if (pi2c->error)
+    if (tra.errorcode)
     {
       state = 102; // repeat write
       return;
