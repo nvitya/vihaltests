@@ -14,19 +14,32 @@
 
 #include "board_pins.h"
 #include "bmp280.h"
+#include "aht10.h"
 
 volatile unsigned hbcounter = 0;
 
 TBmp280  bmp280;
+TAht10   aht10;
 
 void sensor_init()
 {
-  bmp280.Init(&i2c, 0x76);
+  //bmp280.Init(&i2c, 0x76);
+
+  aht10.Init(&i2c, 0x38);
 }
 
 void sensor_run()  // runs from idle, not from heartbeat !
 {
-  bmp280.Run();
+  //bmp280.Run();
+
+  aht10.Run();
+
+  if (aht10.measurement_count != aht10.prev_measurement_count)
+  {
+    TRACE("AHT10 ST=%02X, T = %u, RH = %u\r\n", aht10.ic_status, aht10.t_deg_x100, aht10.rh_percent_x100);
+
+    aht10.prev_measurement_count = aht10.measurement_count;
+  }
 }
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
