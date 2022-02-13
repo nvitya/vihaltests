@@ -62,6 +62,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/ATSAM/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/ATSAM/3X}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.1277985625" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.528797858" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -174,6 +175,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/F7}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.216609955" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.839463971" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -286,6 +288,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/F1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.409771640" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.1284377469" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -331,6 +334,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/armm/core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/core/src"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/modules/i2c_eeprom"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/modules/sensor"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -398,6 +402,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/F4}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.2132202876" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.2108241893" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -510,6 +515,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/F3}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.1986066828" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.2128595750" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -622,6 +628,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/G4}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.1222012345" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.1039307719" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -734,6 +741,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/STM32/F0}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.549190844" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.1180709628" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -846,6 +854,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/ATSAM_V2/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/ATSAM_V2/E5X}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.1460280950" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.2046668343" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -1003,6 +1012,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/i2c_eeprom}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/LPC_V3/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/armm/LPC_V3/546XX}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/modules/sensor}&quot;"/>
 								</option>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions.618031856" name="Do not use exceptions (-fno-exceptions)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.noexceptions" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 								<option id="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti.1591627556" name="Do not use RTTI (-fno-rtti)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.cpp.compiler.nortti" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -1121,10 +1131,43 @@
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.27836245;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1929181884">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.849427142;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1106452501">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.746964999;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1140288292">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1701461404;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1658930827">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.345614440;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.19146036">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1850504143;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.334755844">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1489047321;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1152222736">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1876134461;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.610211867">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.614117365;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1407757880">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.2061917554;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.357547442">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1546494286;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1574118129">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1128682573;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.152285436">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1094192264;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.83876700">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.2036304716;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.2036304716.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1449532414;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.922111659">
@@ -1136,43 +1179,10 @@
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1080897311;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.849914070">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1153654715;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.2015497964">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1546494286;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1574118129">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.2036304716;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.2036304716.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1238681357;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1676973669">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.27836245;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1929181884">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1802014151.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.849427142;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1106452501">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1094192264;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.83876700">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.746964999;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1140288292">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.377313271.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.345614440;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.19146036">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.1850504143;ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.334755844">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1876134461;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.610211867">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.1873685429.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1701461404;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1658930827">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.218737277.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1489047321;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1152222736">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.1815430011.528425952.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.614117365;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.1407757880">
+		<scannerConfigBuildInfo instanceId="ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221;ilg.gnuarmeclipse.managedbuild.cross.config.elf.debug.4569677.1375028221.;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.1153654715;ilg.gnuarmeclipse.managedbuild.cross.tool.cpp.compiler.input.2015497964">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
