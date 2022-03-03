@@ -1,11 +1,11 @@
 /*
- * file:     main_usb_hid.cpp
- * brief:    USB HID example for VIHAL
+ * file:     main_usb_uart.cpp
+ * brief:    USB -> UART example for VIHAL
  * created:  2021-11-18
  * authors:  nvitya
  *
  * description:
- *   Simple HID example which just moves the mouse cursor every second
+ *   Fully functional USB to 3.3V TTL UART device
 */
 
 #include "platform.h"

@@ -7,10 +7,11 @@
 
 #include "traces.h"
 
-char trace_buffer[1024];
+char trace_buffer[4096];
 
 void traces_init()
 {
+  tracebuf.waitsend = false;  // the USB requires fast service !
 	tracebuf.Init(&conuart, &trace_buffer[0], sizeof(trace_buffer));
 }
 

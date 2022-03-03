@@ -175,7 +175,22 @@ bool TUifCdcData::HandleTransferEvent(TUsbEndpoint * aep, bool htod)
 	if (htod)
 	{
 		r = ep_input.ReadRecvData(&databuf[0], sizeof(databuf));
-		TRACE("%i byte VCP data arrived\r\n", r);
+		//TRACE("%i byte VCP data arrived\r\n", r);
+
+#if 0
+		for (unsigned n = 0; n < r; ++n)
+		{
+		   if (databuf[n] >=32)
+		   {
+		     TRACE("%c", databuf[n]);
+		   }
+		   else
+		   {
+		     TRACE(".");
+		   }
+		}
+		TRACE("\r\n");
+#endif
 
 		// send it back
 		ep_output.StartSendData(&databuf[0], r);
