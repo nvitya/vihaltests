@@ -197,13 +197,16 @@ void board_pins_init()
 #endif
 }
 
-#elif defined(BOARD_DISCOVERY_F746)
+#elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
 
 void board_pins_init()
 {
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_I,  1, false);
   board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_K,  3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
 
   hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
   hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
