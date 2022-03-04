@@ -21,7 +21,20 @@ extern THwUart    conuart;  // console uart
 
 void board_pins_init();
 
+#if 0
+
+#elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
+
 #include "framebuffer16.h"
 extern TFrameBuffer16  disp;
+
+#elif defined(BOARD_DEV_STM32F407ZE)
+
+#include "tftlcd_mm16_f407ze.h"
+extern TTftLcd_mm16_F407ZE  disp;
+
+#else
+  #error "Board not defined."
+#endif
 
 #endif /* SRC_BOARD_PINS_H_ */

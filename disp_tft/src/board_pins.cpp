@@ -41,12 +41,7 @@ void board_pins_init_leds()
 
 #if 0  // to use elif everywhere
 
-//-------------------------------------------------------------------------------
-// ARM Cortex-M
-//-------------------------------------------------------------------------------
-
-// STM32
-
+//----------------------------------------------------------------------------------------------------
 #elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
 
 THwLcdCtrl      lcdctrl;
@@ -196,87 +191,25 @@ void board_pins_init()
   lcd_init();
 }
 
-#elif defined(BOARD_DISCOVERY_F429)
+//----------------------------------------------------------------------------------------------------
+#elif defined(BOARD_DEV_STM32F407ZE)
+
+TTftLcd_mm16_F407ZE  disp;
 
 void board_pins_init()
 {
   pin_led_count = 2;
-  pin_led[0].Assign(PORTNUM_G, 13, false);
-  pin_led[1].Assign(PORTNUM_G, 14, false);
+  pin_led[0].Assign(PORTNUM_F,  9, false);
+  pin_led[1].Assign(PORTNUM_F, 10, false);
   board_pins_init_leds();
 
-  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
-  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
   conuart.Init(1); // USART1
 
-  // it does not run with PINCFG_SPEED_FAST !
-  unsigned pin_flags = PINCFG_AF_12 | PINCFG_SPEED_MED2;
-
-  hwpinctrl.PinSetup(PORTNUM_B,  5, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_B,  6, pin_flags);
-
-  hwpinctrl.PinSetup(PORTNUM_C,  0, pin_flags);
-
-  hwpinctrl.PinSetup(PORTNUM_D,  0, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D,  1, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D,  8, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D,  9, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D, 10, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D, 14, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_D, 15, pin_flags);
-
-  hwpinctrl.PinSetup(PORTNUM_E,  0, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E,  1, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E,  7, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E,  8, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E,  9, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 10, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 11, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 12, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 13, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 14, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_E, 15, pin_flags);
-
-  hwpinctrl.PinSetup(PORTNUM_F,  0, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F,  1, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F,  2, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F,  3, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F,  4, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F,  5, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F, 11, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F, 12, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F, 13, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F, 14, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_F, 15, pin_flags);
-
-  hwpinctrl.PinSetup(PORTNUM_G,  0, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_G,  1, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_G,  4, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_G,  5, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_G,  8, pin_flags);
-  hwpinctrl.PinSetup(PORTNUM_G, 15, pin_flags);
-
-  // config the SDRAM device: 8 MByte
-
-  hwsdram.bank = 2; // it is connected to bank 2!
-
-  hwsdram.hclk_div = 2;
-
-  hwsdram.row_bits = 12;
-  hwsdram.column_bits = 8;
-  hwsdram.bank_count = 4;
-  hwsdram.cas_latency = 3;
-
-  hwsdram.row_precharge_delay = 2;
-  hwsdram.row_to_column_delay = 2;
-  hwsdram.recovery_delay = 2;
-  hwsdram.row_cycle_delay = 7;
-  hwsdram.exit_self_refresh_delay = 7;
-  hwsdram.active_to_precharge_delay = 4; // TRAS
-
-  hwsdram.burst_length = 1;
-
-  hwsdram.Init();
+  disp.mirrorx = true;
+  disp.Init(LCD_CTRL_UNKNOWN, 240, 320);
+  disp.SetRotation(1);
 }
 
 // ATSAM
