@@ -243,7 +243,6 @@ void board_pins_init()
   uint32_t pincfgbase = 0; // PINCFG_DRIVE_STRONG;
 
   hwpinctrl.PinSetup(PORTNUM_A, 20, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A16/BA0
-  hwpinctrl.PinSetup(PORTNUM_A,  0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A17/BA1
 
   hwpinctrl.PinSetup(PORTNUM_C, 0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D0
   hwpinctrl.PinSetup(PORTNUM_C, 1, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D1
@@ -279,9 +278,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_C, 27, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A9
   hwpinctrl.PinSetup(PORTNUM_C, 28, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A10
   hwpinctrl.PinSetup(PORTNUM_C, 29, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A11
-  hwpinctrl.PinSetup(PORTNUM_C, 30, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A12
-  hwpinctrl.PinSetup(PORTNUM_C, 31, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A13
-  hwpinctrl.PinSetup(PORTNUM_A, 18, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A14
 
   hwpinctrl.PinSetup(PORTNUM_D, 13, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDA10
   hwpinctrl.PinSetup(PORTNUM_D, 14, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDCKE
@@ -292,17 +288,17 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_D, 29, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDWE
 
 
-  // config for MT48LC16M16A2-6A: 32 MByte
+  // config for 2 MByte onboard SDRAM
 
-  hwsdram.row_bits = 13;
-  hwsdram.column_bits = 9;
-  hwsdram.bank_count = 4;
+  hwsdram.row_bits = 11;
+  hwsdram.column_bits = 8;
+  hwsdram.bank_count = 2;
   hwsdram.cas_latency = 3;
 
-  hwsdram.row_precharge_delay = 3;
-  hwsdram.row_to_column_delay = 3;
-  hwsdram.recovery_delay = 2;
-  hwsdram.row_cycle_delay = 9;
+  hwsdram.row_precharge_delay = 5;
+  hwsdram.row_to_column_delay = 5;
+  hwsdram.recovery_delay = 5;
+  hwsdram.row_cycle_delay = 13;
 
   hwsdram.burst_length = 1;  // SDRAM does not work properly when larger than 1, but no speed degradation noticed
 
