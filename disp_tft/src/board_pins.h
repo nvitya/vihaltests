@@ -33,6 +33,11 @@ extern TFrameBuffer16  disp;
 #include "tftlcd_mm16_f407ze.h"
 extern TTftLcd_mm16_F407ZE  disp;
 
+#elif defined(BOARD_ARDUINO_DUE)
+
+#include "tftlcd_gp16_due.h"
+extern TTftLcd_gp16_due  disp;
+
 #else
   #error "Board not defined."
 #endif

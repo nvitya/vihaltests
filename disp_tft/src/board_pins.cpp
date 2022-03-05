@@ -214,6 +214,35 @@ void board_pins_init()
 
 // ATSAM
 
+#elif defined(BOARD_ARDUINO_DUE)
+
+/* 16 bit parallel display module designed to arduino mega connected to DUE
+ * The pins arent layed out optimal so it is as fast as an SPI display
+ *
+ * At least optimization -O1 or -Og must be used otherwise it will be too slow
+ */
+
+#include "tftlcd_gp16_due.h"
+
+TTftLcd_gp16_due  disp;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_B, 27, false);
+  board_pins_init_leds();
+
+  // UART - On the Arduino programmer interface
+  hwpinctrl.PinSetup(0, 8, PINCFG_INPUT | PINCFG_AF_0);  // UART_RXD
+  hwpinctrl.PinSetup(0, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
+  conuart.Init(0);  // UART
+
+  disp.mirrorx = true;
+  disp.Init(LCD_CTRL_HX8357B, 320, 480);
+  disp.SetRotation(3);
+}
+
+
 #elif defined(BOARD_VERTIBO_A)
 
 void board_pins_init()
