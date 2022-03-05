@@ -19,6 +19,7 @@ class TTftDisplayTest
 {
 public:
   unsigned    framecnt = 0;
+  unsigned    idlecnt = 0;
 
   unsigned    test_begin_ms = 0;
 

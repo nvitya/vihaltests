@@ -39,9 +39,137 @@ void board_pins_init_leds()
   }
 }
 
+#ifdef DISP_SPI
+
+TTftLcd_spi  disp;
+
+void init_spi_display()
+{
+#if 240 == SPI_DISPLAY_WIDTH
+  disp.mirrorx = true;
+  disp.Init(LCD_CTRL_ILI9341, 240, 320);
+  disp.SetRotation(1);
+#else
+  //lcd.mirrorx = true;
+  disp.Init(LCD_CTRL_ST7735, 128, 160);
+  disp.SetRotation(1);
+#endif
+}
+
+#endif
+
 #if 0  // to use elif everywhere
 
 //----------------------------------------------------------------------------------------------------
+// SPI DISPLAYS with SMALLER MCUs
+//----------------------------------------------------------------------------------------------------
+
+#elif defined(BOARD_MIN_F103)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_PULLUP);  // USART1_RX, no AF here!
+  conuart.Init(1);
+
+  // LCD control
+  //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // SPI1_CS as GPIO
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_0); // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_0); // SPI1_MOSI
+
+  disp.pin_reset.Assign(PORTNUM_A, 4, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B0: RESET
+
+  disp.pin_cs.Assign(PORTNUM_A, 2, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  disp.pin_cd.Assign(PORTNUM_A, 3, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SPI1
+  disp.spi.speed = 36000000; // max speed for this MCU
+  disp.spi.Init(1);
+
+  init_spi_display();
+}
+
+#elif    defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+
+  // LCD control
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_5); // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_5); // SPI1_MOSI
+
+  disp.pin_reset.Assign(PORTNUM_A, 4, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B0: RESET
+
+  disp.pin_cs.Assign(PORTNUM_A, 2, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  disp.pin_cd.Assign(PORTNUM_A, 3, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SPI1
+  disp.spi.speed = SystemCoreClock / 2; // max speed for this MCU
+  disp.spi.Init(1);
+
+  init_spi_display();
+}
+
+#elif    defined(BOARD_MIBO48_STM32F303) \
+      || defined(BOARD_MIBO64_STM32F405) \
+      || defined(BOARD_MIBO48_STM32G473)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+
+  // LCD control
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_5); // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_5); // SPI1_MOSI
+
+  disp.pin_reset.Assign(PORTNUM_B, 0, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B0: RESET
+
+  disp.pin_cs.Assign(PORTNUM_B, 2, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  disp.pin_cd.Assign(PORTNUM_B, 1, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SPI1
+  disp.spi.speed = SystemCoreClock / 2; // max speed for this MCU
+  disp.spi.Init(1);
+
+  init_spi_display();
+}
+
+//----------------------------------------------------------------------------------------------------
+// EMBEDDED LCD CONROLLER WITH FRAMEBUFFER
+//----------------------------------------------------------------------------------------------------
+
 #elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
 
 THwLcdCtrl      lcdctrl;
@@ -192,6 +320,9 @@ void board_pins_init()
 }
 
 //----------------------------------------------------------------------------------------------------
+// PARALLEL DISPLAYS
+//----------------------------------------------------------------------------------------------------
+
 #elif defined(BOARD_DEV_STM32F407ZE)
 
 TTftLcd_mm16_F407ZE  disp;
@@ -245,6 +376,20 @@ void board_pins_init()
 
 #elif defined(BOARD_VERTIBO_A)
 
+#if VERTIBO_A_LCD_GPIO
+
+  #include "tftlcd_gp16_vertibo_a.h"
+
+  TTftLcd_gp16_vertibo_a  disp;
+
+#else
+
+  #include "tftlcd_mm16_vertibo_a.h"
+
+  TTftLcd_mm16_vertibo_a  disp;
+
+#endif
+
 void board_pins_init()
 {
   pin_led_count = 1;
@@ -256,76 +401,25 @@ void board_pins_init()
   conuart.baudrate = 115200;
   conuart.Init(0);
 
-  // SDRAM
+  #if VERTIBO_A_LCD_800x480
 
-  // it does not work with strong drive !
-  uint32_t pincfgbase = 0; // PINCFG_DRIVE_STRONG;
+    disp.mirrorx = true;
+    //disp.Init(LCD_CTRL_ILI9486, 480, 800);
+    //disp.Init(LCD_CTRL_ILI9341, 480, 800);
+    disp.Init(LCD_CTRL_HX8357B, 480, 800);
+    //disp.Init(LCD_CTRL_UNKNOWN, 480, 800);
+    disp.SetRotation(0);
 
-  hwpinctrl.PinSetup(PORTNUM_A, 20, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A16/BA0
-  hwpinctrl.PinSetup(PORTNUM_A,  0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A17/BA1
+  #else
 
-  hwpinctrl.PinSetup(PORTNUM_C, 0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D0
-  hwpinctrl.PinSetup(PORTNUM_C, 1, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D1
-  hwpinctrl.PinSetup(PORTNUM_C, 2, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D2
-  hwpinctrl.PinSetup(PORTNUM_C, 3, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D3
-  hwpinctrl.PinSetup(PORTNUM_C, 4, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D4
-  hwpinctrl.PinSetup(PORTNUM_C, 5, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D5
-  hwpinctrl.PinSetup(PORTNUM_C, 6, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D6
-  hwpinctrl.PinSetup(PORTNUM_C, 7, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D7
+    disp.mirrorx = true;
+    //disp.Init(LCD_CTRL_ILI9486, 320, 480);
+    disp.Init(LCD_CTRL_HX8357B, 320, 480);
+    //lcd.Init(LCD_CTRL_UNKNOWN, 320, 480);
+    disp.SetRotation(1);
 
-  hwpinctrl.PinSetup(PORTNUM_E, 0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D8
-  hwpinctrl.PinSetup(PORTNUM_E, 1, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D9
-  hwpinctrl.PinSetup(PORTNUM_E, 2, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D10
-  hwpinctrl.PinSetup(PORTNUM_E, 3, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D11
-  hwpinctrl.PinSetup(PORTNUM_E, 4, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D12
-  hwpinctrl.PinSetup(PORTNUM_E, 5, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D13
+  #endif
 
-  hwpinctrl.PinSetup(PORTNUM_A, 15, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D14
-  hwpinctrl.PinSetup(PORTNUM_A, 16, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // D15
-
-  hwpinctrl.PinSetup(PORTNUM_C, 15, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // NCS1/SDCS
-
-  hwpinctrl.PinSetup(PORTNUM_C, 18, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A0/NBS0
-  //hwpinctrl.PinSetup(PORTNUM_C, 19, PINCFG_OUTPUT | PINCFG_AF_0);  // A1
-
-  hwpinctrl.PinSetup(PORTNUM_C, 20, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A2
-  hwpinctrl.PinSetup(PORTNUM_C, 21, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A3
-  hwpinctrl.PinSetup(PORTNUM_C, 22, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A4
-  hwpinctrl.PinSetup(PORTNUM_C, 23, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A5
-  hwpinctrl.PinSetup(PORTNUM_C, 24, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A6
-  hwpinctrl.PinSetup(PORTNUM_C, 25, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A7
-  hwpinctrl.PinSetup(PORTNUM_C, 26, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A8
-  hwpinctrl.PinSetup(PORTNUM_C, 27, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A9
-  hwpinctrl.PinSetup(PORTNUM_C, 28, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A10
-  hwpinctrl.PinSetup(PORTNUM_C, 29, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A11
-  hwpinctrl.PinSetup(PORTNUM_C, 30, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A12
-  hwpinctrl.PinSetup(PORTNUM_C, 31, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_0);  // A13
-  hwpinctrl.PinSetup(PORTNUM_A, 18, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A14
-
-  hwpinctrl.PinSetup(PORTNUM_D, 13, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDA10
-  hwpinctrl.PinSetup(PORTNUM_D, 14, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDCKE
-  hwpinctrl.PinSetup(PORTNUM_D, 15, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // NWR1/NBS1
-  hwpinctrl.PinSetup(PORTNUM_D, 16, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // RAS
-  hwpinctrl.PinSetup(PORTNUM_D, 17, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // CAS
-  hwpinctrl.PinSetup(PORTNUM_D, 23, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDCK
-  hwpinctrl.PinSetup(PORTNUM_D, 29, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // SDWE
-
-
-  // config for MT48LC16M16A2-6A: 32 MByte
-
-  hwsdram.row_bits = 13;
-  hwsdram.column_bits = 9;
-  hwsdram.bank_count = 4;
-  hwsdram.cas_latency = 3;
-
-  hwsdram.row_precharge_delay = 3;
-  hwsdram.row_to_column_delay = 3;
-  hwsdram.recovery_delay = 2;
-  hwsdram.row_cycle_delay = 9;
-
-  hwsdram.burst_length = 1;  // SDRAM does not work properly when larger than 1, but no speed degradation noticed
-
-  hwsdram.Init();
 }
 
 // LPC

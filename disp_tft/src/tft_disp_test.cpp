@@ -12,7 +12,10 @@
 #include "board_pins.h"
 #include "tft_disp_test.h"
 
-uint8_t txtscr_charbuf[128*64];
+#define TXTSCR_MAX_WIDTH  80
+#define TXTSCR_MAX_HEIGHT 40
+
+uint8_t txtscr_charbuf[TXTSCR_MAX_WIDTH*TXTSCR_MAX_HEIGHT];
 uint8_t txtscr_changebuf[sizeof(txtscr_charbuf) / 8];
 
 TGfxTextScreen   textscreen;
@@ -104,9 +107,6 @@ void TTftDisplayTest::test0_init()
   dwidth = disp.width / 3;
   dheight = disp.height - 20;
 
-  disp.color = RGB16(0, 255, 0);
-  disp.FillRect(10, 10, 100, 100, disp.color);
-
   disp.color = RGB16(255, 0, 0);
   disp.DrawRect(0, 0, disp.width, disp.height);
 }
@@ -171,11 +171,27 @@ void TTftDisplayTest::test1_init()
   disp.color = 0xffff;
   disp.SetCursor(10, 10);
   disp.DrawString("This is the test 2.");
+
+  disp.color = RGB16(255, 0, 0);
+  disp.SetFont(&font_serif);
+  disp.SetCursor(20, disp.height / 2);
+  disp.DrawString("Hello World!");
+
+  disp.SetFont(&font_gfx_standard);
 }
 
 void TTftDisplayTest::test1_run()
 {
   // no movement here
+
+  ++idlecnt;
+
+  disp.color = RGB16(255, 0, 0);
+  disp.SetFont(&font_serif);
+  disp.SetCursor(20, disp.height / 2);
+  disp.printf("Idle cnt: %u ", idlecnt);
+
+  disp.SetFont(&font_gfx_standard);
 }
 
 void TTftDisplayTest::test2_init()
@@ -183,7 +199,7 @@ void TTftDisplayTest::test2_init()
   disp.color = RGB16(255, 255, 0);
   disp.DrawRect(0, 0, disp.width, disp.height);
 
-  textscreen.InitCharBuf(128, 64, &txtscr_charbuf[0], &txtscr_changebuf[0]);  // init to the maximal buffer size
+  textscreen.InitCharBuf(TXTSCR_MAX_WIDTH, TXTSCR_MAX_HEIGHT, &txtscr_charbuf[0], &txtscr_changebuf[0]);  // init to the maximal buffer size
   textscreen.InitTextGfx(&disp, 3, 3, disp.width-7, disp.height-7, disp.font);
 
   disp.color = RGB16(255, 255, 255);
