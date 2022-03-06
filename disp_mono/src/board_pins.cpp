@@ -59,8 +59,11 @@ TMonoLcd_spi    disp;
 void init_display()
 {
   disp.pspi = &spi;
-  disp.rotation = 0;
-  disp.Init(MLCD_CTRL_UC1701, DISPLAY_WIDTH, DISPLAY_HEIGHT, &disp_buf[0]);
+  disp.rotation = DISPLAY_ROTATION;
+  #ifdef DISPLAY_CONTRAST
+    disp.contrast = DISPLAY_CONTRAST;
+  #endif
+  disp.Init(DISPLAY_CTRL, DISPLAY_WIDTH, DISPLAY_HEIGHT, &disp_buf[0]);
 }
 
 #else
@@ -154,7 +157,7 @@ void board_pins_init()
 
     spi.idleclk_high = false;
     spi.datasample_late = false;
-    spi.speed = 8000000; // 4 MHz
+    spi.speed = 4000000; // 8 MHz
     spi.Init(1);
 
     spi_txdma.Init(2, 5, 3); // SPI1_TX, alternative 2, 3, 3
