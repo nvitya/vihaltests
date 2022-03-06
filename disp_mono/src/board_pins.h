@@ -15,6 +15,7 @@
 #include "hwspi.h"
 #include "oleddisp_i2c.h"
 #include "monolcd_spi.h"
+#include "monolcd_bb.h"
 
 #define MAX_LEDS  4
 
@@ -35,10 +36,12 @@ void board_pins_init();
   extern THwSpi          spi;
   extern TMonoLcd_spi    disp;
 
+#elif defined(DISP_BITBANG)
+
+  extern TMonoLcd_bb     disp;
+
 #else
-
   #error "undefined inerface type"
-
 #endif
 
 #endif /* SRC_BOARD_PINS_H_ */

@@ -66,6 +66,19 @@ void init_display()
   disp.Init(DISPLAY_CTRL, DISPLAY_WIDTH, DISPLAY_HEIGHT, &disp_buf[0]);
 }
 
+#elif defined(DISP_BITBANG)
+
+TMonoLcd_bb     disp;
+
+void init_display()
+{
+  disp.rotation = DISPLAY_ROTATION;
+  #ifdef DISPLAY_CONTRAST
+    disp.contrast = DISPLAY_CONTRAST;
+  #endif
+  disp.Init(DISPLAY_CTRL, DISPLAY_WIDTH, DISPLAY_HEIGHT, &disp_buf[0]);
+}
+
 #else
 
   #error "unhandled interface type"
@@ -138,9 +151,9 @@ void board_pins_init()
       i2c.DmaAssign(true,  &i2c_txdma);
       i2c.DmaAssign(false, &i2c_rxdma);
     #endif
-  #endif
 
-  #ifdef DISP_SPI_MONO
+  #elif defined(DISP_SPI_MONO)
+
     // LCD control
     disp.pin_cs.Assign(PORTNUM_A, 0, false);
     disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
@@ -163,6 +176,22 @@ void board_pins_init()
     spi_txdma.Init(2, 5, 3); // SPI1_TX, alternative 2, 3, 3
     spi.DmaAssign(true, &spi_txdma);
 
+  #elif defined(DISP_BITBANG)
+
+    disp.pin_clk.Assign(PORTNUM_A, 5, false);
+    disp.pin_clk.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+    disp.pin_din.Assign(PORTNUM_A, 7, false);
+    disp.pin_din.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+    disp.pin_ce.Assign(PORTNUM_A, 0, false);
+    disp.pin_ce.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+    disp.pin_reset.Assign(PORTNUM_A, 1, false);
+    disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B0: RESET
+
+  #else
+    #error "unhandled display type"
   #endif
 
   init_display();
