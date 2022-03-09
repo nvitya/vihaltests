@@ -15,25 +15,22 @@
 #include "board_pins.h"
 #include "bmp280.h"
 #include "aht10.h"
-#include "i2cmanager.h"
 
 volatile unsigned hbcounter = 0;
 
 TBmp280  bmp280;
 TAht10   aht10;
 
-TI2cManager  i2cmgr;
-
 void sensor_init()
 {
-  bmp280.Init(&i2cmgr, 0x76);
+  bmp280.Init(&i2c, 0x76);
 
-  aht10.Init(&i2cmgr, 0x38);
+  aht10.Init(&i2c, 0x38);
 }
 
 void sensor_run()  // runs from idle, not from heartbeat !
 {
-  i2cmgr.Run();
+  i2c.Run();
 
 #if 1
   aht10.Run();
@@ -89,8 +86,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	// go on with the hardware initializations
 	board_pins_init();
-
-	i2cmgr.Init(&i2c);
 
 	TRACE("\r\n--------------------------------------\r\n");
 	TRACE("VIHAL I2C Sensor Test\r\n");
