@@ -265,6 +265,16 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
   conuart.Init(0);
+
+  // TWI0
+  hwpinctrl.PinSetup(PORTNUM_A,  3, PINCFG_AF_0 | PINCFG_PULLUP); // TWI0: SDA/TWD0
+  hwpinctrl.PinSetup(PORTNUM_A,  4, PINCFG_AF_0 | PINCFG_PULLUP); // TWI0: SCL/TWCK0
+
+  i2c.Init(0); // TWIHS0
+
+  // PdmaInit must be called after i2c.Init !!!
+  i2c.PdmaInit(true,  nullptr);   // use internal
+  i2c.PdmaInit(false,  nullptr);  // use internal
 }
 
 #elif defined(BOARD_XPLAINED_SAME70)
@@ -285,6 +295,15 @@ void board_pins_init()
   //hwpinctrl.PinSetup(3, 28, PINCFG_INPUT | PINCFG_AF_0);  // UART3_RXD
   //hwpinctrl.PinSetup(3, 30, PINCFG_OUTPUT | PINCFG_AF_0); // UART3_TXD
   //uartx2.Init(3); // UART3
+
+  // TWIHS0
+  hwpinctrl.PinSetup(PORTNUM_A,  3, PINCFG_AF_0 | PINCFG_PULLUP); // TWIHS0: SDA/TWD0
+  hwpinctrl.PinSetup(PORTNUM_A,  4, PINCFG_AF_0 | PINCFG_PULLUP); // TWIHS0: SCL/TWCK0
+
+  i2c.Init(0); // TWIHS0
+
+  i2c.txdma.Init(14, 14);  // 14 = TWIHS0.TX (see XDMAC controller peripheral connections)
+  i2c.rxdma.Init(15, 15);  // 15 = TWIHS0.RX
 }
 
 #elif defined(BOARD_MIBO64_ATSAME5X)
