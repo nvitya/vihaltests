@@ -10,14 +10,14 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-//#define DISP_I2C_OLED
-#define DISP_SPI_MONO
+#define DISP_I2C_OLED
+//#define DISP_SPI_MONO
 //#define DISP_BITBANG
 
 #if defined(DISP_I2C_OLED)
-  #define OLED_DISPLAY_WIDTH    128
-  #define OLED_DISPLAY_HEIGHT    64
-  //#define OLED_DISPLAY_HEIGHT  32
+  #define DISPLAY_WIDTH    128
+  #define DISPLAY_HEIGHT    64
+  //#define DISPLAY_HEIGHT  32
 
   #define REFRESH_TIME_MS  17  // ~60 FPS
 

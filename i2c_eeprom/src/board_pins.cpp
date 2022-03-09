@@ -160,7 +160,6 @@ void board_pins_init()
   // open drain mode have to be used, otherwise it won't work
   // WARNING: 1. B6 is not connected to I2C anymore
   //          2. B8 is shared to BOOT0 pin, so when it is pulled up the device does not start from flash
-
   hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
   hwpinctrl.PinSetup(PORTNUM_A, 15, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
 

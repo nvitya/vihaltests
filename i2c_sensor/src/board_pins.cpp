@@ -152,7 +152,6 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_C, 13, false);
   board_pins_init_leds();
 
-
   // USART1
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
@@ -160,18 +159,10 @@ void board_pins_init()
 
   // I2C1
   // open drain mode have to be used, otherwise it won't work
-
-  // WARNING: the B6 pin did not work (was always low after enabling the AF_4)
-  //          this is due the USB-C power delivery pull down functionality
-  //          turning off did not work for me this way:
-  //  RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
-  //  PWR->CR3 |= PWR_CR3_UCPD_DBDIS;
-  //  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
-  //  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
-
-  // Warning: PB8 = boot pin ! must be high at reset otherwise the Flash code does not start
-  hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
-  hwpinctrl.PinSetup(PORTNUM_B,  9, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
+  // WARNING: 1. B6 is not connected to I2C anymore
+  //          2. B8 is shared to BOOT0 pin, so when it is pulled up the device does not start from flash
+  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
+  hwpinctrl.PinSetup(PORTNUM_A, 15, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
 
   i2c.speed = 100000; // 100 kHz
   i2c.Init(1); // I2C1

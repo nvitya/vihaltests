@@ -91,7 +91,8 @@ void init_display()
 // SPI DISPLAYS with SMALLER MCUs
 //----------------------------------------------------------------------------------------------------
 
-#elif defined(BOARD_MIN_F103)
+#elif    defined(BOARD_MIN_F103) \
+      || defined(BOARD_MIBO48_STM32F303)
 
 void board_pins_init()
 {
@@ -197,50 +198,10 @@ void board_pins_init()
   init_display();
 }
 
-#elif defined(BOARD_MIN_F103)  \
-      || defined(BOARD_MIBO48_STM32F303)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-
-  // I2C1
-  // open drain mode have to be used, otherwise it won't work
-  // External pull-ups are required !
-  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SCL
-  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_SPEED_FAST); // I2C1_SDA
-  i2c.Init(1); // I2C1
-
-  #if 1
-    i2c_txdma.Init(1, 6, 0);  // dma1,ch6 = I2C1 TX
-    i2c_rxdma.Init(1, 7, 0);  // dma1,ch5 = I2C1 RX
-
-    i2c.DmaAssign(true,  &i2c_txdma);
-    i2c.DmaAssign(false, &i2c_rxdma);
-  #endif
-
-  init_display();
-}
-
-
 #elif defined(BOARD_MIBO48_STM32G473)
 
 void board_pins_init()
 {
-
-  // WARNING: the B6 pin did not work (was always low after enabling the AF_4)
-  //          this is due the USB-C power delivery pull down functionality
-  //          turning off did not work for me this way:
-  //RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
-  //PWR->CR3 |= PWR_CR3_UCPD_DBDIS;
-
   pin_led_count = 1;
   pin_led[0].Assign(PORTNUM_C, 13, false);
   board_pins_init_leds();
@@ -250,27 +211,18 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
   conuart.Init(2);
 
-  i2c.speed = 100000; // 100 kHz
-
   // I2C1
-  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
+  // open drain mode have to be used, otherwise it won't work
+  // WARNING: 1. B6 is not connected to I2C anymore
+  //          2. B8 is shared to BOOT0 pin, so when it is pulled up the device does not start from flash
   hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
+  hwpinctrl.PinSetup(PORTNUM_A, 15, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
+  i2c.speed = 100000; // 100 kHz
   i2c.Init(1); // I2C1
 
-  // I2C2
-  // open drain mode have to be used, otherwise it won't work
-  //hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C2_SCL
-  //hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C2_SDA
-  //i2c.Init(2); // I2C2
-
-  // Warning: PB8 = boot pin ! must be high at reset otherwise the Flash code does not start
-  //hwpinctrl.PinSetup(PORTNUM_B,  8, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
-  //hwpinctrl.PinSetup(PORTNUM_B,  9, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
-
-
-#if 0
-  i2c_txdma.Init(1, 6, 19);  // dmamux19 = I2C2 TX
-  i2c_rxdma.Init(1, 5, 18);  // dmamux18 = I2C2 RX
+#if 1
+  i2c_txdma.Init(1, 6, 17);  // dmamux17 = I2C1 TX
+  i2c_rxdma.Init(1, 5, 16);  // dmamux16 = I2C1 RX
 
   i2c.DmaAssign(true,  &i2c_txdma);
   i2c.DmaAssign(false, &i2c_rxdma);
