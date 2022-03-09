@@ -55,14 +55,16 @@ void show_mem(void * addr, unsigned len)
 static uint8_t rxbuf[1024];
 static uint8_t txbuf[1024];
 
+TI2cTransaction itra;
+
 void test_i2c_interface()
 {
 #if 1 // very simple read test with 1 byte addressing
-  i2c.StartReadData(I2CADDR, 0 | I2CEX_1, &rxbuf[0], 4); // read byte with 1 byte addressing
-  i2c.WaitFinish();
-  if (i2c.error)
+  i2c.StartRead(&itra, I2CADDR, 0 | I2CEX_1, &rxbuf[0], 4); // read byte with 1 byte addressing
+  i2c.WaitFinish(&itra);
+  if (itra.error)
   {
-    TRACE("Read error: %i\r\n", i2c.error);
+    TRACE("Read error: %i\r\n", itra.error);
   }
 
   show_mem(&rxbuf[0], 4);
@@ -74,32 +76,32 @@ void test_i2c_interface()
 #if 0
 
   txbuf[0] = 0xDA;
-  i2c.StartWriteData(I2CADDR, 0 | I2CEX_1, &txbuf[0], 1); // write byte with addressing
-  i2c.WaitFinish();
-  if (i2c.error)
+  i2c.StartWrite(&itra, I2CADDR, 0 | I2CEX_1, &txbuf[0], 1); // write byte with addressing
+  i2c.WaitFinish(&itra);
+  if (itra.error)
   {
-    TRACE("Write without addressing error: %i\r\n", i2c.error);
+    TRACE("Write without addressing error: %i\r\n", itra.error);
   }
 
   //TRACE("Read without addressing ok.\r\n");
 
   //TRACE("Reading byte without addressing...\r\n");
-  i2c.StartReadData(I2CADDR, 0, &rxbuf[0], 1); // read byte without addressing
-  i2c.WaitFinish();
-  if (i2c.error)
+  i2c.StartRead(&itra, I2CADDR, 0, &rxbuf[0], 1); // read byte without addressing
+  i2c.WaitFinish(&itra);
+  if (itra.error)
   {
-    TRACE("Read without addressing error: %i\r\n", i2c.error);
+    TRACE("Read without addressing error: %i\r\n", itra.error);
   }
 
   //TRACE("Read without addressing ok.\r\n");
 
 
   //TRACE("Reading byte with addressing...\r\n");
-  i2c.StartReadData(I2CADDR, 0 | I2CEX_1, &rxbuf[0], 1); // read byte without addressing
-  i2c.WaitFinish();
-  if (i2c.error)
+  i2c.StartRead(&itra, I2CADDR, 0 | I2CEX_1, &rxbuf[0], 1); // read byte without addressing
+  i2c.WaitFinish(&itra);
+  if (itra.error)
   {
-    TRACE("Read with addressing error: %i\r\n", i2c.error);
+    TRACE("Read with addressing error: %i\r\n", itra.error);
   }
 
   TRACE("Read with addressing ok.\r\n");
@@ -116,12 +118,12 @@ void test_i2c_interface()
   for (n = 0; n < 8; ++n)
   {
     //i2c.StartReadData(I2CADDR, n | I2CEX_1, &rxbuf[0], 1);
-    i2c.StartReadData(I2CADDR, n | I2CEX_1, &rxbuf[0], 1);
-    i2c.WaitFinish();
-    if (i2c.error)
+    i2c.StartRead(&itra, I2CADDR, n | I2CEX_1, &rxbuf[0], 1);
+    i2c.WaitFinish(&itra);
+    if (itra.error)
     {
       ++errcnt;
-      //TRACE("Read 1 I2C error: %i\r\n", i2c.error);
+      //TRACE("Read 1 I2C error: %i\r\n", itra.error);
       //return;
     }
 
@@ -159,7 +161,7 @@ void test_i2c_eeprom()
 
   if (!eeprom.Init(&i2c, 0x50, 256 * 8))
   {
-    TRACE("Error initializing the EEPROM: %08X\r\n", eeprom.errorcode);
+    TRACE("Error initializing the EEPROM: %08X\r\n", eeprom.error);
     return;
   }
 
@@ -172,17 +174,17 @@ void test_i2c_eeprom()
 
 #if 1 // I2C driver test
 	TRACE("I2C Reading 1 byte from invalid address...\r\n");
-	i2c.StartReadData(0x40, 0, &rxbuf[0], 1);
-	r = i2c.WaitFinish();
-	TRACE("Completed: %i\r\n", r);
+	i2c.StartRead(&itra, 0x40, 0, &rxbuf[0], 1);
+	i2c.WaitFinish(&itra);
+	TRACE("Completed: %i\r\n", itra.error);
 
 	len2 = 1;
 	TRACE("Reading %i byte at %04X...\r\n", len2, addr);
 	eeprom.StartReadMem(addr, &rxbuf[0], len2);
 	eeprom.WaitComplete();
-  if (eeprom.errorcode)
+  if (eeprom.error)
   {
-    TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+    TRACE(" EEPROM error = %i\r\n", eeprom.error);
     return;
   }
   else
@@ -194,9 +196,9 @@ void test_i2c_eeprom()
 	TRACE("Reading %i byte at %04X...\r\n", len2, addr);
 	eeprom.StartReadMem(addr, &rxbuf[0], len2);
 	eeprom.WaitComplete();
-  if (eeprom.errorcode)
+  if (eeprom.error)
   {
-    TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+    TRACE(" EEPROM error = %i\r\n", eeprom.error);
     return;
   }
   else
@@ -208,9 +210,9 @@ void test_i2c_eeprom()
 	TRACE("Reading %i byte at %04X...\r\n", len2, addr);
 	eeprom.StartReadMem(addr, &rxbuf[0], len2);
 	eeprom.WaitComplete();
-  if (eeprom.errorcode)
+  if (eeprom.error)
   {
-    TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+    TRACE(" EEPROM error = %i\r\n", eeprom.error);
     return;
   }
   else
@@ -222,9 +224,9 @@ void test_i2c_eeprom()
   TRACE("Reading memory at %04X...\r\n", addr);
   eeprom.StartReadMem(addr, &rxbuf[0], len);
   eeprom.WaitComplete();
-  if (eeprom.errorcode)
+  if (eeprom.error)
   {
-    TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+    TRACE(" EEPROM error = %i\r\n", eeprom.error);
     return;
   }
   show_mem(&rxbuf[0], len);
@@ -245,9 +247,9 @@ void test_i2c_eeprom()
 
 	eeprom.StartWriteMem(addr + incoffs, &txbuf[0], 4);
 	eeprom.WaitComplete();
-	if (eeprom.errorcode)
+	if (eeprom.error)
 	{
-		TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+		TRACE(" EEPROM error = %i\r\n", eeprom.error);
 		return;
 	}
 
@@ -257,9 +259,9 @@ void test_i2c_eeprom()
 
 	eeprom.StartReadMem(addr, &rxbuf[0], len);
 	eeprom.WaitComplete();
-	if (eeprom.errorcode)
+	if (eeprom.error)
 	{
-		TRACE(" EEPROM error = %i\r\n", eeprom.errorcode);
+		TRACE(" EEPROM error = %i\r\n", eeprom.error);
 		return;
 	}
 
@@ -278,7 +280,7 @@ void test_i2c_eeprom()
 
 	eeprom.StartWriteMem(addr, &txbuf[0], len);
 	eeprom.WaitComplete();
-	if (eeprom.errorcode)	{ TRACE(" EEPROM error = %i\r\n", eeprom.errorcode); }
+	if (eeprom.error)	{ TRACE(" EEPROM error = %i\r\n", eeprom.error); }
 
 	TRACE("Reading %u bytes memory at %04X...\r\n", len, addr);
 	eeprom.StartReadMem(addr, &rxbuf[0], len);
