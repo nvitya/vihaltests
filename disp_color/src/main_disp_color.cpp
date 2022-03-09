@@ -1,5 +1,5 @@
-// file:     main_disp_tft.cpp
-// brief:    VIHAL GFX TFT Display test
+// file:     main_disp_color.cpp
+// brief:    VIHAL Color TFT LCD Display test
 // created:  2022-03-04
 // authors:  nvitya
 

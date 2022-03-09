@@ -226,7 +226,7 @@ void board_pins_init()
     i2c.DmaAssign(false, &i2c_rxdma);
   #endif
 
-  init_i2c_display();
+  init_display();
 }
 
 
@@ -276,7 +276,7 @@ void board_pins_init()
   i2c.DmaAssign(false, &i2c_rxdma);
 #endif
 
-  init_i2c_display();
+  init_display();
 }
 
 #else

@@ -1,6 +1,6 @@
-// file:     main_disp_tft.cpp
-// brief:    VIHAL GFX TFT Display test
-// created:  2022-03-04
+// file:     main_disp_mono.cpp
+// brief:    VIHAL Monochrome Display tests
+// created:  2022-03-05
 // authors:  nvitya
 // notes:
 //    Adjust the display settings in the board.h
