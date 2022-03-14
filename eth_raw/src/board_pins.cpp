@@ -8,6 +8,7 @@
 
 #include "board_pins.h"
 #include "traces.h"
+#include "clockcnt.h"
 
 THwUart   conuart;  // console uart
 unsigned  pin_led_count = 1;
