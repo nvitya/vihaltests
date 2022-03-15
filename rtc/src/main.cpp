@@ -1,7 +1,7 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
-// created:  2021-10-03
-// authors:  nvitya
+// file:     main.cpp (rtc)
+// brief:    VIHAL RTC Test
+// created:  2022-03-15
+// authors:  Bergi84
 
 #include "platform.h"
 #include "cppinit.h"
