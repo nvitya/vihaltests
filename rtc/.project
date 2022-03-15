@@ -28,7 +28,7 @@
 		<link>
 			<name>vihal</name>
 			<type>2</type>
-			<location>D:/Projekte/vihal</location>
+			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/vihal</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
