@@ -10,8 +10,6 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-#define BOARD_NAME "RolloCon"
-#define MCU_STM32WB55VG
-#define EXTERNAL_XTAL_HZ   32000000
+#include "boards_builtin.h"
 
 #endif /* BOARD_H_ */
