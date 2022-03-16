@@ -24,6 +24,15 @@ unsigned last_recv_time = 0;
 void eth_test_init()
 {
   //eth.promiscuous_mode = true;
+
+  // random generated mac address:
+  eth.mac_address[0] = 0xE4;
+  eth.mac_address[1] = 0x88;
+  eth.mac_address[2] = 0xF9;
+  eth.mac_address[3] = 0xB4;
+  eth.mac_address[4] = 0xFE;
+  eth.mac_address[5] = 0x70;
+
   eth.promiscuous_mode = false;
   eth.hw_ip_checksum = false; //true;
   if (!eth.Init(&eth_rx_desc_mem, ETH_RX_PACKETS, &eth_tx_desc_mem, ETH_TX_PACKETS))
@@ -94,7 +103,17 @@ typedef struct icmp_echo_header
 //
 } __attribute__((packed))  TIcmpHeader, * PIcmpHeader;
 
-uint8_t pbuf[1536];
+typedef struct TUdpHeader
+{
+  uint16_t  sport;   // source port
+  uint16_t  dport;   // destination port
+  uint16_t  len;     // length
+  uint16_t  csum;    // checksum
+//
+} TUdpHeader, * PUdpHeader;
+
+
+uint8_t pbuf[1536] __attribute__((aligned(16)));  // alignment is useful for the debugging
 
 void answer_arp(uint8_t * pdata)
 {
@@ -163,6 +182,49 @@ uint16_t calc_icmp_checksum(void * pdata, uint32_t datalen)
   return (uint16_t) (~sum);
 }
 
+uint16_t calc_udp_checksum(TIpHeader * piph, uint16_t datalen)  // datalen is only for check
+{
+  uint32_t n;
+  uint32_t sum = 0;
+  TUdpHeader * pudp = PUdpHeader(piph + 1); // the UDP header comes after the IP header
+
+  // add the two IP addresses first
+  uint16_t * pd16 = (uint16_t *)&piph->src;
+  for (n = 0; n < 4; ++n)
+  {
+    sum += __REV16(*pd16++);
+  }
+
+  sum += piph->p; // add the protocol as well
+  sum += __REV16(pudp->len); // add the UDP length
+
+  // add the UDP header parts exlusive the checksum
+  pd16 = (uint16_t *)pudp;
+  for (n = 0; n < 3; ++n)
+  {
+    sum += __REV16(*pd16++);
+  }
+
+  // and then the data
+  pd16 = (uint16_t *)(pudp + 1);
+  for (n = 0; n < (datalen >> 1); ++n)
+  {
+    sum += __REV16(*pd16++);
+  }
+
+  if (datalen & 1)
+  {
+    sum += (*pd16 & 0xFF);  // mo byte swapping here !
+  }
+
+  while (sum >> 16)
+  {
+    sum = (sum & 0xffff) + (sum >> 16);
+  }
+
+  return (uint16_t) (~sum);
+}
+
 
 void answer_ip(uint8_t * pdata, uint16_t datalen)
 {
@@ -171,7 +233,7 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
   PIpHeader        pih;
   uint32_t         idx;
   peth = PEthernetHeader(pdata);
-  pih  = PIpHeader(pdata + sizeof(TEthernetHeader));
+  pih  = PIpHeader(peth + 1);
 
   uint8_t prot = pih->p;
 
@@ -222,6 +284,75 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
 
       TRACE("ICMP response sent.\r\n");
     }
+  }
+  else if (17 == prot)  // UDP
+  {
+    PUdpHeader pudp = PUdpHeader(pih + 1);
+
+    // prepare the answer
+    memcpy(&pbuf[0], pdata, datalen);
+
+    peth = PEthernetHeader(&pbuf[0]);
+    pih  = PIpHeader(peth + 1);
+    pudp = PUdpHeader(pih + 1);
+
+    // fill the ETH addresses
+    for (n = 0; n < 6; ++n)
+    {
+      peth->dest_mac[n] = peth->src_mac[n];
+      peth->src_mac[n] = eth.mac_address[n];
+    }
+
+    // fill the IP addresses
+    for (n = 0; n < 4; ++n)
+    {
+      pih->dst[n] = pih->src[n];
+      pih->src[n] = my_ip_address[n];
+    }
+
+    // flip the ports
+    uint16_t destport = pudp->sport;
+    uint16_t srcport = pudp->dport;
+    pudp->dport = destport;
+    pudp->sport = srcport;
+
+    // increment the data
+    uint16_t udatalen =__REV16(pudp->len) - sizeof(TUdpHeader);
+
+    if (udatalen > sizeof(pbuf) - (14+20+8))
+    {
+      TRACE("invalid UDP data length!\r\n");
+      return;
+    }
+
+    uint8_t * pd8 = (uint8_t *)(pudp + 1);
+    for (n = 0; n < udatalen; ++n)
+    {
+      *pd8 = *pd8 + 1;
+      ++pd8;
+    }
+
+    pudp->csum = __REV16(calc_udp_checksum(pih, udatalen));
+
+#if 0 // display contents
+    TRACE("UDP response: (csum = %04X)\r\n", pudp->csum);
+    for (n = 0; n < datalen; ++n)
+    {
+      if ((n > 0) && ((n & 15) == 0)) TRACE("\r\n");
+      TRACE(" %02X", pdata[n]);
+    }
+    TRACE("\r\n");
+#endif
+
+    // send the packed
+    if (!eth.TrySend(&idx, &pbuf[0], datalen))
+    {
+      TRACE("UDP Packet send failed.\r\n");
+      return;
+    }
+
+    TRACE("UDP response sent.\r\n");
+
   }
 }
 
