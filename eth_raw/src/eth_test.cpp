@@ -214,7 +214,7 @@ uint16_t calc_udp_checksum(TIpHeader * piph, uint16_t datalen)  // datalen is on
 
   if (datalen & 1)
   {
-    sum += (*pd16 & 0xFF);  // mo byte swapping here !
+    sum += (*pd16 & 0xFF);  // mo byte swapping here, we need just the low byte
   }
 
   while (sum >> 16)
@@ -352,7 +352,6 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
     }
 
     TRACE("UDP response sent.\r\n");
-
   }
 }
 
