@@ -17,7 +17,7 @@ uint8_t   eth_rx_desc_mem[sizeof(HW_ETH_DMA_DESC) * ETH_RX_PACKETS];
 __attribute__((aligned(32)))
 uint8_t   eth_tx_desc_mem[sizeof(HW_ETH_DMA_DESC) * ETH_TX_PACKETS];
 
-uint8_t   eth_rx_packet_mem[HWETH_MAX_PACKET_SIZE * ETH_RX_PACKETS]   __attribute__((aligned(16)));
+uint8_t   eth_rx_packet_mem[sizeof(TPacketMem) * ETH_RX_PACKETS]   __attribute__((aligned(16)));
 
 unsigned last_recv_time = 0;
 
@@ -48,7 +48,7 @@ void eth_test_init()
 
   for (unsigned n = 0; n < ETH_RX_PACKETS; ++n)
   {
-    eth.AssignRxBuf(n, &eth_rx_packet_mem[HWETH_MAX_PACKET_SIZE * n], HWETH_MAX_PACKET_SIZE);
+    eth.AssignRxBuf(n, (TPacketMem * )&eth_rx_packet_mem[sizeof(TPacketMem) * n], HWETH_MAX_PACKET_SIZE);
   }
 
   eth.Start();
@@ -358,15 +358,18 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
 void eth_test_run()
 {
   uint32_t n;
-  uint32_t idx;
+  TPacketMem * pmem;
   uint8_t * pdata;
   uint32_t  datalen;
   PEthernetHeader peh;
 
   eth.PhyStatusPoll(); // must be called regularly
 
-  if (eth.TryRecv(&idx, (void * *)&pdata, &datalen))
+  if (eth.TryRecv(&pmem))
   {
+    pdata = &pmem->data[0];
+    datalen = pmem->datalen;
+
     unsigned t0 = CLOCKCNT;
 
     TRACE("+%u ms: ", (t0 - last_recv_time) / (SystemCoreClock / 1000));
@@ -414,6 +417,6 @@ void eth_test_run()
       answer_ip(pdata, datalen);
     }
 
-    eth.ReleaseRxBuf(idx); // must be called !
+    eth.ReleaseRxBuf(pmem); // must be called !
   }
 }
