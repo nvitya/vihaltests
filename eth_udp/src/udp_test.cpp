@@ -9,22 +9,17 @@
 #include "board_pins.h"
 #include "traces.h"
 #include "udp_test.h"
-
+#include "netadapter.h"
 #include "net_ip4.h"
-
-uint8_t   my_ip_address[4] = {192, 168, 2, 10};
 
 // combined buffer for the Ethernet RX, TX descriptors, packet buffers and later TCP buffers
 uint8_t   network_memory[32 * 1024] __attribute__((aligned(32)));
 
-unsigned last_recv_time = 0;
-
-TNetAdapter    netif;
-
-TIp4Handler    ip4_handler;
-
+TNetAdapter  nadap;
+TIp4Handler  ip4_handler;
 TUdp4Socket  udp;
 
+unsigned last_recv_time;
 uint8_t pbuf[1536] __attribute__((aligned(16)));  // alignment is useful for the debugging
 
 //--------------------------------------------------------
@@ -45,12 +40,12 @@ void udp_test_init()
 
   // 2. INITIALIZE THE Adapter
 
-  netif.Init(&eth, &network_memory[0], sizeof(network_memory));  // Ethernet initialization included
+  nadap.Init(&eth, &network_memory[0], sizeof(network_memory));  // Ethernet initialization included
 
   ip4_handler.ipaddress.Set(192, 168, 2, 10);
   ip4_handler.netmask.Set(255, 255, 255, 0);
   ip4_handler.gwaddress.u32 = 0;
-  ip4_handler.Init(&netif);
+  ip4_handler.Init(&nadap);
 
   // 3. INITIALIZE THE UDP4 SOCKET
   //udp.Init(&netif, 3000);
@@ -64,8 +59,9 @@ void udp_test_run()
   int len;
   int i;
 
-  netif.Run(); // must be called regularly
+  nadap.Run(); // must be called regularly
 
+#if 0
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
@@ -83,4 +79,5 @@ void udp_test_run()
       TRACE("UDP Send Error: %i\r\n", r);
     }
   }
+#endif
 }

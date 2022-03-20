@@ -10,23 +10,8 @@
 
 #include "stdint.h"
 #include "network.h"
+#include "netadapter.h"
 #include "hweth.h"
-
-#define NETIF_PMEM_HEAD_SIZE  16
-//#define NETIF_TX_PMEM_SIZE  (HWETH_MAX_PACKET_SIZE + NETIF_PMEM_HEAD_SIZE)
-//#define NETIF_RX_PMEM_SIZE  (HWETH_MAX_PACKET_SIZE + NETIF_PMEM_HEAD_SIZE)
-
-typedef struct TPacketMem
-{
-  uint8_t       idx;
-  uint8_t       flags;
-  uint16_t      datalen;
-  TPacketMem *  next;    // this is reserved for the applications
-  uint64_t      timestamp_ns;
-
-  uint8_t       data[HWETH_MAX_PACKET_SIZE];
-//
-} TPacketMem, * PPacketMem;
 
 typedef struct
 {
@@ -80,55 +65,21 @@ typedef struct TArp4TableItem // 16 byte
 //
 } TArp4TableItem, * PArp4TableItem;
 
-class TProtocolHandler
-{
-public:
-
-};
-
-class TNetAdapter // could be the child of the THwEth too
-{
-protected:
-  uint8_t           state = 0;
-
-public: // settings
-
-  uint8_t           max_rx_packets = 8;
-  uint8_t           max_tx_packets = 8;
-  uint8_t           max_arp_items = 8;
-
-public:
-  bool              initialized = false;
-  THwEth *          peth = nullptr;
-  uint8_t *         netmem = nullptr;
-  unsigned          netmem_size = 0;
-  unsigned          netmem_allocated = 0;
-
-  TPacketMem *      first_tx_pmem = nullptr;
-  TPacketMem *      syspkt = nullptr;
-
-  uint8_t *         rx_desc_mem = nullptr;
-  uint8_t *         tx_desc_mem = nullptr;
-
-  uint8_t *         rx_pmem = nullptr;
-  uint8_t *         tx_pmem = nullptr;
-
-  void              Init(THwEth * aeth, void * anetmem, unsigned anetmemsize);
-
-  void              Run(); // must be called regularly
-
-  TPacketMem *      AllocateTxPacket();
-  void              ReleaseTxPacket(TPacketMem * apmem);
-};
-
 class TIp4Handler : public TProtocolHandler
 {
 public:
-  TIp4Addr          ipaddress;
-  TIp4Addr          netmask;
-  TIp4Addr          gwaddress;
+  TNetAdapter *       adapter = nullptr;
 
-  void              Init(TNetAdapter * aadapter);
+  TIp4Addr            ipaddress;
+  TIp4Addr            netmask;
+  TIp4Addr            gwaddress;
+  uint8_t             max_arp_items = 8;
+  TPacketMem *        syspkt = nullptr;
+
+  void                Init(TNetAdapter * aadapter);
+  virtual void        Run();
+
+  virtual bool        HandleRxPacket(TPacketMem * apkt);  // return true, if the packet is handled
 };
 
 class TUdp4Socket

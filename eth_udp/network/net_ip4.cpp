@@ -52,96 +52,24 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   return (uint16_t) (~sum);
 }
 
-void TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
+//--------------------------------------------------------------
+
+void TIp4Handler::Init(TNetAdapter *aadapter)
 {
-  peth = aeth;
-  netmem = (uint8_t *)anetmem;
-  netmem_size = anetmemsize;
+  adapter = aadapter;
 
-  initialized = false;
+  syspkt = adapter->AllocateTxPacket();  // reserve one TX packet for system purposes
 
-  // memory allocation
-  netmem_allocated = 0;
-  // RX and TX descriptors
-  rx_desc_mem = &netmem[netmem_allocated];
-  netmem_allocated += sizeof(HW_ETH_DMA_DESC) * max_rx_packets;
-  tx_desc_mem = &netmem[netmem_allocated];
-  netmem_allocated += sizeof(HW_ETH_DMA_DESC) * max_tx_packets;
-
-  rx_pmem = &netmem[netmem_allocated];
-  netmem_allocated += sizeof(TPacketMem) * max_rx_packets;
-  tx_pmem = &netmem[netmem_allocated];
-  netmem_allocated += sizeof(TPacketMem) * max_tx_packets;
-
-  if (netmem_allocated > netmem_size)
-  {
-    TRACE("Network memory is too small: %u, required: %u\r\n", netmem_size, netmem_allocated);
-    return;
-  }
-
-  peth->promiscuous_mode = false;
-  peth->hw_ip_checksum = false; //true;
-
-  if (!peth->Init(rx_desc_mem, max_rx_packets, tx_desc_mem, max_tx_packets))
-  {
-    TRACE("ETH INIT FAILED!\r\n");
-    return;
-  }
-
-  // Assign RX packet buffers, required for the receive
-
-  for (unsigned n = 0; n < max_rx_packets; ++n)
-  {
-    peth->AssignRxBuf(n, &rx_pmem[sizeof(TPacketMem) * n + NETIF_PMEM_HEAD_SIZE], HWETH_MAX_PACKET_SIZE);
-  }
-
-  // Initialize TX packet allocation
-  TPacketMem *  pmem = (TPacketMem *)tx_pmem;
-  TPacketMem *  prevpmem = pmem;
-  first_tx_pmem = pmem;
-  for (unsigned n = 1; n < max_tx_packets; ++n)
-  {
-    ++pmem;
-    prevpmem->next = pmem;
-    pmem->next = nullptr;
-    prevpmem = pmem;
-  }
-
-  syspkt = AllocateTxPacket();  // reserve one TX packet for system purposes
-
-  // start the network interface
-
-  peth->Start();
-
-  initialized = true;
+  adapter->AddHandler(this);
 }
 
-void TNetAdapter::Run()
+void TIp4Handler::Run()
 {
-  if (peth)
-  {
-    peth->PhyStatusPoll(); // must be called regularly
-  }
 }
 
-TPacketMem * TNetAdapter::AllocateTxPacket()
+bool TIp4Handler::HandleRxPacket(TPacketMem * apkt)  // return true, if the packet is handled
 {
-  if (first_tx_pmem)
-  {
-    TPacketMem * result = first_tx_pmem;
-    first_tx_pmem = first_tx_pmem->next;
-    return result;
-  }
-  else
-  {
-    return nullptr;
-  }
-}
-
-void TNetAdapter::ReleaseTxPacket(TPacketMem * apmem)
-{
-  apmem->next = first_tx_pmem;
-  first_tx_pmem = apmem;
+  return false;
 }
 
 //--------------------------------------------------------------
@@ -158,8 +86,4 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
 {
   return -1;
-}
-
-void TIp4Handler::Init(TNetAdapter *aadapter)
-{
 }
