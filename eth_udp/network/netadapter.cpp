@@ -17,6 +17,8 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
 
   initialized = false;
   firsthandler = nullptr;
+  first_sending_pkt = nullptr;
+  last_sending_pkt = nullptr;
 
   // memory allocation
   netmem_allocated = 0;
@@ -62,7 +64,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   // Initialize TX packet allocation
   TPacketMem *  pmem = (TPacketMem *)tx_pmem;
   TPacketMem *  prevpmem = pmem;
-  first_tx_pmem = pmem;
+  first_free_tx_pmem = pmem;
   for (unsigned n = 1; n < max_tx_packets; ++n)
   {
     ++pmem;
@@ -120,10 +122,26 @@ void TNetAdapter::Run()
     peth->PhyStatusPoll(); // must be called regularly
   }
 
+  // free Sended Tx Packets
+  // TODO: check the whole chain ?
+  while (first_sending_pkt && peth->SendFinished(first_sending_pkt->idx))
+  {
+    pmem = first_sending_pkt;
+    first_sending_pkt = first_sending_pkt->next; // unchain first before free !
+
+    ReleaseTxPacket(pmem);
+  }
+  if (!first_sending_pkt)
+  {
+    last_sending_pkt = nullptr;
+  }
+
   // check for Rx Packets
 
   if (peth->TryRecv(&pmem))
   {
+    pmem->flags = 0;
+
     ph = firsthandler;
     while (ph)
     {
@@ -135,6 +153,11 @@ void TNetAdapter::Run()
     }
 
     if (!ph)
+    {
+      // the packet was not handled
+    }
+
+    if (0 == (pmem->flags & PMEMFLAG_KEEP))
     {
       // the packet was not handled, just ignore and release
       peth->ReleaseRxBuf(pmem);
@@ -153,10 +176,10 @@ void TNetAdapter::Run()
 
 TPacketMem * TNetAdapter::AllocateTxPacket()
 {
-  if (first_tx_pmem)
+  if (first_free_tx_pmem)
   {
-    TPacketMem * result = first_tx_pmem;
-    first_tx_pmem = first_tx_pmem->next;
+    TPacketMem * result = first_free_tx_pmem;
+    first_free_tx_pmem = first_free_tx_pmem->next;
     return result;
   }
   else
@@ -167,6 +190,36 @@ TPacketMem * TNetAdapter::AllocateTxPacket()
 
 void TNetAdapter::ReleaseTxPacket(TPacketMem * apmem)
 {
-  apmem->next = first_tx_pmem;
-  first_tx_pmem = apmem;
+  apmem->next = first_free_tx_pmem;
+  first_free_tx_pmem = apmem;
+}
+
+bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automatically released
+{
+  // send the packet on the Ethernet
+
+  uint32_t idx;
+  if (!peth->TrySend(&idx, &apmem->data[0], apmem->datalen))
+  {
+    ReleaseTxPacket(apmem);
+    return false;
+  }
+
+  // add to the sending chain
+  apmem->idx = idx;
+  apmem->next = nullptr;
+
+  TPacketMem * pmem;
+  if (last_sending_pkt)
+  {
+    last_sending_pkt->next = apmem;
+    last_sending_pkt = apmem;
+  }
+  else
+  {
+    first_sending_pkt = apmem;
+    last_sending_pkt = apmem;
+  }
+
+  return true;
 }

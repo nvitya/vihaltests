@@ -65,23 +65,6 @@ typedef struct TArp4TableItem // 16 byte
 //
 } TArp4TableItem, * PArp4TableItem;
 
-class TIp4Handler : public TProtocolHandler
-{
-public:
-  TNetAdapter *       adapter = nullptr;
-
-  TIp4Addr            ipaddress;
-  TIp4Addr            netmask;
-  TIp4Addr            gwaddress;
-  uint8_t             max_arp_items = 8;
-  TPacketMem *        syspkt = nullptr;
-
-  void                Init(TNetAdapter * aadapter);
-  virtual void        Run();
-
-  virtual bool        HandleRxPacket(TPacketMem * apkt);  // return true, if the packet is handled
-};
-
 class TUdp4Socket
 {
 public:
@@ -99,7 +82,32 @@ public:
   int Receive(void * adataptr, unsigned adatalen);
 };
 
-uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen);
+class TIp4Handler : public TProtocolHandler
+{
+public:
+  TNetAdapter *       adapter = nullptr;
 
+  TIp4Addr            ipaddress;
+  TIp4Addr            netmask;
+  TIp4Addr            gwaddress;
+  uint8_t             max_arp_items = 8;
+  TPacketMem *        syspkt = nullptr;
+
+  TPacketMem *        rxpkt = nullptr;
+  TEthernetHeader *   rxeh = nullptr;
+  TIp4Header *        rxiph = nullptr;
+
+  void                Init(TNetAdapter * aadapter);
+  virtual void        Run();
+
+  virtual bool        HandleRxPacket(TPacketMem * pmem);  // return true, if the packet is handled
+
+protected:
+  bool                HandleArp();
+  bool                HandleIcmp();
+  bool                HandleUdp();
+};
+
+uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen);
 
 #endif /* NETWORK_NET_IP4_H_ */

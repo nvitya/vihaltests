@@ -38,10 +38,14 @@ public:
   THwEth *            peth = nullptr;
 
   TProtocolHandler *  firsthandler = nullptr;
+  TPacketMem *        first_sending_pkt = nullptr;
+  TPacketMem *        last_sending_pkt = nullptr;
 
   bool                Init(THwEth * aeth, void * anetmem, unsigned anetmemsize);
 
   void                Run(); // must be called regularly
+
+  bool                SendTxPacket(TPacketMem * apmem);  // the packet will be automatically released
 
   TPacketMem *        AllocateTxPacket();
   void                ReleaseTxPacket(TPacketMem * apmem);
@@ -53,7 +57,7 @@ public:
 
 protected: // internal memory management
 
-  TPacketMem *        first_tx_pmem = nullptr;
+  TPacketMem *        first_free_tx_pmem = nullptr;
 
   uint8_t *           rx_desc_mem = nullptr;
   uint8_t *           tx_desc_mem = nullptr;

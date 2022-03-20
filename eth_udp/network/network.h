@@ -20,15 +20,15 @@ typedef struct
 
 typedef struct
 {
-  uint16_t  hrd;    /**< Format of hardware address */
-  uint16_t  pro;    /**< Format of protocol address */
-  uint8_t   hln;    /**< Length of hardware address */
-  uint8_t   pln;    /**< Length of protocol address */
-  uint16_t  op;     /**< Operation */
-  uint8_t   sha[6]; /**< Sender hardware address */
-  uint8_t   spa[4]; /**< Sender protocol address */
-  uint8_t   tha[6]; /**< Target hardware address */
-  uint8_t   tpa[4]; /**< Target protocol address */
+  uint16_t  htype;   // hardware type
+  uint16_t  ptype;   // protocol type
+  uint8_t   hlen;    // hardware address length
+  uint8_t   plen;    // protocol address length
+  uint16_t  oper;    // operation
+  uint8_t   sha[6];  // Sender hardware address
+  uint8_t   spa[4];  // Sender protocol address
+  uint8_t   tha[6];  // Target hardware address
+  uint8_t   tpa[4];  // Target protocol address
 //
 } TArpHeader, * PArpHeader;
 

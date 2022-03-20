@@ -17,7 +17,7 @@ uint8_t   network_memory[32 * 1024] __attribute__((aligned(32)));
 
 TNetAdapter  nadap;
 TIp4Handler  ip4_handler;
-TUdp4Socket  udp;
+//TUdp4Socket  udp;
 
 unsigned last_recv_time;
 uint8_t pbuf[1536] __attribute__((aligned(16)));  // alignment is useful for the debugging

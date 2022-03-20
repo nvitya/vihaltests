@@ -67,7 +67,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   //tracebuf.waitsend = true;  // better for basic debugging
 
   TRACE("\r\n--------------------------------------\r\n");
-  TRACE("VIHAL Raw Ethernet Test\r\n");
+  TRACE("VIHAL UDP Network Stack Test\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
