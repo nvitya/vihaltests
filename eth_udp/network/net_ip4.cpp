@@ -55,8 +55,10 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
 
 //--------------------------------------------------------------
 
-void TUdp4Socket::Init(void * anif, uint16_t aport)
+void TUdp4Socket::Init(TIp4Handler * ahandler, uint16_t alistenport)
 {
+  phandler = ahandler;
+  listenport = alistenport;
 }
 
 int TUdp4Socket::Send(void * adataptr, unsigned adatalen)

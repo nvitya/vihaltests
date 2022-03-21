@@ -129,6 +129,7 @@ void TNetAdapter::Run()
     pmem = first_sending_pkt;
     first_sending_pkt = first_sending_pkt->next; // unchain first before free !
 
+    //TRACE("Releasing TX packet %u\r\n", pmem->idx);
     ReleaseTxPacket(pmem);
   }
   if (!first_sending_pkt)

@@ -65,6 +65,8 @@ typedef struct TArp4TableItem // 16 byte
 //
 } TArp4TableItem, * PArp4TableItem;
 
+class TIp4Handler;
+
 class TUdp4Socket
 {
 public:
@@ -74,9 +76,11 @@ public:
   TIp4Addr          srcaddr;
   uint16_t          srcport = 0;
 
-  TNetAdapter *     pnetif = nullptr;
+  uint16_t          listenport = 0;
 
-  void Init(void * anif, uint16_t aport);
+  TIp4Handler *     phandler = nullptr;
+
+  void Init(TIp4Handler * ahandler, uint16_t alistenport);
 
   int Send(void * adataptr, unsigned adatalen);
   int Receive(void * adataptr, unsigned adatalen);
