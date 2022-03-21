@@ -4190,6 +4190,7 @@
 			<resource resourceType="PROJECT" workspacePath="/uart"/>
 		</configuration>
 		<configuration configurationName="BOARD_MIBO64_ATSAM4S"/>
+		<configuration configurationName="BOARD_NODEMCU_ESP32C3"/>
 		<configuration configurationName="BOARD_MIBO64_STM32F405"/>
 		<configuration configurationName="BOARD_MIBO43_STM32G473">
 			<resource resourceType="PROJECT" workspacePath="/uart"/>
@@ -4198,6 +4199,7 @@
 		<configuration configurationName="BOARD_VRV100_441"/>
 		<configuration configurationName="BOARD_MIBO20_STM32F030"/>
 		<configuration configurationName="BOARD_MIBO100_ATSAME70"/>
+		<configuration configurationName="BOARD_DISCOVERY_F750"/>
 		<configuration configurationName="BOARD_MIBO20_STM32F070"/>
 		<configuration configurationName="BOARD_XPRESSO_LPC54608"/>
 		<configuration configurationName="BOARD_MIBO48_STM32G473">
