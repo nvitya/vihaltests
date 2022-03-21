@@ -187,7 +187,7 @@ bool TIp4Handler::HandleIcmp()
 
     PEthernetHeader txeh = PEthernetHeader(&pmem->data[0]);
     PIp4Header  txiph = PIp4Header(txeh + 1);
-    PIcmpHeader txich = PIcmpHeader(rxiph + 1);
+    PIcmpHeader txich = PIcmpHeader(txiph + 1);
 
     // fill the ETH addresses
     for (n = 0; n < 6; ++n)
