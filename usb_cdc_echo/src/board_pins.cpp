@@ -7,6 +7,7 @@
 */
 
 #include "board_pins.h"
+#include "clockcnt.h"
 
 THwUart   conuart;  // console uart
 unsigned  pin_led_count = 1;
@@ -135,7 +136,13 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_PULLUP);  // USART1_RX, no AF here!
   conuart.Init(1);
 
-  // USB PINS
+  // USB RE-CONNECT
+  // The Blue Pill has a fix external pull-up on the USB D+ = PA12, which always signalizes a connected device
+  // in order to reinit the device upon restart we pull this down:
+  hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_OUTPUT | PINCFG_OPENDRAIN | PINCFG_GPIO_INIT_0);
+  delay_us(10000); // 10 ms
+
+  // Setup USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DP
 }

@@ -38,11 +38,6 @@ void board_pins_init_leds()
   }
 }
 
-THwUart              usbuart;
-THwDmaChannel        usbuart_dma_tx;
-THwDmaChannel        usbuart_dma_rx;
-
-
 #if 0  // to use elif everywhere
 
 //-------------------------------------------------------------------------------
@@ -69,8 +64,6 @@ void board_pins_init()
   // USB_OTG_FS PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB_OTG_FS DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB_OTG_FS DP
-
-  #error "define USB-UART pins"
 }
 
 #elif defined(BOARD_NUCLEO_H723)
@@ -91,8 +84,6 @@ void board_pins_init()
   // USB_OTG_FS PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB_OTG_FS DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB_OTG_FS DP
-
-  #error "define USB-UART pins"
 }
 
 
@@ -111,8 +102,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART1_TX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_1);  // USART1_RX
   conuart.Init(1);
-
-  #error "define USB-UART pins"
 }
 
 #elif defined(BOARD_MIN_F103)  // = blue pill
@@ -128,14 +117,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_PULLUP);  // USART1_RX, no AF here!
   conuart.Init(1);
 
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT | PINCFG_PULLUP);  // USART2_RX - do not set AF for inputs!
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 7, 2); // USART2_TX
-  usbuart_dma_rx.Init(1, 6, 2); // USART2_RX
-
   // USB RE-CONNECT
   // The Blue Pill has a fix external pull-up on the USB D+ = PA12, which always signalizes a connected device
   // in order to reinit the device upon restart we pull this down:
@@ -147,7 +128,8 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DP
 }
 
-#elif defined(BOARD_MIBO48_STM32G473)
+#elif defined(BOARD_MIBO48_STM32F303) \
+      || defined(BOARD_MIBO48_STM32G473)
 
 void board_pins_init()
 {
@@ -163,42 +145,7 @@ void board_pins_init()
   // USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DP
-
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART2_RX
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 7, 27); // USART2_TX
-  usbuart_dma_rx.Init(1, 6, 26); // USART2_RX
 }
-
-#elif defined(BOARD_MIBO48_STM32F303)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_C, 13, false);
-  board_pins_init_leds();
-
-  // USART1
-  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
-  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
-  conuart.Init(1);
-
-  // USB PINS
-  hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DM
-  hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_14 | PINCFG_SPEED_FAST);  // USB DP
-
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART2_RX
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 7, 2); // USART2_TX
-  usbuart_dma_rx.Init(1, 6, 2); // USART2_RX
-}
-
 
 #elif defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
       || defined(BOARD_MIBO64_STM32F405) \
@@ -217,16 +164,25 @@ void board_pins_init()
   // USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB DP
-
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART2_RX
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 6, 4); // USART2_TX
-  usbuart_dma_rx.Init(1, 5, 4); // USART2_RX
 }
 
+#elif defined(BOARD_DEV_STM32F407VG)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_E, 0, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
+  conuart.Init(1);
+
+  // USB PINS
+  hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB DM
+  hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_10 | PINCFG_SPEED_FAST);  // USB DP
+}
 
 #elif defined(BOARD_MIBO64_STM32F070)
 
@@ -243,14 +199,6 @@ void board_pins_init()
   // USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_0 | PINCFG_SPEED_FAST);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_0 | PINCFG_SPEED_FAST);  // USB DP
-
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_1 | PINCFG_PULLUP);  // USART2_RX
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 4, 2); // USART2_TX
-  usbuart_dma_rx.Init(1, 5, 2); // USART2_RX
 }
 
 #elif defined(BOARD_MIBO20_STM32F070)
@@ -269,14 +217,6 @@ void board_pins_init()
   // USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 11, PINCFG_INPUT | PINCFG_AF_0 | PINCFG_SPEED_FAST);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_INPUT | PINCFG_AF_0 | PINCFG_SPEED_FAST);  // USB DP
-
-  // USART2
-  hwpinctrl.PinSetup(PORTNUM_A,  2,  PINCFG_OUTPUT | PINCFG_AF_1);  // USART2_TX
-  hwpinctrl.PinSetup(PORTNUM_A,  3,  PINCFG_INPUT  | PINCFG_AF_1 | PINCFG_PULLUP);  // USART2_RX
-  usbuart.Init(2);
-
-  usbuart_dma_tx.Init(1, 4, 2); // USART2_TX
-  usbuart_dma_rx.Init(1, 5, 2); // USART2_RX
 }
 
 // ATSAM
@@ -295,8 +235,6 @@ void board_pins_init()
   conuart.Init(0);  // UART
 
   // dedicated HS USB pins, no pin setup required
-
-  #error "define USB-UART pins"
 }
 
 #elif defined(BOARD_MIBO64_ATSAM4S)
@@ -310,18 +248,9 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
   conuart.Init(0);
-
-  hwpinctrl.PinSetup(PORTNUM_B,  2,  PINCFG_INPUT  | PINCFG_AF_A);  // URXD1
-  hwpinctrl.PinSetup(PORTNUM_B,  3,  PINCFG_OUTPUT | PINCFG_AF_A);  // UTXD1
-  usbuart.Init(1);
-
-  usbuart.PdmaInit(true,  &usbuart_dma_tx);
-  usbuart.PdmaInit(false, &usbuart_dma_rx);
 }
 
 #elif defined(BOARD_MIBO100_ATSAME70)
-
-#warning "Imperfect USB implementation (config descriptor segmentation)"
 
 void board_pins_init()
 {
@@ -334,13 +263,6 @@ void board_pins_init()
   conuart.Init(0);
 
   // dedicated HS USB pins, no pin setup required
-
-  hwpinctrl.PinSetup(PORTNUM_A,  5,  PINCFG_INPUT  | PINCFG_AF_C);  // UART1_RX
-  hwpinctrl.PinSetup(PORTNUM_A,  4,  PINCFG_OUTPUT | PINCFG_AF_C);  // UART1_TX
-  usbuart.Init(1);
-
-  usbuart_dma_tx.Init(4, 22); // 22 = UART1_TX
-  usbuart_dma_rx.Init(5, 23); // 23 = UART1_RX
 }
 
 #elif defined(BOARD_XPLAINED_SAME70)
@@ -363,8 +285,6 @@ void board_pins_init()
   //uartx2.Init(3); // UART3
 
   // dedicated HS USB pins, no pin setup required
-
-  #error "define USB-UART pins"
 }
 
 #elif defined(BOARD_MIBO64_ATSAME5X)
@@ -388,14 +308,40 @@ void board_pins_init()
   // USB PINS
   hwpinctrl.PinSetup(PORTNUM_A, 24, PINCFG_AF_7);  // USB DM
   hwpinctrl.PinSetup(PORTNUM_A, 25, PINCFG_AF_7);  // USB DP
+}
 
-  // SERCOM2
-  hwpinctrl.PinSetup(PORTNUM_A, 12, PINCFG_AF_2);  // PAD[0] = TX
-  hwpinctrl.PinSetup(PORTNUM_A, 13, PINCFG_AF_2);  // PAD[1] = RX
-  usbuart.Init(2);
+#elif defined(BOARD_VERTIBO_A)
 
-  usbuart_dma_tx.Init(4, 0x09); // 0x09 = SERCOM2_TX
-  usbuart_dma_rx.Init(5, 0x08); // 0x08 = SERCOM2_RX
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 29, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  conuart.baudrate = 115200;
+  conuart.Init(0);
+
+  // dedicated HS USB pins, no pin setup required
+}
+
+#elif defined(BOARD_ENEBO_A)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_A, 20, true);
+  pin_led[1].Assign(PORTNUM_D, 14, true);
+  pin_led[2].Assign(PORTNUM_D, 13, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
+  conuart.baudrate = 115200;
+  conuart.Init(0);
+
+  // dedicated HS USB pins, no pin setup required
 }
 
 #else
