@@ -12,10 +12,7 @@
 #define TEST_START_ADDR  0x000000
 
 TSpiPsram  psram;
-
-uint8_t spi_id[4];
-
-unsigned readlen = 256;
+TPsramTra  tra;
 
 uint8_t  databuf[8 * 1024] __attribute__((aligned(8)));
 
@@ -31,125 +28,26 @@ void show_mem(void * addr, unsigned len)
   TRACE("\r\n");
 }
 
-#if 0
-
-void test_spiflash_reliability()
+void psram_test_simple()
 {
-  TRACE("Reliability test begin\r\n");
+  unsigned i;
 
-  unsigned value;
-  const unsigned begin_value = 0xc35a7291 + 1;
-  const unsigned value_add = 33;
-  uint32_t * dp;
-  uint32_t * endp = (uint32_t *)&databuf[sizeof(databuf)];
-
-  const unsigned test_length = sizeof(databuf);
+  unsigned testsize = sizeof(databuf);
+  //unsigned testsize = 256;
+  unsigned showlen = 256;
+  if (showlen > testsize)  showlen = testsize;
 
 #if 1
-
-  TRACE("Erasing the first %u k...\r\n", test_length / 1024);
-  spiflash.StartEraseMem(TEST_START_ADDR, test_length);
-  spiflash.WaitForComplete();
-  TRACE("Erase complete. Erase check...\r\n");
-  memset(&databuf[0], 0x55, sizeof(databuf));
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
-
-  unsigned mismatch_cnt = 0;
-
-  dp = (uint32_t *)&databuf[0];
-  while (dp < endp)
-  {
-    if (*dp++ != 0xFFFFFFFF)
-    {
-      ++mismatch_cnt;
-    }
-  }
-
-  if (mismatch_cnt)
-  {
-    TRACE("Erase ERROR! Mismatch count: %u\r\n", mismatch_cnt);
-  }
-  else
-  {
-    TRACE("Erase ok.\r\n");
-  }
-
-  TRACE("Writing blocks...\r\n");
-  // fill the buffer:
-  dp = (uint32_t *)&databuf[0];
-  value = begin_value;
-  while (dp < endp)
-  {
-    *dp++ = value;
-    value += value_add;
-  }
-  spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
-
-#endif
-
-  TRACE("Reading back...\r\n");
-  memset(&databuf[0], 0, sizeof(databuf));
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
-
-  TRACE("Comparing...\r\n");
-
-  mismatch_cnt = 0;
-  value = begin_value;
-  dp = (uint32_t *)&databuf[0];
-  while (dp < endp)
-  {
-    if (*dp++ != value)
-    {
-      ++mismatch_cnt;
-    }
-    value += value_add;
-  }
-
-  if (mismatch_cnt)
-  {
-    TRACE("ERROR! Mismatch count: %u\r\n", mismatch_cnt);
-  }
-  else
-  {
-    TRACE("Content check ok.\r\n");
-  }
-
-  TRACE("Reliability Test Finished.\r\n");
-}
-
-void test_simple_rw()
-{
-  int i;
-
-  TRACE("Testing simple Read, Erase, Write\r\n");
-
-  TRACE("Reading memory...\r\n");
-
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
-
-  TRACE("Memory read finished\r\n");
-
-  show_mem(&databuf[0], readlen);
-
-  TRACE("Erase sector...\r\n");
-  spiflash.StartEraseMem(TEST_START_ADDR, sizeof(databuf));
-  spiflash.WaitForComplete();
-  TRACE("Erase complete.\r\n");
-
-#if 1
-  TRACE("Writing memory...\r\n");
-
-  for (i = 0; i < sizeof(databuf); ++i)
+  for (i = 0; i < testsize; ++i)
   {
     databuf[i] = uint8_t(0xF0 + i);
   }
 
-  spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
+  TRACE("Filling RAM...\r\n");
+
+  psram.StartWriteMem(&tra, 0, &databuf[0], testsize);
+  psram.WaitFinish(&tra);
+
 #endif
 
   TRACE("Reading memory...\r\n");
@@ -160,15 +58,32 @@ void test_simple_rw()
     databuf[i] = uint8_t(0x55 + i);
   }
 
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
-  spiflash.WaitForComplete();
+  psram.StartReadMem(&tra, 0, &databuf[0], testsize);
+  psram.WaitFinish(&tra);
 
   TRACE("Memory read finished\r\n");
 
-  show_mem(&databuf[0], readlen);
+  show_mem(&databuf[0], showlen);
+
+#if 0
+  TRACE("Reading memory / 2 ...\r\n");
+
+  // set the memory contents to some invalid one
+  for (i = 0; i < sizeof(databuf); ++i)
+  {
+    databuf[i] = uint8_t(0x55 + i);
+  }
+
+  psram.StartReadMem(&tra, 0, &databuf[0], testsize);
+  psram.WaitFinish(&tra);
+
+  TRACE("Memory read finished\r\n");
+
+  show_mem(&databuf[0], showlen);
+#endif
 
   unsigned errorcnt = 0;
-  for (i = 0; i < sizeof(databuf); ++i)
+  for (i = 0; i < testsize; ++i)
   {
     if (databuf[i] != uint8_t(0xF0 + i))
     {
@@ -188,73 +103,6 @@ void test_simple_rw()
   TRACE("Test finished.\r\n");
   TRACE("\r\n");
 }
-
-#if 0
-
-uint8_t tdmabuf[8];
-uint8_t rdmabuf[8];
-
-THwDmaTransfer txfer;
-THwDmaTransfer rxfer;
-
-void test_dma()
-{
-  TRACE("DMA Test\r\n");
-
-  if (!fl_spi.txdma || !fl_spi.rxdma)
-  {
-    TRACE("DMA channels are not assigned !\r\n");
-    return;
-  }
-
-  tdmabuf[0] = 0x9F;
-  tdmabuf[1] = 0x55;
-  tdmabuf[2] = 0x56;
-  tdmabuf[3] = 0x57;
-  tdmabuf[4] = 0x58;
-
-  rdmabuf[0] = 0x55;
-  rdmabuf[1] = 0x56;
-  rdmabuf[2] = 0x57;
-  rdmabuf[3] = 0x58;
-  rdmabuf[4] = 0x59;
-
-  fl_spi.manualcspin->Set0();
-
-  rxfer.dstaddr = &rdmabuf[0];
-  rxfer.bytewidth = 1;
-  rxfer.count = 5;
-  rxfer.flags = 0;
-
-  txfer.srcaddr = &tdmabuf[0];
-  txfer.bytewidth = 1;
-  txfer.count = 5;
-  txfer.flags = 0;
-
-  fl_spi.DmaStartRecv(&rxfer);
-  fl_spi.DmaStartSend(&txfer);
-
-  while (fl_spi.rxdma->Active() || fl_spi.txdma->Active())
-  {
-    // wait for the DMAs
-  }
-
-  delay_us(10);
-
-  fl_spi.manualcspin->Set1();
-
-  unsigned n;
-  TRACE("DMA test result:\r\n");
-  for (n = 0; n < 5; ++n)
-  {
-    TRACE(" %02X", rdmabuf[n]);
-  }
-  TRACE("\r\n");
-}
-
-#endif
-
-#endif
 
 void psram_test_init()
 {
@@ -289,11 +137,13 @@ void psram_test_init()
     return;
   }
 
-  TRACE("SPI PSRAM initialized, ID CODE = %06X, kbyte size = %u\r\n", psram.idcode, (psram.bytesize >> 10));
+  TRACE("PSRAM ID = %08X:%08X, kbyte size = %u\r\n", psram.idcode, psram.idcode2, (psram.bytesize >> 10));
+  TRACE("  max chunk size: %u\r\n", psram.maxchunksize);
   TRACE("Test flash address: 0x%08X\r\n", TEST_START_ADDR);
   TRACE("Test buffer size: %u\r\n", sizeof(databuf));
 
-  //test_simple_rw();
+  psram_test_simple();
+
   //test_spiflash_reliability();
 
   TRACE("SPI PSRAM Test end\r\n");

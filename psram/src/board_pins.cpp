@@ -228,8 +228,14 @@ void board_pins_init()
     // You can select the used DMA chennels with the txdmachannel, rxdmachannel
     fl_qspi.txdmachannel = 5;
     fl_qspi.rxdmachannel = 6;
-    fl_qspi.multi_line_count = 1;
+
+#if 0
+    fl_qspi.multi_line_count = 4;
     fl_qspi.speed = 30000000;
+#else
+    fl_qspi.multi_line_count = 1;
+    fl_qspi.speed = 12000000;
+#endif
     fl_qspi.Init();
 
   #else
