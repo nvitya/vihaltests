@@ -74,11 +74,11 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
+    psram_test_run();
+
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
-
-			psram_test_run();
 
 			for (unsigned n = 0; n < pin_led_count; ++n)
 			{

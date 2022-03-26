@@ -33,7 +33,7 @@ void psram_test_simple()
   unsigned i;
 
   unsigned testsize = sizeof(databuf);
-  //unsigned testsize = 256;
+  //unsigned testsize = 2 * 256;
   unsigned showlen = 256;
   if (showlen > testsize)  showlen = testsize;
 
@@ -149,8 +149,175 @@ void psram_test_init()
   TRACE("SPI PSRAM Test end\r\n");
 }
 
+unsigned g_addr = 0;
+unsigned g_mode = 0;
+unsigned g_phase = 0;
+unsigned g_chunksize = sizeof(databuf);
+unsigned g_errcnt = 0;
+unsigned g_testsize = 1024 * 64;
+unsigned g_starttime = 0;
+uint32_t g_startvalue = 0x12345678;
+uint32_t g_value = 0;
+uint32_t g_waitcnt = 0;
+
 void psram_test_run()
 {
+  if (!psram.initialized)
+  {
+    return;
+  }
+
+  unsigned i;
+
+  if (0 == g_phase)  // filling the memory
+  {
+    if (0 == g_addr)
+    {
+      TRACE("Filling...");
+
+      #if 1
+        // overriding the calculated max chunk size
+        // it seems that the device can handle (in single line mode) any access
+        // and it is not sensible to the TCEM (maximal chip enable time) violation
+
+        //#warning "TCEM violation is active !"
+        psram.maxchunksize = psram.pagesize;  // this is the maximum (internally limited)
+      #endif
+
+      g_testsize = psram.bytesize;
+      g_startvalue += 101;
+      g_value = g_startvalue;
+      g_errcnt = 0;
+      g_starttime = CLOCKCNT;
+    }
+
+    if (g_addr < g_testsize)
+    {
+      register uint32_t * pdst = (uint32_t *)&databuf[0];
+      register uint32_t * pend = pdst + (g_chunksize >> 2);
+      register uint32_t v = g_value;
+      while (pdst < pend)
+      {
+        *pdst++ = v;
+        v = v + 0x01010101;
+      }
+      g_value = v;
+
+      psram.StartWriteMem(&tra, g_addr, &databuf[0], g_chunksize);
+      g_phase = 1;
+    }
+    else
+    {
+      unsigned clkcnt = CLOCKCNT - g_starttime;
+      TRACE("%u us\r\n", clkcnt / (SystemCoreClock / 1000000));
+      g_addr = 0;
+      g_waitcnt = 0;
+
+      #if 1
+        g_phase = 10;  // read back
+      #else
+        g_phase = 5;   // refresh deny
+      #endif
+    }
+  }
+  else if (1 == g_phase) // wait chunk fill complete
+  {
+    psram.Run();
+    if (!tra.completed)
+    {
+      return;
+    }
+
+    g_addr += g_chunksize;
+    g_phase = 0;
+  }
+
+  else if (5 == g_phase)  // repeating a single transaction which should lead to refresh error
+  {
+    if (0 == g_waitcnt)
+    {
+      TRACE("Denying refresh...\r\n");
+    }
+
+    psram.StartReadMem(&tra, 0, &databuf[0], 1024);
+    g_phase = 6;
+  }
+  else if (6 == g_phase)
+  {
+    psram.Run();
+    if (!tra.completed)
+    {
+      return;
+    }
+
+    ++g_waitcnt;
+    if (g_waitcnt > 16 * 1024)
+    {
+      g_phase = 10;  // go to read
+    }
+    else
+    {
+      g_phase = 5;
+    }
+  }
+
+  else if (10 == g_phase)  // reading back
+  {
+    if (0 == g_addr)
+    {
+      TRACE("Reading...");
+      g_starttime = CLOCKCNT;
+      g_value = g_startvalue;
+    }
+
+    if (g_addr < g_testsize)
+    {
+      psram.StartReadMem(&tra, g_addr, &databuf[0], g_chunksize);
+      g_phase = 11;
+    }
+    else
+    {
+      unsigned clkcnt = CLOCKCNT - g_starttime;
+      TRACE("%u us\r\n", clkcnt / (SystemCoreClock / 1000000));
+
+      if (g_errcnt)
+      {
+        TRACE("  errors: %u\r\n", g_errcnt);
+      }
+      else
+      {
+        TRACE("  no errors.\r\n");
+      }
+
+      g_addr = 0;
+      g_phase = 0;
+    }
+  }
+  else if (11 == g_phase)  // wait chunk read complete
+  {
+    psram.Run();
+    if (!tra.completed)
+    {
+      return;
+    }
+
+    // compare
+    register uint32_t * pdst = (uint32_t *)&databuf[0];
+    register uint32_t * pend = pdst + (g_chunksize >> 2);
+    register uint32_t v = g_value;
+    while (pdst < pend)
+    {
+      if (*pdst++ != v)
+      {
+        ++g_errcnt;
+      }
+      v = v + 0x01010101;
+    }
+    g_value = v;
+
+    g_addr += g_chunksize;
+    g_phase = 10;
+  }
 
 }
 

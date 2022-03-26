@@ -59,8 +59,11 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  7, qspipincfg | PINCFG_AF_10);   // IO2
   hwpinctrl.PinSetup(PORTNUM_A,  6, qspipincfg | PINCFG_AF_10);   // IO3
 
-  fl_qspi.speed = 32000000;
-  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = SystemCoreClock / 2;
+  // the QSPI unit in the MCU can not provide proper timing / control in quad mode for this device
+  fl_qspi.multi_line_count = 1;
+  fl_qspi.idleclk_high = false;
+  fl_qspi.datasample_late = false;
   fl_qspi.Init();
 }
 
@@ -229,13 +232,9 @@ void board_pins_init()
     fl_qspi.txdmachannel = 5;
     fl_qspi.rxdmachannel = 6;
 
-#if 0
-    fl_qspi.multi_line_count = 4;
-    fl_qspi.speed = 30000000;
-#else
+    // the QSPI unit in the MCU can not provide proper timing / control in quad mode for this device
     fl_qspi.multi_line_count = 1;
-    fl_qspi.speed = 12000000;
-#endif
+    fl_qspi.speed = SystemCoreClock / 2;
     fl_qspi.Init();
 
   #else
