@@ -57,6 +57,42 @@ void board_pins_init()
   fl_spi.Init(1); // flash
 }
 
+#elif defined(BOARD_MIN_F103)
+
+TGpioPin       fl_spi_cs_pin;
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 13, false);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART1_RX
+  conuart.Init(1);
+
+  // by STM32 the CS must be controlled manually (in single SPI master operation)
+  fl_spi_cs_pin.Assign(PORTNUM_A, 4, false);
+  fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_AF_5);  // SPI1_NSS (CS)
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_AF_5);  // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_AF_5);  // SPI1_MISO (D1)
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_AF_5);  // SPI1_MOSI (D0)
+
+  fl_spi.manualcspin = &fl_spi_cs_pin;
+  fl_spi.speed = SystemCoreClock / 3;
+  fl_spi.Init(1);
+
+  fl_spi_txdma.Init(1, 3, 0);  // dma1/ch3
+  fl_spi_rxdma.Init(1, 2, 0);  // dma1/ch2
+
+  fl_spi.DmaAssign(true,  &fl_spi_txdma);
+  fl_spi.DmaAssign(false, &fl_spi_rxdma);
+}
+
 #elif defined(BOARD_MIBO48_STM32G473)
 
 void board_pins_init()

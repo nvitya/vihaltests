@@ -12,6 +12,4 @@
 
 #include "boards_builtin.h"
 
-#define FL_SPI_USE_DMA      1  // 0 = normal polling, 1 = DMA, (qspi always uses DMA)
-
 #endif /* BOARD_H_ */
