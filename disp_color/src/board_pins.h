@@ -60,6 +60,12 @@ extern TFrameBuffer16  disp;
 
 extern TTftLcd_mm16_F407ZE  disp;
 
+#elif defined(BOARD_DEV_STM32F407VG)
+
+#include "tftlcd_mm16_f407v.h"
+
+extern TTftLcd_mm16_F407V  disp;
+
 #elif defined(BOARD_ARDUINO_DUE)
 
 #include "tftlcd_gp16_due.h"
