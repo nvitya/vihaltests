@@ -18,7 +18,7 @@
 
 #include "board_pins.h"
 
-#if defined(MCU_VRV100)
+#if defined(MCU_VRV100) | defined(MCUF_RP)
   #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
 #else
   #define TEST_START_ADDR  0x000000
@@ -130,6 +130,22 @@ void test_spiflash_reliability()
   }
 
   TRACE("Reliability Test Finished.\r\n");
+}
+
+void test_ro()
+{
+  int i;
+
+  TRACE("Testing Read Only\r\n");
+
+  TRACE("Reading memory...\r\n");
+
+  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], 4); //sizeof(databuf));
+  spiflash.WaitForComplete();
+
+  TRACE("Memory read finished\r\n");
+
+  show_mem(&databuf[0], 4); //readlen);
 }
 
 void test_simple_rw()
@@ -308,8 +324,20 @@ void test_spiflash()
   TRACE("Test flash address: 0x%08X\r\n", TEST_START_ADDR);
   TRACE("Test buffer size: %u\r\n", sizeof(databuf));
 
+#if 0
+  test_ro();
+  test_ro();
+  spiflash.ReadIdCode();
+  test_ro();
+  test_ro();
+#endif
+
+#if 1
 	test_simple_rw();
 	test_spiflash_reliability();
+#else
+	TRACE("SPI FLASH R/W tests are deactivated.\r\n");
+#endif
 
 	TRACE("SPI test end\r\n");
 }

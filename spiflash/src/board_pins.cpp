@@ -427,6 +427,31 @@ void board_pins_init()
   #endif
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  // because of the transfers are unidirectional the same DMA channel can be used here:
+  fl_qspi.txdmachannel = 7;
+  fl_qspi.rxdmachannel = 7;
+  // for read speeds over 24 MHz dual or quad mode is required.
+  // the writes are forced to single line mode (SSS) because the RP does not support SSM mode at write
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 66000000;     // this is preatty high speed, but seems to work
+  fl_qspi.Init();
+}
+
+
 #else
   #error "Define board_pins_init here"
 #endif
