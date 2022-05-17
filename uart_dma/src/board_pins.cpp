@@ -211,6 +211,31 @@ bool TUartComm::InitHw()
   return true;
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  uart.Init(0);
+
+  // the DMA channel (first parameter) can be chosen freely
+  // the Trigger sources (second parameter) can be found in the chapter "2.5.3.1 System DREQ Table"
+  dma_tx.Init(0, DREQ_UART0_TX);  // 20 = UART0_TX
+  dma_rx.Init(1, DREQ_UART0_RX);  // 21 = UART0_RX
+
+  return true;
+}
+
 
 #else
   #error "Define board_pins_init here"
