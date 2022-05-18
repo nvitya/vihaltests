@@ -304,6 +304,43 @@ void board_pins_init()
   #endif
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  unsigned pinflags = PINCFG_AF_1 | PINCFG_SPEED_FAST | PINCFG_DRIVE_STRONG;
+
+  hwpinctrl.PinSetup(0, 3, pinflags);  // SPI0_TX
+  hwpinctrl.PinSetup(0, 4, pinflags);  // SPI0_RX
+  //hwpinctrl.PinSetup(0, 5, pinflags);  // SPI0_CS
+  hwpinctrl.PinSetup(0, 6, pinflags);  // SPI0_CLK
+
+  fl_spi_cs_pin.Assign(0, 5, false);
+  fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  fl_spi.manualcspin = &fl_spi_cs_pin;
+  //fl_spi.datasample_late = true;
+  fl_spi.speed = 33000000;
+  fl_spi.Init(0);
+
+  fl_spi_txdma.Init(2, DREQ_SPI0_TX);
+  fl_spi_rxdma.Init(3, DREQ_SPI0_RX);
+
+  fl_spi.DmaAssign(true,  &fl_spi_txdma);
+  fl_spi.DmaAssign(false, &fl_spi_rxdma);
+}
+
+
 #else
   #error "Define board_pins_init here"
 #endif
