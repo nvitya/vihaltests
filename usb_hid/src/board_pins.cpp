@@ -342,6 +342,39 @@ void board_pins_init()
   // dedicated HS USB pins, no pin setup required
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  // dedicated USB pins, no pin setup required
+
+  // to debug the USB clock lead it out:
+  hwpinctrl.PinSetup(0, 21, PINCFG_OUTPUT | PINCFG_AF_8); // CLOCK GPOUT0
+
+  clock_hw_t * pclk_gpout0 = &clocks_hw->clk[clk_gpout0];
+  pclk_gpout0->ctrl &= ~(1 << 11);  // disable
+  pclk_gpout0->ctrl = (0
+    | (0  << 20)  // NUDGE
+    | (0  << 16)  // PHASE(2)
+    | (0  << 12)  // DC50
+    | (0  << 11)  // ENABLE
+    | (0  << 10)  // KILL
+    | (7  <<  5)  // AUXSRC(4); 0 = sys, 7 = USB CLOCK
+  );
+  pclk_gpout0->div = (48 << 8);
+  pclk_gpout0->ctrl |= (1 << 11); // enable
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
