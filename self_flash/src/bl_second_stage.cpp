@@ -78,8 +78,9 @@ static void flash_read(unsigned flashaddr, uint8_t * dst, unsigned len)
   ssi->ssienr = 0; // ...
 }
 
+typedef void (* TEntryFunc)(void);
 
-extern "C" __attribute__((section(".bl_second_stage_start"),naked,noreturn,used))
+extern "C" __attribute__((section(".bl_second_stage_start"),noreturn,used))
 void bl_second_stage_start()
 {
   TAppHeader apph;
@@ -93,6 +94,9 @@ void bl_second_stage_start()
   if (APP_HEADER_SIGNATURE == apph.signature)
   {
     flash_read(0x002000, (uint8_t *)apph.copy_addr, apph.copy_length);
+
+    TEntryFunc entryfunc = TEntryFunc(apph.entry_point);
+    (*entryfunc)();
   }
 
   // stay here forever...
