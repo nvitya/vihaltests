@@ -28,7 +28,7 @@
 #include "board_pins.h"
 #include "traces.h"
 
-#include "self_flashing.h"
+#include "spi_self_flashing.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
