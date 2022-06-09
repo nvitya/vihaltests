@@ -129,6 +129,34 @@ void adc_setup()
   adc_ch_y = 1;
 }
 
+#elif defined(BOARD_MIBO64_ATSAME5X)
+
+void adc_setup()
+{
+  hwpinctrl.PinSetup(PORTNUM_A, 2, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC0_AIN[0]
+  hwpinctrl.PinSetup(PORTNUM_A, 3, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC0_AIN[1]
+
+  adc_num = 0;
+  adc_ch_x = 0;
+  adc_ch_y = 1;
+}
+
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void adc_setup()
+{
+  hwpinctrl.PinSetup(0, 26, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC0
+  hwpinctrl.PinSetup(0, 27, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC1
+  hwpinctrl.PinSetup(0, 28, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC2
+  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT | PINCFG_ANALOGUE); // ADC3 (internal, VCC measurement)
+
+  adc_num = 0;
+  adc_ch_x = 0;
+  adc_ch_y = 1;
+}
+
 #else
   #error "ADC board specific setup is missing"
 #endif
@@ -251,7 +279,7 @@ void adc_test_freerun()
       uint16_t advx = (adc.ChValue(adc_ch_x) >> adc_shift);
       uint16_t advy = (adc.ChValue(adc_ch_y) >> adc_shift);
 
-      TRACE("\rx: %5u, y: %5u", advx, advy);
+      TRACE("\rx: %5u, y: %5u   ", advx, advy);
 
       // and finally do the usual led blinking
 
@@ -260,8 +288,7 @@ void adc_test_freerun()
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-      board_show_hexnum(hbcounter);
-
+      ++hbcounter;
       t0 = t1;
     }
   }
