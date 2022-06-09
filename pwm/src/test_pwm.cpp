@@ -105,6 +105,21 @@ void pwm_setup()
   pwm[1].Init(0, 1);
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void pwm_setup()
+{
+  hwpinctrl.PinSetup(0, 14,  PINCFG_OUTPUT | PINCFG_AF_4);  // PWM7_A
+  hwpinctrl.PinSetup(0, 15,  PINCFG_OUTPUT | PINCFG_AF_4);  // PWM7_B
+
+  //pwm[0].inverted = true;
+  pwm[0].Init(0, 7, 0);
+  //pwm[1].inverted = true;
+  pwm[1].Init(0, 7, 1);
+}
+
 #else
   #error "Board specific PWM setup is missing!"
 #endif

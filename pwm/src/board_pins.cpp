@@ -1,8 +1,7 @@
 /*
- *  file:     board_pins.cpp (intflash)
- *  brief:    Internal Flash Write Test Board pins (just leds and uart console)
- *  version:  1.00
- *  date:     2021-11-07
+ *  file:     board_pins.cpp (pwm)
+ *  brief:    PWM Test board specific initializations
+ *  created:  2021-11-07
  *  authors:  nvitya
 */
 
@@ -414,6 +413,21 @@ void board_pins_init()
 
   hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
   hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
+  conuart.Init(0);
+}
+
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
   conuart.Init(0);
 }
 
