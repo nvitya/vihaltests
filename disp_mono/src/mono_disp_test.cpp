@@ -65,13 +65,13 @@ void TMonoDisplayTest::InitTest()
 {
   disp.FillScreen(0);
 
-  if (0 == testid)
-  {
-    test0_init();
-  }
-  else if (1 == testid)
+  if (1 == testid)
   {
     test1_init();
+  }
+  else
+  {
+    test0_init();
   }
 
   last_update = CLOCKCNT;
@@ -95,7 +95,10 @@ void TMonoDisplayTest::Run()
     last_refresh = curms;
     ++framecnt;
 
-    textscreen.Run(); // draw the changed characters to the screen buffer
+    if (1 == testid)
+    {
+      textscreen.Run(); // draw the changed characters to the screen buffer
+    }
 
     refreshing = true;
   }

@@ -231,6 +231,39 @@ void board_pins_init()
   init_display();
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  // I2C0
+  hwpinctrl.PinSetup(0, 16, PINCFG_AF_3 | PINCFG_PULLUP); // I2C0_SDA
+  hwpinctrl.PinSetup(0, 17, PINCFG_AF_3 | PINCFG_PULLUP); // I2C0_SCL
+  //i2c.speed = 400000;
+  i2c.speed = 1000000;
+  i2c.Init(0);
+
+  #if 0
+    i2c_txdma.Init(2, DREQ_I2C0_TX);
+    i2c_rxdma.Init(3, DREQ_I2C0_RX);
+
+    i2c.DmaAssign(true,  &i2c_txdma);
+    i2c.DmaAssign(false, &i2c_rxdma);
+  #endif
+
+  init_display();
+}
+
+
 #else
   #error "Define board_pins_init here"
 #endif
