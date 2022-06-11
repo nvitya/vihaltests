@@ -24,6 +24,10 @@ extern THwUart              usbuart;
 extern THwDmaChannel        usbuart_dma_tx;
 extern THwDmaChannel        usbuart_dma_rx;
 
+#if SPI_SELF_FLASHING
+  #include "spiflash.h"
+  extern TSpiFlash  spiflash;
+#endif
 
 void board_pins_init();
 

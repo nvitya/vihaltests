@@ -26,6 +26,10 @@
 #include "board_pins.h"
 #include "usb_cdc_echo.h"
 
+#if SPI_SELF_FLASHING
+  #include "spi_self_flashing.h"
+#endif
+
 #include "traces.h"
 
 volatile unsigned hbcounter = 0;
@@ -80,6 +84,22 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
   TRACE_FLUSH();
+
+  #if SPI_SELF_FLASHING
+    if (spiflash.initialized)
+    {
+      TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
+      if (self_flashing)
+      {
+        spi_self_flashing(&spiflash);
+      }
+    }
+    else
+    {
+      TRACE("Error initializing SPI Flash !\r\n");
+    }
+    TRACE_FLUSH();
+  #endif
 
   mcu_enable_interrupts();
 
