@@ -75,6 +75,23 @@ void setup_board()
 
 #endif
 
+// RP
+
+#if defined(BOARD_RPI_PICO)
+
+TGpioPin  pin_led1(0, 25, false);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+}
+
+#endif
+
 #ifndef LED_COUNT
   #define LED_COUNT 1
 #endif
