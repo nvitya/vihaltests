@@ -373,7 +373,7 @@ void board_pins_init()
   hwpinctrl.PinSetup(0, 17, PINCFG_AF_3 | PINCFG_PULLUP); // I2C0_SCL
   i2c.Init(0);
 
-  #if 0
+  #if 1
     i2c_txdma.Init(2, DREQ_I2C0_TX);
     i2c_rxdma.Init(3, DREQ_I2C0_RX);
 
