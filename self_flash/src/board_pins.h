@@ -13,7 +13,6 @@
 #include "hwuart.h"
 #include "hwspi.h"
 #include "hwqspi.h"
-#include "spiflash.h"
 
 #define MAX_LEDS  4
 
@@ -25,7 +24,10 @@ extern THwUart   conuart;  // console uart
 extern THwSpi    fl_spi;
 extern THwQspi   fl_qspi;
 
-extern TSpiFlash  spiflash;
+#if SPI_SELF_FLASHING
+  #include "spiflash.h"
+  extern TSpiFlash  spiflash;
+#endif
 
 void board_pins_init();
 
