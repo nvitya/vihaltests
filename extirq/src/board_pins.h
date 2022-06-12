@@ -1,8 +1,7 @@
 /*
  *  file:     board_pins.h (spiflash)
- *  brief:    SPI Flash Test Board pins
- *  version:  1.00
- *  date:     2021-10-29
+ *  brief:    External Pin IRQ Test Board pins
+ *  created:  2021-10-29
  *  authors:  nvitya
 */
 
@@ -20,12 +19,8 @@ extern unsigned   pin_led_count;
 extern THwUart    conuart;  // console uart
 
 #if SPI_SELF_FLASHING
-
-  #include "hwspi.h"
   #include "spiflash.h"
-  extern THwSpi     fl_spi; // for the VRV100 self-flashing
   extern TSpiFlash  spiflash;
-
 #endif
 
 void board_pins_init();

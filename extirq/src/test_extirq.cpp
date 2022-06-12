@@ -148,13 +148,36 @@ void init_extirq_pins()
   #define EXTINT_IRQ_HANDLER  IRQ_Handler_12  // overrides the weak definition in vectors.cpp
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+// for this test short the GPIO16 and GPIO17
+
+TGpioPin  pin_extirq( 0, 17, false);
+TGpioPin  pin_irqctrl(0, 16, false);
+
+void init_extirq_pins()
+{
+  pin_irqctrl.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+  pin_extirq.Setup(PINCFG_INPUT);
+
+  extirq.Init(pin_extirq.portnum, pin_extirq.pinnum, HWEXTIRQ_RISING);
+
+  // The RP2040 has one IRQ for all the GPIO pins
+  // Search the IO_IRQ_BANK0 / IO_BANK0_IRQn interrupt number from the MCU header definition
+  #define EXTINT_IRQ_NUM                  13
+  #define EXTINT_IRQ_HANDLER  IRQ_Handler_13
+}
+
 #else
   #error "External IRQ board specific setup is missing"
 #endif
 
 
-
 #if defined(EXTINT_IRQ_HANDLER)
+
+#warning "latency measurement is unprecise because the time base is running at 12 MHz"
 
 extern "C" void EXTINT_IRQ_HANDLER()
 {

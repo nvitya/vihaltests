@@ -417,6 +417,41 @@ void board_pins_init()
   conuart.Init(0);
 }
 
+// RP
+
+#elif defined(BOARD_RPI_PICO)
+
+#if SPI_SELF_FLASHING
+  THwQspi    fl_qspi;
+  TSpiFlash  spiflash;
+#endif
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  #if SPI_SELF_FLASHING
+    // because of the transfers are unidirectional the same DMA channel can be used here:
+    fl_qspi.txdmachannel = 7;
+    fl_qspi.rxdmachannel = 7;
+    // for read speeds over 24 MHz dual or quad mode is required.
+    // the writes are forced to single line mode (SSS) because the RP does not support SSM mode at write
+    fl_qspi.multi_line_count = 4;
+    fl_qspi.speed = 32000000;
+    fl_qspi.Init();
+
+    spiflash.qspi = &fl_qspi;
+    spiflash.has4kerase = true;
+    spiflash.Init();
+  #endif
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
