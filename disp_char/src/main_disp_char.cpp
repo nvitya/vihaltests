@@ -19,6 +19,9 @@
 #include "mscounter.h"
 #include "char_disp_test.h"
 
+#if SPI_SELF_FLASHING
+  #include "spi_self_flashing.h"
+#endif
 
 volatile unsigned hbcounter = 0;
 
@@ -53,6 +56,21 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("VIHAL Character Display Test\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
+
+  #if SPI_SELF_FLASHING
+    if (spiflash.initialized)
+    {
+      TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
+      if (self_flashing)
+      {
+        spi_self_flashing(&spiflash);
+      }
+    }
+    else
+    {
+      TRACE("Error initializing SPI Flash !\r\n");
+    }
+  #endif
 
   mcu_enable_interrupts();
 

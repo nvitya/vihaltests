@@ -25,6 +25,11 @@ extern THwUart    conuart;  // console uart
 
 extern THwI2c     i2c;
 
+#if SPI_SELF_FLASHING
+  #include "spiflash.h"
+  extern TSpiFlash  spiflash;
+#endif
+
 void board_pins_init();
 
 #if defined(DISP_16X2_I2C)
