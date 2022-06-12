@@ -23,6 +23,11 @@ extern unsigned   pin_led_count;
 
 extern THwUart    conuart;  // console uart
 
+#if SPI_SELF_FLASHING
+  #include "spiflash.h"
+  extern TSpiFlash  spiflash;
+#endif
+
 void board_pins_init();
 
 #if 0 == DISP_SEL

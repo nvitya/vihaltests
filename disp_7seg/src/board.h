@@ -10,7 +10,7 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-#define DISP_SEL    3
+#define DISP_SEL    0
 // 0 = LED & KEY module with TM1638 controller (8 digits + 8 leds + 8 keys)
 // 1 = Simple 4-digit Clock Display with TM1637 controller
 // 2 = 8-digit display with MAX7219
