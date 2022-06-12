@@ -19,6 +19,11 @@ extern unsigned   pin_led_count;
 
 extern THwUart    conuart;  // console uart
 
+#if SPI_SELF_FLASHING
+  #include "spiflash.h"
+  extern TSpiFlash  spiflash;
+#endif
+
 void board_pins_init();
 
 #if 0
@@ -32,7 +37,8 @@ void board_pins_init();
       || defined(BOARD_MIN_F411) \
       || defined(BOARD_MIBO48_STM32F303) \
       || defined(BOARD_MIBO64_STM32F405) \
-      || defined(BOARD_MIBO48_STM32G473)
+      || defined(BOARD_MIBO48_STM32G473) \
+      || defined(BOARD_RPI_PICO)
 
 #define DISP_SPI
 
