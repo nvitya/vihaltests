@@ -43,6 +43,29 @@ void board_pins_init_leds()
 // Risc-V (RV32I)
 //-------------------------------------------------------------------------------
 
+#elif defined(BOARD_LONGAN_NANO)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_C, 13, true);
+  pin_led[1].Assign(PORTNUM_A,  1, true);
+  pin_led[2].Assign(PORTNUM_A,  2, true);
+  board_pins_init_leds();
+}
+
+bool TUartComm::InitHw()
+{
+  hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_0);
+  hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_0);
+  uart.Init(0); // USART0
+
+  dma_tx.Init(0, 3);  // dma0, ch3 = USART3_TX
+  dma_rx.Init(0, 4);  // dma0, ch4 = USART3_RX
+
+  return true;
+}
+
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------

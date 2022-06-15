@@ -66,6 +66,7 @@ bool TUartComm::Init()
   // Send some wellcome message
   AddTxMessage("\r\n-------------------------------\r\n");
   AddTxMessage("VIHAL UART DMA DEMO\r\n");
+  AddTxMessage("BOARD: %s\r\n", BOARD_NAME);
   AddTxMessage("Enter some text (not echoed as you type) and press enter!\r\n");
   StartSendTxBuffer(); // send it with DMA now
 
