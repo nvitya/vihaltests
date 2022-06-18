@@ -1,10 +1,9 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
-// created:  2021-10-03
+// file:     main_irq_timer.cpp
+// brief:    VIHAL Timer IRQ Test
+// created:  2022-06-18
 // authors:  nvitya
 
 #include "platform.h"
-//#include "hwclkctrl.h"
 #include "cppinit.h"
 #include "clockcnt.h"
 
@@ -40,7 +39,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   #else
     //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
-    //if (!hwclk_init(EXTERNAL_XTAL_HZ, 32000000))  // special for STM32F3, STM32F1
+    //if (!hwclk_init(0, 64000000))  // special for STM32F3, STM32F1
     if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     {
       while (1)
@@ -60,26 +59,26 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	board_pins_init();
 
 	TRACE("\r\n--------------------------------------\r\n");
-	TRACE("Hello From VIHAL !\r\n");
+	TRACE("VIHAL Timer IRQ Test\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-#if SPI_SELF_FLASHING
+  #if SPI_SELF_FLASHING
 
-  if (spiflash.initialized)
-  {
-    TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
-  }
-  else
-  {
-    TRACE("Error initializing SPI Flash !\r\n");
-  }
+    if (spiflash.initialized)
+    {
+      TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
+    }
+    else
+    {
+      TRACE("Error initializing SPI Flash !\r\n");
+    }
 
-  if (self_flashing)
-  {
-    spi_self_flashing(&spiflash);
-  }
-#endif
+    if (self_flashing)
+    {
+      spi_self_flashing(&spiflash);
+    }
+  #endif
 
 	mcu_interrupts_enable();
 
@@ -94,15 +93,11 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
-		char c;
-		if (conuart.TryRecvChar(&c))
-		{
-		  conuart.printf("you pressed \"%c\"\r\n", c);
-		}
-
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
+
+			TRACE("g_mscounter=%9u, CLOCKCNT=%10u\r\n", g_mscounter, t1);
 
       for (unsigned n = 0; n < pin_led_count; ++n)
       {
@@ -110,8 +105,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
       }
 
       board_show_hexnum(hbcounter);
-
-			TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
 			t0 = t1;
 
