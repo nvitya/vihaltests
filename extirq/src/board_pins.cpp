@@ -1,8 +1,7 @@
 /*
- *  file:     board_pins.cpp (intflash)
- *  brief:    Internal Flash Write Test Board pins (just leds and uart console)
- *  version:  1.00
- *  date:     2021-11-07
+ *  file:     board_pins.cpp (extirq)
+ *  brief:    External IRQ Test Board pins (just leds and uart console)
+ *  created:  2021-11-07
  *  authors:  nvitya
 */
 
