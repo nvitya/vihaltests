@@ -58,7 +58,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	TRACE("Starting main cycle...\r\n");
 
-	mcu_enable_interrupts();
+	mcu_interrupts_enable();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;

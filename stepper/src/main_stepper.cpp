@@ -20,7 +20,6 @@ volatile unsigned hbcounter = 0;
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
-  mcu_disable_interrupts();
 
   // Set the interrupt vector table offset, so that the interrupts and exceptions work
   mcu_init_vector_table();
@@ -61,7 +60,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-	mcu_enable_interrupts();
+	mcu_interrupts_enable();
 
 	test_stepper_init();
 
