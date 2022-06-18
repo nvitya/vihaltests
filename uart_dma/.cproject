@@ -1024,6 +1024,10 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="BOARD_MIN_F401"/>
+		<configuration configurationName="BOARD_LONGAN_NANO"/>
+		<configuration configurationName="BOARD_MIN_F103"/>
+		<configuration configurationName="BOARD_RPI_PICO"/>
 		<configuration configurationName="BOARD_XPLAINED_SAME70"/>
 		<configuration configurationName="BOARD_NUCLEO_F746">
 			<resource resourceType="PROJECT" workspacePath="/uart_dma"/>
@@ -1086,4 +1090,5 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
