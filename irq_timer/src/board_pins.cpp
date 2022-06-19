@@ -98,10 +98,12 @@ void board_show_hexnum(unsigned ahexnum)
   TSpiFlash  spiflash;
 #endif
 
+#include "traces.h"
 
 extern "C" void IRQ_Handler_23() // Machine Timer Interrupt
 {
   ++g_mscounter;
+  TIMER->INTFLAG = 1;  // acknowledge interrupt, otherwise continously firing
 }
 
 void board_pins_init()
@@ -125,7 +127,18 @@ void board_pins_init()
 
   #endif
 
-  //cpu_csr_write(CSR_M, data)
+  // Timer setup
+
+  TIMER->CH[0].LIMIT = SystemCoreClock / 1000;  // only CH0 is 32-bit, the rest is 16-bit!
+  TIMER->CH[0].CTRL = (0
+    | (1  <<  0)  // ICLK: increment on clock
+    | (0  <<  1)  // IPRE: increment on prescaler overflow
+    | (0  <<  2)  // IEXT: increment on external
+    | (1  << 16)  // CLOVF: clear on overflow
+    | (0  << 17)  // CLEXT: clear on external
+  );
+
+  TIMER->INTMASK = 1; // enable CH0 interrupt
 }
 
 //-------------------------------------------------------------------------------
