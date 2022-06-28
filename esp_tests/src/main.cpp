@@ -43,7 +43,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 #else
 
-	//if (!hwclk_init(EXTERNAL_XTAL_HZ, 20000000))
+	//if (!hwclk_init(EXTERNAL_XTAL_HZ, 160000000))
 	if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
 	{
 	  while (1)

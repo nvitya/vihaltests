@@ -78,11 +78,6 @@ void board_pins_init()
   pin_led_count = 1;
   pin_led[0].Assign(0, 2, false);  // GPIO2 = on board led
 
-  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
-  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  hwpinctrl.GpioSetup(0, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
-
   board_pins_init_leds();
 }
 
