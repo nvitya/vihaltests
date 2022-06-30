@@ -10,6 +10,9 @@
 #define SRC_BOARD_PINS_H_
 
 #include "hwpins.h"
+#include "hwuart.h"
+
+extern THwUart    conuart;  // console uart
 
 #define MAX_LEDS  4
 

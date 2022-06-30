@@ -10,22 +10,7 @@
 
 #include "hwpins.h"
 #include "hwuart.h"
-
-THwUart  uart;
-
-void uart_init()
-{
-  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
-  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
-
-  uart.Init(0);
-}
-
-extern "C" int __getreent()
-{
-  return 0;
-}
-
+#include "traces.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -66,6 +51,12 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	// go on with the hardware initializations (board_pins.cpp)
 	board_pins_init();
 
+  TRACE("\r\n--------------------------------------\r\n");
+  TRACE("Hello From VIHAL !\r\n");
+  TRACE("Board: %s\r\n", BOARD_NAME);
+  TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
+
+
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
 
@@ -78,21 +69,27 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
-		if (t1-t0 > hbclocks)
-		{
-			++hbcounter;
+    char c;
+    if (conuart.TryRecvChar(&c))
+    {
+      conuart.printf("you pressed \"%c\"\r\n", c);
+    }
 
-			uart.TrySendChar('A');
+    if (t1-t0 > hbclocks)
+    {
+      ++hbcounter;
 
       for (unsigned n = 0; n < pin_led_count; ++n)
       {
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-			t0 = t1;
+      TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
-			if (hbcounter > 20)  hbclocks = SystemCoreClock / 2;  // slow down to 0.5 s
-		}
+      t0 = t1;
+
+      if (hbcounter > 20)  hbclocks = SystemCoreClock / 2;  // slow down to 0.5 s
+    }
 	}
 }
 
