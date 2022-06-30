@@ -54,15 +54,18 @@ void setup_board()
 
 #elif defined(BOARD_NODEMCU_ESP32C3)
 
-void board_pins_init()
-{
-  pin_led_count = 3;
-  pin_led[0].Assign(0, 3, false);
-  pin_led[1].Assign(0, 4, false);
-  pin_led[2].Assign(0, 5, false);
-  board_pins_init_leds();
+TGpioPin  pin_led1(0, 3, false);
+//TGpioPin  pin_led2(0, 4, false);
+//TGpioPin  pin_led3(0, 5, false);
 
-  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+#define LED_COUNT 1
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
   hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
   hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
   conuart.Init(0);
