@@ -9,6 +9,8 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
+#define PRINTF_SUPPORT_FULL
+
 #include "boards_builtin.h"
 
 #endif /* BOARD_H_ */

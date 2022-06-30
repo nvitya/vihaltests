@@ -1,5 +1,5 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
+// file:     main.cpp (coremark)
+// brief:    VIHAL Coremark Main
 // created:  2021-10-03
 // authors:  nvitya
 
@@ -13,6 +13,10 @@
 #include "traces.h"
 
 THwUart   conuart;  // console uart
+
+//-------------------------------------------------------------------------------
+// RISC-V
+//-------------------------------------------------------------------------------
 
 #if defined(BOARD_VRV1_103) || defined(BOARD_VRV1_104) || defined(BOARD_VRV1_241) \
     || defined(BOARD_VRV1_403) || defined(BOARD_VRV1_441)|| defined(BOARD_VRV1_443) || defined(BOARD_VRV1_543)
@@ -29,9 +33,7 @@ void setup_board()
 	conuart.Init(1); // UART1
 }
 
-#endif
-
-#if defined(BOARD_LONGAN_NANO)
+#elif defined(BOARD_LONGAN_NANO)
 
 TGpioPin  pin_led1(PORTNUM_C, 13, true);
 TGpioPin  pin_led2(PORTNUM_A,  1, true);
@@ -50,9 +52,44 @@ void setup_board()
   conuart.Init(0); // USART0
 }
 
-#endif
+#elif defined(BOARD_NODEMCU_ESP32C3)
 
-#if defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(0, 3, false);
+  pin_led[1].Assign(0, 4, false);
+  pin_led[2].Assign(0, 5, false);
+  board_pins_init_leds();
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+}
+
+//-------------------------------------------------------------------------------
+// Xtensa (ESP32)
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_ESP32_DEVKIT)
+
+TGpioPin  pin_led1(0, 2, false);  // GPIO2 = on board led
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+}
+
+//-------------------------------------------------------------------------------
+// ARM Cortex-M
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
 
 TGpioPin  pin_led1(1, 0, false);
 TGpioPin  pin_led2(1, 7, false);
@@ -73,11 +110,9 @@ void setup_board()
   conuart.Init(3); // USART3
 }
 
-#endif
-
 // RP
 
-#if defined(BOARD_RPI_PICO)
+#elif defined(BOARD_RPI_PICO)
 
 TGpioPin  pin_led1(0, 25, false);
 
@@ -89,6 +124,10 @@ void setup_board()
   hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
   conuart.Init(0);
 }
+
+#else
+
+#error "unhandled board"
 
 #endif
 
@@ -103,6 +142,19 @@ extern "C" void uart_send_char(char c)
     conuart.SendChar('\r');
   }
   conuart.SendChar(c);
+}
+
+extern "C" void portable_calculate(unsigned total_ticks, unsigned iterations)
+{
+  TRACE("\r\n");
+  TRACE("Precise coremark values:\r\n");
+  unsigned t_ms = (total_ticks / (SystemCoreClock / 1000));
+  unsigned cm_x100 = (100 * 1000 * iterations) / t_ms;
+  unsigned mhz = (SystemCoreClock / 1000000);
+  TRACE("  total millisecs     = %u\r\n", t_ms);
+  TRACE("  CM (Iterations / s) = %1.2f\r\n", float(cm_x100) / 100.0);
+  TRACE("  CM / MHz            = %1.2f\r\n", float(cm_x100) / float(100 * mhz));
+  TRACE("\r\n");
 }
 
 // CoreMark Main:
@@ -169,6 +221,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   pin_led1.Set1();
 	main(0, nullptr);
+
+	//TRACE("WARNING: for precise coremark value take the \"Total Ticks\" divide it with %u
 
 	TRACE("\r\nStarting main cycle...\r\n");
 

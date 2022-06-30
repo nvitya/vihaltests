@@ -438,5 +438,7 @@ for (i = 0; i < MULTITHREAD; i++)
     /* And last call any target specific code for finalizing */
     portable_fini(&(results[0].port));
 
+    portable_calculate(total_time, default_num_contexts * results[0].iterations);
+
     return MAIN_RETURN_VAL;
 }
