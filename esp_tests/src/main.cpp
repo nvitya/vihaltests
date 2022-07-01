@@ -10,7 +10,49 @@
 
 #include "hwpins.h"
 #include "hwuart.h"
+#include "hwspi.h"
 #include "traces.h"
+
+THwSpi    spi;
+TGpioPin  pin_spi_cs;
+
+uint8_t txbuf[256];
+uint8_t rxbuf[256];
+
+void spi_prepare()
+{
+  pin_spi_cs.Assign(0, 3, false);
+  pin_spi_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
+  //hwpinctrl.PadSetup(PAD_GPIO3, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
+  hwpinctrl.PadSetup(PAD_GPIO2, FSPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_2);         // MISO, AF_2 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO7, FSPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_2);         // MOSI, AF_2 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO6, FSPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_2);         // CLK,  AF_2 = direct routing
+
+  spi.manualcspin = &pin_spi_cs;
+  spi.speed = 1000000;
+  spi.Init(2);
+}
+
+void spi_test()
+{
+  unsigned n;
+
+  TRACE("Testing SPI...\r\n");
+
+  spi_prepare();
+
+  for (n = 0; n < sizeof(txbuf); ++n)
+  {
+    txbuf[n] = 0xA0 + n;
+    rxbuf[n] = 0x55;
+  }
+
+  spi.StartTransfer(0, 0, 0, 256, &txbuf[0], &rxbuf[0]);
+  spi.WaitFinish();
+
+  TRACE("Spi finished.\r\n");
+}
+
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -52,10 +94,11 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	board_pins_init();
 
   TRACE("\r\n--------------------------------------\r\n");
-  TRACE("Hello From VIHAL !\r\n");
+  TRACE("ESP Tests\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
+  spi_test();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
@@ -84,7 +127,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-      TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
+      //TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
       t0 = t1;
 
