@@ -15,9 +15,12 @@
 
 THwSpi    spi;
 TGpioPin  pin_spi_cs;
+TGpioPin  pin_spifl_cs;
 
 uint8_t txbuf[256];
 uint8_t rxbuf[256];
+
+#if defined(BOARD_NODEMCU_ESP32C3)
 
 void spi_prepare()
 {
@@ -32,6 +35,58 @@ void spi_prepare()
   spi.speed = 1000000;
   spi.Init(2);
 }
+
+void spiflash_prepare()
+{
+  pin_spifl_cs.Assign(0, 14, false);
+  pin_spifl_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
+  //hwpinctrl.PadSetup(PAD_GPIO14, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
+  hwpinctrl.PadSetup(PAD_GPIO14, SPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO17, SPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_0);         // MISO, AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO16, SPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_0);         // MOSI, AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO15, SPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CLK,  AF_0 = direct routing
+
+  spi.manualcspin = &pin_spifl_cs;
+  spi.speed = 2000000;
+  //spi.Init(0);
+  spi.Init(1);
+}
+
+#elif defined(BOARD_ESP32_DEVKIT)
+
+void spi_prepare()
+{
+  pin_spi_cs.Assign(0, 5, false);
+  pin_spi_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
+  //hwpinctrl.PadSetup(PAD_GPIO5, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
+  hwpinctrl.PadSetup(PAD_GPIO19, VSPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_1);         // MISO, AF_1 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO23, VSPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_1);         // MOSI, AF_1 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO18, VSPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_1);         // CLK,  AF_1 = direct routing
+
+  spi.manualcspin = &pin_spi_cs;
+  spi.speed = 1000000;
+  spi.Init(3); // VSPI = SPI3
+}
+
+void spiflash_prepare()
+{
+  pin_spifl_cs.Assign(0, 11, false);
+  pin_spifl_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
+
+  //hwpinctrl.PadSetup(PAD_GPIO11, SPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_1 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO7,  SPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_1);         // MISO, AF_1 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO8,  SPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_1);         // MOSI, AF_1 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO6,  SPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_1);         // CLK,  AF_1 = direct routing
+
+  spi.manualcspin = &pin_spifl_cs;
+  spi.speed = 1000000;
+  spi.Init(1);  // 1 = SPI
+}
+
+
+#else
+  #error "unhandled board."
+#endif
 
 void spi_test()
 {
@@ -54,6 +109,28 @@ void spi_test()
 }
 
 
+void spiflash_test()
+{
+  //unsigned n;
+
+  TRACE("Testing SPI FLASH...\r\n");
+
+  spiflash_prepare();
+
+  txbuf[0] = 0x9F;
+  txbuf[1] = 0x00;
+  txbuf[2] = 0x00;
+  txbuf[3] = 0x00;
+
+  spi.StartTransfer(0, 0, 0, 4, &txbuf[0], &rxbuf[0]);
+  spi.WaitFinish();
+
+  TRACE("SPI RX = %02X %02X %02X %02X\r\n", rxbuf[0], rxbuf[1], rxbuf[2], rxbuf[3]);
+
+  TRACE("SPI Flash finished.\r\n");
+}
+
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
 	// after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -70,7 +147,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 #else
 
-	//if (!hwclk_init(EXTERNAL_XTAL_HZ, 160000000))
+	//if (!hwclk_init(EXTERNAL_XTAL_HZ, 40000000))
 	if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
 	{
 	  while (1)
@@ -99,6 +176,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
   spi_test();
+  //spiflash_test();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
