@@ -69,8 +69,9 @@ void board_pins_init()
   fl_spi_cs_pin.Assign(PORTNUM_A, 4, false);
   fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
   //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_AF_0);  // SPI0_NSS (CS)
+  // PINCFG_OUTPUT must be set for the AF outputs too!
   hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_0);  // SPI0_SCK
-  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_INPUT | PINCFG_AF_0);   // SPI0_MISO (D1)
+  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_INPUT  | PINCFG_AF_0);  // SPI0_MISO (D1)
   hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_0);  // SPI0_MOSI (D0)
 
   fl_spi.manualcspin = &fl_spi_cs_pin;

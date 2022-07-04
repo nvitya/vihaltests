@@ -50,6 +50,11 @@ void init_spi_display()
   disp.mirrorx = true;
   disp.Init(LCD_CTRL_ILI9341, 240, 320);
   disp.SetRotation(1);
+#elif 160 == SPI_DISPLAY_WIDTH
+  disp.mirrorx = false;
+  disp.Init(LCD_CTRL_ST7735, 80, 160);
+  //disp.Init(LCD_CTRL_ST7735, 80, 80);
+  disp.SetRotation(1);
 #else
   //lcd.mirrorx = true;
   disp.Init(LCD_CTRL_ST7735, 128, 160);
@@ -64,6 +69,48 @@ void init_spi_display()
 //----------------------------------------------------------------------------------------------------
 // SPI DISPLAYS with SMALLER MCUs
 //----------------------------------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------------
+// Risc-V (RV32I)
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_LONGAN_NANO)
+
+TGpioPin       fl_spi_cs_pin;
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_C, 13, true);
+  pin_led[1].Assign(PORTNUM_A,  1, true);
+  pin_led[2].Assign(PORTNUM_A,  2, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_0);
+  hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_0);
+  conuart.Init(0); // USART0
+
+  // LCD control
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_0); // SPI1_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_0); // SPI1_MOSI
+
+  disp.pin_reset.Assign(PORTNUM_B, 1, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B1: RESET
+
+  disp.pin_cs.Assign(PORTNUM_B, 2, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  disp.pin_cd.Assign(PORTNUM_B, 0, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SPI1
+  disp.spi.speed = 4000000;
+  disp.spi.Init(0);
+
+  init_spi_display();
+}
 
 #elif defined(BOARD_MIN_F103)
 

@@ -38,7 +38,8 @@ void board_pins_init();
       || defined(BOARD_MIBO48_STM32F303) \
       || defined(BOARD_MIBO64_STM32F405) \
       || defined(BOARD_MIBO48_STM32G473) \
-      || defined(BOARD_RPI_PICO)
+      || defined(BOARD_RPI_PICO) \
+      || defined(BOARD_LONGAN_NANO)
 
 #define DISP_SPI
 
