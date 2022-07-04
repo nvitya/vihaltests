@@ -43,6 +43,48 @@ void board_pins_init_leds()
 
 #if 0 // to use elif everywhere
 
+//-------------------------------------------------------------------------------
+// Risc-V (RV32I)
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_LONGAN_NANO)
+
+TGpioPin       fl_spi_cs_pin;
+THwDmaChannel  fl_spi_txdma;
+THwDmaChannel  fl_spi_rxdma;
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_C, 13, true);
+  pin_led[1].Assign(PORTNUM_A,  1, true);
+  pin_led[2].Assign(PORTNUM_A,  2, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9, PINCFG_OUTPUT | PINCFG_AF_0);
+  hwpinctrl.PinSetup(PORTNUM_A, 10, PINCFG_INPUT  | PINCFG_AF_0);
+  conuart.Init(0); // USART0
+
+  // the CS must be controlled manually (in single SPI master operation)
+  fl_spi_cs_pin.Assign(PORTNUM_A, 4, false);
+  fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  //hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_AF_0);  // SPI0_NSS (CS)
+  hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_OUTPUT | PINCFG_AF_0);  // SPI0_SCK
+  hwpinctrl.PinSetup(PORTNUM_A, 6, PINCFG_INPUT | PINCFG_AF_0);   // SPI0_MISO (D1)
+  hwpinctrl.PinSetup(PORTNUM_A, 7, PINCFG_OUTPUT | PINCFG_AF_0);  // SPI0_MOSI (D0)
+
+  fl_spi.manualcspin = &fl_spi_cs_pin;
+  fl_spi.speed = 4000000; //SystemCoreClock / 4;
+  fl_spi.Init(0);
+
+  fl_spi_txdma.Init(0, 2);  // dma0/ch2
+  fl_spi_rxdma.Init(0, 1);  // dma0/ch1
+
+  fl_spi.DmaAssign(true,  &fl_spi_txdma);
+  fl_spi.DmaAssign(false, &fl_spi_rxdma);
+
+}
+
 #elif defined(MCUF_VRV100) //BOARD_VRV100_441)
 
 void board_pins_init()
@@ -56,6 +98,10 @@ void board_pins_init()
   fl_spi.speed = 8000000;
   fl_spi.Init(1); // flash
 }
+
+//-------------------------------------------------------------------------------
+// ARM Cortex-M
+//-------------------------------------------------------------------------------
 
 #elif defined(BOARD_MIN_F103)
 
