@@ -50,14 +50,9 @@ void init_spi_display()
   disp.mirrorx = true;
   disp.Init(LCD_CTRL_ILI9341, 240, 320);
   disp.SetRotation(1);
-#elif 160 == SPI_DISPLAY_WIDTH
-  disp.mirrorx = false;
-  disp.Init(LCD_CTRL_ST7735, 80, 160);
-  //disp.Init(LCD_CTRL_ST7735, 80, 80);
-  disp.SetRotation(1);
 #else
   //lcd.mirrorx = true;
-  disp.Init(LCD_CTRL_ST7735, 128, 160);
+  disp.Init(LCD_CTRL_ST7735R, 128, 160);
   disp.SetRotation(1);
 #endif
 }
@@ -106,10 +101,16 @@ void board_pins_init()
   disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
 
   // SPI1
-  disp.spi.speed = 4000000;
+  disp.spi.speed = SystemCoreClock / 4;
   disp.spi.Init(0);
 
-  init_spi_display();
+  // special display init for the integrated display:
+  disp.invert_color = true;
+  disp.shift_x = 26;
+  disp.shift_y = 1;
+  disp.Init(LCD_CTRL_ST7735R, 80, 160);
+
+  disp.SetRotation(3);
 }
 
 #elif defined(BOARD_MIN_F103)
