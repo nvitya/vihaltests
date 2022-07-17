@@ -1,8 +1,7 @@
-# Test / Example projects
-Tests / Examples for the VIHAL (https://github.com/nvitya/vihal) Library
+# Test / Example projects for the [VIHAL](https://github.com/nvitya/vihal) Library
 
 In order to compile and run the examples here the following SW and HW required:
- - The VIHAL Core, clone from the GitHub: [VIHAL](https://github.com/nvitya/vihal)
+ - VIHAL sources, clone it from the GitHub: [github.com/nvitya/vihal](https://github.com/nvitya/vihal)
  - [Eclipse CDT](https://www.eclipse.org/cdt/downloads.php), the latest should be fine
  - [Eclipse Embedded CDT Plugin](https://projects.eclipse.org/projects/iot.embed-cdt), you can install it from the Eclipse Marketplace (available from the Help menu) 
  - Working GCC Cross-Compiler for your target:
@@ -11,31 +10,37 @@ In order to compile and run the examples here the following SW and HW required:
  - Appropriate HW with connections (example dependent)
  - A debug probe (some boards have integrated), its drivers and a working GDBServer (e.g. J-Link or OpenOCD)
 
-## Symlinking NVCM Core
+## Getting / Symlinking the VIHAL
 
-The examples here require the NVCM core ([https://github.com/nvitya/nvcm]) sources in the "nvcm" subdirectory within the root directory of the "nvcmtests".
-The easiest way to achieve this is to create a symlink.
+The examples here require that the VIHAL sources ([github.com/nvitya/vihal](https://github.com/nvitya/vihal)) are accessible in the "vihal" subdirectory within the root directory of this "vihaltests".
 
-Before importing these examples into Eclipse CDT make a symlink in the exampes root with the name "vihal" that points to the "vihal" library!
+The easiest way is to download the VIHAL library into the "vihal" subdirectory.
 
+Or, if you have more projects with the VIHAL, you can create a link (symlink) to an existing one. On Windows you can achieve this using the mklink command (must be executed with Administrator privileges):
 
-Assuming you have downloaded the example sources into c:\work\nvcmtests-master and you have downloaded the NVCM core into c:\work\nvcm-master the following command is required on Windows:
+  ```c:\work\vihaltests-master>mklink /d vihal c:\work\vihal-master```
 
-    c:\work\nvcmtests-master>mklink /d nvcm c:\work\nvcm-master
+on Linux:
+
+  ```/work/vihaltests $ ln -s /work/vihal vihal```
 
 ## Importing Projects into Eclipse Workspace
 
 Every example has an associated Eclipse project. Importing the project into the Eclipse workspace require the following steps:
  * From File menu select "Import..."
  * From the "General" cathegory select "Existing Projects into Workspace", and click "Next"
- * Select "Select root directory" and browse for the project root directory (e.g. C:\work\nvcmtests-master\blinkled)
+ * Select "Select root directory" and browse for the project root directory (e.g. C:\work\vihaltests-master\blinkled)
  * The project should appear in the list
  * Click "Finish" and the project shoul be appear in the workspace
 
 ## Compiling Project
 
 From the Build Configurations select your Board (e.g. BOARD_MIN_F103). Then Select "Build Project" and the project should compile.
-You might need set the GNU ARM Toolchain Path in the "Window" / "Preferences" / "MCU" / "Global ARM Toolchains Path".
+
+If the GCC cross-compiler was not found then you need to specify it (once) in the preferences:
+  - For ARM: "Window" / "Preferences" / "MCU" / "Global ARM Toolchains Path"
+  - For RISC-V: "Window" / "Preferences" / "MCU" / "Global RISC-V Toolchains Path"
+  - For Xtensa (ESP32) there are some special instructions here: [https://github.com/nvitya/vihal/tree/main/xtensa/ESP](https://github.com/nvitya/vihal/tree/main/xtensa/ESP)
 
 ## Running / Debugging the Project
 
