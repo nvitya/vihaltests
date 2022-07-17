@@ -46,15 +46,20 @@ If the GCC cross-compiler was not found then you need to specify it (once) in th
 
 After a successful compilation you need to do the following to download and start the application:
  * From "Run" menu select "Debug Configurations..."
- * Double click on your favorite debug probe type (e.g.: GDB OpenOCD Debugging)
- * This creates a new entry
- * At the "Main" page select the application. When the C/C++ Application is empty just click on search project
- * At the "Debugger" set up the GDBServer parameters. (This requires some knowledge, I might be give some hints later)
- * At the "Startup" page you can setup some extra options. I suggest to turn off "Set breakpoint at: main"
+ * Double click on your favorite debug probe type (e.g.: GDB OpenOCD Debugging), this creates a new entry   
+ * At the "Main" page select the application. When the C/C++ Application is empty just click on the "Search project..." button
+   * If your executable is not listed at the "Search Project..." button, then close the window, issue a "Refresh" in the whole project tree and Open the "Debug configurations..." again. This is a known bug in the Eclipse when using external builder
+ * At the "Debugger" set up the GDBServer parameters. 
+   * "Start the xxx GDB server locally": You can specify, that the GDBServer started automatically or not. For the beginning it may be simpler to use this possibility. I prefer external start because I can see if the debug probe works propery or not and the download starts slightly faster.
+   * "Start Debugger": this option must be on, the default should be fine, or you can browse the gdb in the compiler directory. On Linux you can specify "gdb-multiarch"
+ * At the "Startup" page you can setup some extra options. I usually turn off "Set breakpoint at: main" so that the applications starts immediately after clicking the debug buffon
  * clicking on the "Debug" should start the application on the HW
+
+This debug configuration must be made only once. The repeated debugging can be achieved by clicking on the green bug speed button in the eclipse.
 
 ## Eclipse CDT Tuning
 
 I strongly recommend to set the following options in the "Window" / "Preferences":
  * "Run/Debug" / "Launching": At "Launch Operation" select "Always Launch the previously launched application"
  * "C/C++" / "Indexer": At "Build configuration for the indexer" select "Use active build configuration"
+ * In the newer Eclipse versions are some autocomplete options deactivated. You can activate them in the "Preferences" here: "C/C++" / "Editor" / "Content Assist" / "Advanced"
