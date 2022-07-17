@@ -40,7 +40,7 @@ From the Build Configurations select your Board (e.g. BOARD_MIN_F103). Then Sele
 If the GCC cross-compiler was not found then you need to specify it (once) in the preferences:
   - For ARM: "Window" / "Preferences" / "MCU" / "Global ARM Toolchains Path"
   - For RISC-V: "Window" / "Preferences" / "MCU" / "Global RISC-V Toolchains Path"
-  - For Xtensa (ESP32) there are some special instructions here: [https://github.com/nvitya/vihal/tree/main/xtensa/ESP](https://github.com/nvitya/vihal/tree/main/xtensa/ESP)
+  - For Xtensa (ESP32) there are some special instructions [here](https://github.com/nvitya/vihal/tree/main/xtensa/ESP)
 
 ## Running / Debugging the Project
 
