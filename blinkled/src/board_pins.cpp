@@ -106,9 +106,15 @@ void board_pins_init()
 
 void board_pins_init()
 {
-  pin_led_count = 1;
-#warning "adjust me !"
-  pin_led[0].Assign(PORTNUM_A,  1, true);
+  pin_led_count = 3;
+  // K210 specific pad routing
+  hwpinctrl.PadSetup(12, FUNC_GPIOHS0, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(13, FUNC_GPIOHS1, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(14, FUNC_GPIOHS2, PINCFG_OUTPUT);
+
+  pin_led[0].Assign(0, 0, true); // GPIOHS assignment here
+  pin_led[1].Assign(0, 1, true);
+  pin_led[2].Assign(0, 2, true);
 
   board_pins_init_leds();
 }
