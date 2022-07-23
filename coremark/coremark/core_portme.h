@@ -108,7 +108,7 @@ typedef double        ee_f32;
 typedef unsigned char ee_u8;
 typedef uint32_t      ee_u32;
 typedef uint64_t      ee_u64;
-typedef ee_u32        ee_ptr_int;
+typedef uintptr_t     ee_ptr_int;
 typedef size_t        ee_size_t;
 //#define NULL ((void *)0)
 /* align_mem :

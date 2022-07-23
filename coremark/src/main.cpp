@@ -72,6 +72,34 @@ void setup_board()
 }
 
 //-------------------------------------------------------------------------------
+// Risc-V: RV64G
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_MAIX_BIT)
+
+#define LED_COUNT 1
+
+TGpioPin  pin_led1(0, 0, true);
+TGpioPin  pin_led2(0, 1, true);
+TGpioPin  pin_led3(0, 2, true);
+
+void setup_board()
+{
+  // K210 specific pad routing, using GPIOHS
+  hwpinctrl.PadSetup(12, FUNC_GPIOHS0, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(13, FUNC_GPIOHS1, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(14, FUNC_GPIOHS2, PINCFG_OUTPUT);
+  // Assign the GPIOHS pins
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led3.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PadSetup(4, FUNC_UART3_RX, PINCFG_INPUT);
+  hwpinctrl.PadSetup(5, FUNC_UART3_TX, PINCFG_OUTPUT);
+  conuart.Init(3);
+}
+
+//-------------------------------------------------------------------------------
 // Xtensa (ESP32)
 //-------------------------------------------------------------------------------
 
