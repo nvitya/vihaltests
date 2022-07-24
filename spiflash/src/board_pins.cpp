@@ -101,6 +101,35 @@ void board_pins_init()
 }
 
 //-------------------------------------------------------------------------------
+// Risc-V: RV64G
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_MAIX_BIT)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  // K210 specific pad routing, using GPIOHS
+  hwpinctrl.PadSetup(12, FUNC_GPIOHS0, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(13, FUNC_GPIOHS1, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(14, FUNC_GPIOHS2, PINCFG_OUTPUT);
+  // Assign the GPIOHS pins
+  pin_led[0].Assign(0, 0, true);
+  pin_led[1].Assign(0, 1, true);
+  pin_led[2].Assign(0, 2, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(4, FUNC_UART3_RX, PINCFG_INPUT);
+  hwpinctrl.PadSetup(5, FUNC_UART3_TX, PINCFG_OUTPUT);
+  conuart.Init(3);
+
+  // No pad setup required for the SPI3, it is tied to the external flash
+
+  fl_spi.speed = 4000000; //SystemCoreClock / 4;
+  fl_spi.Init(3);
+}
+
+//-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
 
