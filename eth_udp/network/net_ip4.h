@@ -56,14 +56,37 @@ typedef struct
 //
 } TUdp4Header, * PUdp4Header;
 
-typedef struct TArp4TableItem // 16 byte
+typedef struct TArp4TableItem
 {
   TIp4Addr  ipaddr;
   uint8_t   macaddr[6];
   uint8_t   _pad[2];
   uint32_t  timestamp_ms;
+
+  TArp4TableItem *  prev;
+  TArp4TableItem *  next;
 //
 } TArp4TableItem, * PArp4TableItem;
+
+class TArp4Table
+{
+public:
+  TArp4TableItem *    firstitem = nullptr;
+  TArp4TableItem *    lastitem  = nullptr;
+  TArp4TableItem *    freelist  = nullptr;
+
+  TProtocolHandler *  phandler = nullptr;
+
+  uint8_t             max_items = 8;
+
+  void                Init(TProtocolHandler * ahandler);
+  void                Update(TIp4Addr aipaddr, uint8_t * amacaddr);
+  TArp4TableItem *    FindByIp(TIp4Addr aipaddr);
+  TArp4TableItem *    FindByMac(uint8_t * amacaddr);
+
+protected:
+  TArp4TableItem *    CreateNewItem();
+};
 
 class TIp4Handler;
 
@@ -80,6 +103,14 @@ public:
 
   TIp4Handler *     phandler = nullptr;
 
+  TPacketMem *      rxpkt_first = nullptr;
+  TPacketMem *      rxpkt_last  = nullptr;
+
+  TPacketMem *      txpkt_first = nullptr;  // waiting for address resolution
+  TPacketMem *      txpkt_last  = nullptr;
+
+  TUdp4Socket *     nextsocket = nullptr;
+
   void Init(TIp4Handler * ahandler, uint16_t alistenport);
 
   int Send(void * adataptr, unsigned adatalen);
@@ -89,22 +120,29 @@ public:
 class TIp4Handler : public TProtocolHandler
 {
 public:
-  TNetAdapter *       adapter = nullptr;
-
   TIp4Addr            ipaddress;
   TIp4Addr            netmask;
   TIp4Addr            gwaddress;
-  uint8_t             max_arp_items = 8;
-  TPacketMem *        syspkt = nullptr;
+
+  TUdp4Socket *       udp_first = nullptr;
+  TUdp4Socket *       udp_last  = nullptr;
+
+  TArp4Table          arptable; // this is a small object
+
+  TPacketMem *        syspkt = nullptr; // is this necessary?
 
   TPacketMem *        rxpkt = nullptr;
-  TEthernetHeader *   rxeh = nullptr;
+  TEthernetHeader *   rxeh  = nullptr;
   TIp4Header *        rxiph = nullptr;
+
 
   void                Init(TNetAdapter * aadapter);
   virtual void        Run();
 
   virtual bool        HandleRxPacket(TPacketMem * pmem);  // return true, if the packet is handled
+
+public:
+  void                AddUdpSocket(TUdp4Socket * audp);
 
 protected:
   bool                HandleArp();

@@ -12,9 +12,13 @@
 #include "network.h"
 #include "hweth.h"
 
+class TNetAdapter;
+
 class TProtocolHandler
 {
 public:
+  TNetAdapter *       adapter = nullptr;
+
   TProtocolHandler *  next = nullptr;
 
   virtual             ~TProtocolHandler() { } // never ment to be destructed, but the GCC requires this
@@ -49,6 +53,7 @@ public:
 
   TPacketMem *        AllocateTxPacket();
   void                ReleaseTxPacket(TPacketMem * apmem);
+  void                ReleaseRxPacket(TPacketMem * apmem);
 
   uint8_t *           AllocateNetMem(unsigned asize);
   int                 NetMemAvailable() { return netmem_size - netmem_allocated; }

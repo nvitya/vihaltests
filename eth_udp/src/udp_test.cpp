@@ -61,7 +61,8 @@ void udp_test_run()
 
   nadap.Run(); // must be called regularly
 
-#if 0
+  // receive does not block
+  // if there are something in the receive queue then this returns with a positive number
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
@@ -73,11 +74,21 @@ void udp_test_run()
 
     udp.destaddr = udp.srcaddr;
     udp.destport = udp.srcport;
+
+    // might require ARP resolution which requires multiple turns.
+    // blocking here long time is not allowed
+
+    // some kind of transaction interface is requiered or
+    //   udp.StartSend()
+    //   udp.SendCompleted() or udp.sending ?
+
+    // internally the udp object has a send queue and a receive queue
+
     int r = udp.Send(&pbuf[0], len);
     if (r <= 0)
     {
+      // if there are no more place in send the queue
       TRACE("UDP Send Error: %i\r\n", r);
     }
   }
-#endif
 }

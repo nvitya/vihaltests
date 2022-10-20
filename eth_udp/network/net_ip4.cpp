@@ -55,20 +55,191 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
 
 //--------------------------------------------------------------
 
+void TArp4Table::Init(TProtocolHandler * ahandler)
+{
+  phandler = ahandler;
+  firstitem = nullptr;
+  lastitem = nullptr;
+  freelist = nullptr;
+
+  // allocate the arp table
+  TArp4TableItem *  items =
+      (TArp4TableItem *) phandler->adapter->AllocateNetMem(sizeof(TArp4TableItem) * max_items);
+
+  // fill the free list
+  for (int i = max_items - 1; i >= 0; --i)  // make it reverse to be linear in the memory (cache optimization)
+  {
+    TArp4TableItem *  item = &items[i];
+    item->next = freelist;
+    item->prev = nullptr; // not used here
+    freelist = item;
+  }
+}
+
+TArp4TableItem * TArp4Table::CreateNewItem()
+{
+  TArp4TableItem *  item;
+
+  if (freelist)
+  {
+    item = freelist;
+    freelist = freelist->next;
+  }
+  else
+  {
+    // take the last (oldest) item
+    item = lastitem;
+
+    lastitem = lastitem->prev;
+    if (lastitem)
+    {
+      lastitem->next = nullptr;
+    }
+    else
+    {
+      firstitem = nullptr; // (impossible case)
+    }
+  }
+
+  item->prev = nullptr;
+  item->next = nullptr;
+  return item;
+}
+
+void TArp4Table::Update(TIp4Addr aipaddr, uint8_t * amacaddr)
+{
+  TArp4TableItem *  item = FindByMac(amacaddr);
+
+  if (item)
+  {
+    // just move to forward
+    item->ipaddr = aipaddr;
+
+    // unchain
+    if (item->prev)   item->prev->next = item->next;
+    else              firstitem = item->next;
+
+    if (item->next)   item->next->prev = item->prev;
+    else              lastitem = item->prev;
+  }
+  else
+  {
+    item = CreateNewItem();
+  }
+
+  // add as first
+
+  item->next = firstitem;
+  item->prev = nullptr;
+  if (firstitem)
+  {
+    firstitem->prev = item;
+  }
+  firstitem = item;
+  if (!lastitem)
+  {
+    lastitem = item;
+  }
+}
+
+TArp4TableItem * TArp4Table::FindByIp(TIp4Addr aipaddr)
+{
+  TArp4TableItem *  item = firstitem;
+  while (item)
+  {
+    if (item->ipaddr.u32 == aipaddr.u32)
+    {
+      return item;
+    }
+    item = item->next;
+  }
+  return nullptr;
+}
+
+TArp4TableItem * TArp4Table::FindByMac(uint8_t * amacaddr)
+{
+  TArp4TableItem *  item = firstitem;
+  while (item)
+  {
+    if (    (*(uint32_t *)&item->macaddr[0] == *(uint32_t *)&amacaddr[0])
+         && (*(uint16_t *)&item->macaddr[4] == *(uint16_t *)&amacaddr[4]) )
+    {
+      return item;
+    }
+    item = item->next;
+  }
+  return nullptr;
+}
+
+//--------------------------------------------------------------
+
 void TUdp4Socket::Init(TIp4Handler * ahandler, uint16_t alistenport)
 {
   phandler = ahandler;
   listenport = alistenport;
+
+  phandler->AddUdpSocket(this);
 }
 
 int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 {
-  return -1;
+  TPacketMem * pmem;
+
+  pmem = phandler->adapter->AllocateTxPacket();
+  if (!pmem)
+  {
+    return 0;  // no free packet !
+  }
+
+  // assemble the UDP packet
+
+  // TODO: assemble the UDP package!
+
+  // does it require ARP ?
+  TArp4TableItem * arpitem = phandler->arptable.FindByIp(destaddr);
+  if (arpitem)
+  {
+    // update the destination MAC (this is the first field
+    *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
+    *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
+
+    if (phandler->adapter->SendTxPacket(pmem))
+    {
+      return adatalen;
+    }
+    else
+    {
+      return 0;  // something was not succesful at the ETH HW level
+    }
+  }
+  else // ARP required!
+  {
+    //TODO: request ARP
+
+    return -1;
+  }
 }
 
 int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
 {
-  return -1;
+  TPacketMem * pmem = rxpkt_first;
+
+  if (!pmem)
+  {
+    return 0;
+  }
+
+  // TODO: copy the UDP data from the packet to the user
+
+  unsigned len = 1;
+
+  rxpkt_first = rxpkt_first->next;
+  if (!rxpkt_first)  rxpkt_last = nullptr;
+
+  // release the packet
+  phandler->adapter->ReleaseRxPacket(pmem);
+
+  return len;
 }
 
 //--------------------------------------------------------------
@@ -77,10 +248,31 @@ void TIp4Handler::Init(TNetAdapter * aadapter)
 {
   adapter = aadapter;
 
+  udp_first = nullptr;
+  udp_last  = nullptr;
+
+  arptable.Init(this);
+
   syspkt = adapter->AllocateTxPacket();  // reserve one TX packet for system purposes
 
   adapter->AddHandler(this);
 }
+
+void TIp4Handler::AddUdpSocket(TUdp4Socket * audp)
+{
+  if (udp_last)
+  {
+    udp_last->nextsocket = audp;
+  }
+  else
+  {
+    udp_last = audp;
+    udp_first = audp;
+  }
+
+  audp->nextsocket = nullptr;
+}
+
 
 void TIp4Handler::Run()
 {
@@ -228,3 +420,4 @@ bool TIp4Handler::HandleUdp()
 {
   return true;
 }
+

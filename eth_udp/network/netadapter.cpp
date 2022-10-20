@@ -195,6 +195,11 @@ void TNetAdapter::ReleaseTxPacket(TPacketMem * apmem)
   first_free_tx_pmem = apmem;
 }
 
+void TNetAdapter::ReleaseRxPacket(TPacketMem * apmem)
+{
+  peth->ReleaseRxBuf(apmem);
+}
+
 bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automatically released
 {
   // send the packet on the Ethernet
