@@ -88,6 +88,56 @@ void board_pins_init()
   eth.phy_address = 0;
 }
 
+#elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_K,  3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  /* Ethernet pins configuration ************************************************
+
+          RMII_REF_CLK ----------------------> PA1
+          RMII_MDIO -------------------------> PA2
+          RMII_MDC --------------------------> PC1
+          RMII_MII_CRS_DV -------------------> PA7
+          RMII_MII_RXD0 ---------------------> PC4
+          RMII_MII_RXD1 ---------------------> PC5
+          RMII_MII_RXER ---------------------> PG2
+          RMII_MII_TX_EN --------------------> PG11
+          RMII_MII_TXD0 ---------------------> PG13
+          RMII_MII_TXD1 ---------------------> PG14
+  */
+
+  uint32_t pinfl = PINCFG_SPEED_FAST | PINCFG_AF_11;  // do not use PINCFG_SPEED_VERYFAST !
+
+  hwpinctrl.PinSetup(PORTNUM_A,  1, pinfl); // REF CLK
+  hwpinctrl.PinSetup(PORTNUM_A,  2, pinfl); // MDIO
+  hwpinctrl.PinSetup(PORTNUM_C,  1, pinfl); // MDC
+  hwpinctrl.PinSetup(PORTNUM_A,  7, pinfl); // CRS_DV
+  hwpinctrl.PinSetup(PORTNUM_C,  4, pinfl); // RXD0
+  hwpinctrl.PinSetup(PORTNUM_C,  5, pinfl); // RXD1
+  hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl); // RXER
+  hwpinctrl.PinSetup(PORTNUM_G, 11, pinfl); // TX_EN
+  hwpinctrl.PinSetup(PORTNUM_G, 13, pinfl); // TXD0
+  hwpinctrl.PinSetup(PORTNUM_G, 14, pinfl); // TXD1
+
+  /* Enable the Ethernet global Interrupt */
+  //HAL_NVIC_SetPriority(ETH_IRQn, 0x7, 0);
+  //HAL_NVIC_EnableIRQ(ETH_IRQn);
+
+  eth.phy_address = 0;
+
+}
+
 #elif defined(BOARD_NUCLEO_H723)
 
 void board_pins_init()

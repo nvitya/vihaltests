@@ -72,6 +72,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   first_free_tx_pmem = pmem;
   for (unsigned n = 1; n < max_tx_packets; ++n)
   {
+    pmem->flags = 0;
     pmem->max_datalen = sizeof(pmem->data); // these are max sized packets
 
     ++pmem;
@@ -248,7 +249,6 @@ bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automa
   apmem->status = 1; // sending active
   apmem->next = nullptr;
 
-  TPacketMem * pmem;
   if (last_sending_pkt)
   {
     last_sending_pkt->next = apmem;

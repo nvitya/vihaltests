@@ -105,8 +105,7 @@ TArp4TableItem * TArp4Table::CreateNewItem(uint8_t * amacaddr)
     }
   }
 
-  *(uint32_t *)&item->macaddr[0] = *(uint32_t *)&amacaddr[0];
-  *(uint16_t *)&item->macaddr[4] = *(uint16_t *)&amacaddr[4];
+  mac_address_copy(&item->macaddr[0], &amacaddr[0]);
 
   item->prev = nullptr;
   item->next = nullptr;
@@ -184,9 +183,8 @@ bool TArp4Table::SendWithArp(TPacketMem * pmem, PIp4Addr paddr)
   TArp4TableItem * arpitem = FindByIp(paddr);
   if (arpitem)
   {
-    // update the destination MAC (this is the first field
-    *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
-    *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
+    // update the destination MAC (this is the first field)
+    mac_address_copy(&pmem->data[0], &arpitem->macaddr[0]);
 
     return adapter->SendTxPacket(pmem);
   }
@@ -216,6 +214,8 @@ bool TArp4Table::ProcessArpResponse(TPacketMem * pmem)
   PEthernetHeader rxeh = PEthernetHeader(&pmem->data[0]);
   PArpHeader      parp = PArpHeader(rxeh + 1);
 
+  TRACE("ARP response.\r\n");
+
   Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
   Run();  // someone probably waits for this
 
@@ -232,6 +232,8 @@ void TArp4Table::Run()
 
   if (0 == phase)  // prepare the request
   {
+    TRACE("%u Start ARP...\r\n", adapter->mscounter);
+
     PEthernetHeader txeh = PEthernetHeader(&syspkt->data[0]);
     PArpHeader      parp = PArpHeader(txeh + 1);
 
@@ -263,6 +265,8 @@ void TArp4Table::Run()
     parp->plen = 4;
     parp->oper = 0x0100; // request, byte swapped
 
+    syspkt->datalen = sizeof(TEthernetHeader) + sizeof(TArpHeader);
+
     adapter->SendTxPacket(syspkt);
     start_ms = adapter->mscounter;
 
@@ -278,7 +282,7 @@ void TArp4Table::Run()
     else if (adapter->mscounter - start_ms > response_timeout_ms)
     {
       // something is very wrong!
-      TRACE("Timeout sending ARP request!\n");
+      TRACE("Timeout sending ARP request!\r\n");
       phase = 9; // re-sending
     }
   }
@@ -288,10 +292,11 @@ void TArp4Table::Run()
     TArp4TableItem * arpitem = FindByIp(paddr);
     if (arpitem)
     {
+      TRACE("%u ARP resolved, continue sending...\r\n", adapter->mscounter);
+
       // the address is resolved!, we can finish this job!
       // update the destination MAC (this is the first field
-      *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
-      *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
+      mac_address_copy(&pmem->data[0], &arpitem->macaddr[0]);
 
       FinishJob(true); // finish the job sending the packet
 
@@ -312,6 +317,8 @@ void TArp4Table::Run()
     }
     else // try again
     {
+      TRACE("%u re-trying ARP...\r\n", adapter->mscounter);
+
       ++trycnt;
       adapter->SendTxPacket(syspkt);
       start_ms = adapter->mscounter;
@@ -357,6 +364,11 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 {
   TPacketMem * pmem;
 
+  if (adatalen > sizeof(pmem->data) - (sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader)))
+  {
+    return -1;
+  }
+
   pmem = phandler->adapter->AllocateTxPacket();
   if (!pmem)
   {
@@ -364,8 +376,32 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   }
 
   // assemble the UDP packet
+  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);
+  PIp4Header      iph   = PIp4Header(eh + 1);
+  PUdp4Header     udph  = PUdp4Header(iph + 1);
+  uint8_t *       pdata = (uint8_t *)(udph + 1);
 
-  // TODO: assemble the UDP package!
+  eh->ethertype = 0x0008; // ether type: 0x0800 = IPV4 (byte swapped)
+
+  *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
+  *PIp4Addr(&iph->dstaddr[0]) = destaddr;
+
+  iph->hl_v = 0x45;
+  iph->tos = 0;
+  iph->len = __builtin_bswap16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
+  iph->id = 0x0AA4;
+  iph->offset = 0;
+  iph->ttl = 64;
+  iph->protocol = 17;
+
+  memcpy(pdata, adataptr, adatalen);
+
+  udph->sport = __builtin_bswap16(listenport);
+  udph->dport = __builtin_bswap16(destport);
+  udph->len   = __builtin_bswap16(adatalen + sizeof(TUdp4Header));
+  udph->csum  = calc_udp4_checksum(iph, adatalen);
+
+  pmem->datalen = adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader);
 
   if (!phandler->SendWithRouting(pmem))
   {
@@ -533,7 +569,7 @@ bool TIp4Handler::HandleIcmp()
   PIcmpHeader rxich = PIcmpHeader(rxiph + 1);
   if (8 == rxich->type) // echo request ?
   {
-    TRACE("Echo request detected.\r\n");
+    //TRACE("Echo request detected.\r\n");
 
     // prepare the answer
 
@@ -599,6 +635,11 @@ bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)
 
 bool TIp4Handler::SendWithRouting(TPacketMem * pmem)
 {
+  PEthernetHeader txeh = PEthernetHeader(&pmem->data[0]);
+
+  // insert my mac address
+  mac_address_copy(&txeh->src_mac[0], &adapter->peth->mac_address[0]);
+
   PIp4Header  txiph  = PIp4Header(&pmem->data[sizeof(TEthernetHeader)]);
   PIp4Addr    pdstip = PIp4Addr(&txiph->dstaddr[0]);
 

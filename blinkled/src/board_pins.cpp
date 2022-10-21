@@ -357,6 +357,17 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_XPRESSO_LPC55S28)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(1,  4, true);  // RGB LED BLUE
+  pin_led[1].Assign(1,  6, true);  // RGB LED RED
+  pin_led[2].Assign(1,  7, true);  // RGB LED GREEN
+  board_pins_init_leds();
+}
+
 #elif defined(BOARD_MIBO100_LPC546XX)
 
 void board_pins_init()

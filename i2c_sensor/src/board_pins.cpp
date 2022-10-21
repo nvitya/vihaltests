@@ -7,6 +7,7 @@
 */
 
 #include "board_pins.h"
+#include "clockcnt.h"
 
 THwI2c         i2c;
 THwDmaChannel  i2c_txdma;
@@ -115,7 +116,7 @@ void board_pins_init()
 }
 
 #elif  defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
-      //|| defined(BOARD_MIBO64_STM32F405)
+       || defined(BOARD_MIBO64_STM32F405)
 
 void board_pins_init()
 {
@@ -130,8 +131,6 @@ void board_pins_init()
 
   // I2C1
   // open drain mode have to be used, otherwise it won't work
-  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
-  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
   i2c.speed = 100000; // 100 kHz
   i2c.Init(1); // I2C1
 
@@ -142,6 +141,9 @@ void board_pins_init()
     i2c.DmaAssign(true,  &i2c_txdma);
     i2c.DmaAssign(false, &i2c_rxdma);
   #endif
+
+  hwpinctrl.PinSetup(PORTNUM_B,  6, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_PULLUP); // I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B,  7, PINCFG_AF_4 | PINCFG_OPENDRAIN | PINCFG_PULLUP); // I2C1_SDA
 }
 
 #elif defined(BOARD_MIBO48_STM32G473)

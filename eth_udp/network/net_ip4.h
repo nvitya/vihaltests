@@ -82,7 +82,7 @@ public:
 
   uint8_t             max_items = 8;
   uint8_t             max_tries = 5;  // after so many tries will be given up
-  uint32_t            response_timeout_ms = 500;
+  uint32_t            response_timeout_ms = 5000;
 
 
   TPacketMem *        firstjob = nullptr;
@@ -174,5 +174,11 @@ protected:
 };
 
 uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen);
+
+inline void  mac_address_copy(uint8_t * pdst, uint8_t * psrc)
+{
+  *(uint32_t *)pdst = *(uint32_t *)psrc;
+  *(uint16_t *)(pdst + 4) = *(uint16_t *)(psrc + 4);
+}
 
 #endif /* NETWORK_NET_IP4_H_ */

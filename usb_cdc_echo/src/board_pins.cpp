@@ -20,6 +20,8 @@ TGpioPin  pin_led[MAX_LEDS] =
   TGpioPin()
 };
 
+TGpioPin   pin_bulkdata;  // useful for scope trigger
+
 /* NOTE:
      for direct GPIO pin definitions is simpler to define with port and pin number:
 
@@ -377,6 +379,9 @@ void board_pins_init()
   hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
   hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
   conuart.Init(0);
+
+  pin_bulkdata.Assign(0,  10, false);
+  pin_bulkdata.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
 
   #if SPI_SELF_FLASHING
     // because of the transfers are unidirectional the same DMA channel can be used here:

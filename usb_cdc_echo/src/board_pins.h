@@ -17,6 +17,8 @@
 extern TGpioPin   pin_led[MAX_LEDS];
 extern unsigned   pin_led_count;
 
+extern TGpioPin   pin_bulkdata;
+
 extern THwUart    conuart;  // console uart
 
 #if SPI_SELF_FLASHING

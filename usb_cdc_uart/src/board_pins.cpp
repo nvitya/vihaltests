@@ -20,6 +20,8 @@ TGpioPin  pin_led[MAX_LEDS] =
   TGpioPin()
 };
 
+TGpioPin pin_bulkdata; // useful for trigger signal...
+
 /* NOTE:
      for direct GPIO pin definitions is simpler to define with port and pin number:
 
