@@ -56,11 +56,17 @@ public:
   void                ReleaseRxPacket(TPacketMem * apmem);
 
   uint8_t *           AllocateNetMem(unsigned asize);
+  TPacketMem *        CreateSysTxPacket(unsigned asize);  // allocates from the NetMem a usually smaller packet
   int                 NetMemAvailable() { return netmem_size - netmem_allocated; }
 
   void                AddHandler(TProtocolHandler * ahandler);
 
+  uint32_t            mscounter = 0; // millisecond timer for various timing
+
 protected: // internal memory management
+
+  unsigned            last_mscounter_clocks = 0;
+  unsigned            clocks_per_ms = 0;
 
   TPacketMem *        first_free_tx_pmem = nullptr;
 

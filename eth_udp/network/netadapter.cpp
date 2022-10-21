@@ -7,6 +7,7 @@
 
 
 #include "netadapter.h"
+#include "clockcnt.h"
 #include "traces.h"
 
 bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
@@ -19,6 +20,10 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   firsthandler = nullptr;
   first_sending_pkt = nullptr;
   last_sending_pkt = nullptr;
+
+  mscounter = 0;
+  last_mscounter_clocks = CLOCKCNT;
+  clocks_per_ms = SystemCoreClock / 1000;
 
   // memory allocation
   netmem_allocated = 0;
@@ -67,6 +72,8 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   first_free_tx_pmem = pmem;
   for (unsigned n = 1; n < max_tx_packets; ++n)
   {
+    pmem->max_datalen = sizeof(pmem->data); // these are max sized packets
+
     ++pmem;
     prevpmem->next = pmem;
     pmem->next = nullptr;
@@ -112,10 +119,28 @@ uint8_t * TNetAdapter::AllocateNetMem(unsigned asize)
   return result;
 }
 
+TPacketMem * TNetAdapter::CreateSysTxPacket(unsigned asize)  // allocates from the NetMem a usually smaller packet
+{
+  TPacketMem * result = (TPacketMem *)AllocateNetMem(asize + HWETH_PMEM_HEAD_SIZE);
+  if (result)
+  {
+    result->max_datalen = asize;
+    result->flags = PMEMFLAG_SYS;
+  }
+
+  return result;
+}
+
 void TNetAdapter::Run()
 {
   TPacketMem *        pmem;
   TProtocolHandler *  ph;
+
+  // update the mscounter
+  unsigned elapsed_clk = CLOCKCNT - last_mscounter_clocks;
+  unsigned elapsed_ms = elapsed_clk / clocks_per_ms;
+  mscounter += elapsed_ms;
+  last_mscounter_clocks += elapsed_ms * clocks_per_ms;
 
   if (peth)
   {
@@ -191,6 +216,13 @@ TPacketMem * TNetAdapter::AllocateTxPacket()
 
 void TNetAdapter::ReleaseTxPacket(TPacketMem * apmem)
 {
+  apmem->status = 0;
+
+  if (apmem->flags & PMEMFLAG_SYS)
+  {
+    return; // do not touch the system packets
+  }
+
   apmem->next = first_free_tx_pmem;
   first_free_tx_pmem = apmem;
 }
@@ -213,6 +245,7 @@ bool TNetAdapter::SendTxPacket(TPacketMem * apmem)  // the packet will be automa
 
   // add to the sending chain
   apmem->idx = idx;
+  apmem->status = 1; // sending active
   apmem->next = nullptr;
 
   TPacketMem * pmem;

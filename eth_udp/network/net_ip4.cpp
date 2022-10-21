@@ -55,12 +55,16 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
 
 //--------------------------------------------------------------
 
-void TArp4Table::Init(TProtocolHandler * ahandler)
+void TArp4Table::Init(TIp4Handler * ahandler)
 {
   phandler = ahandler;
+  adapter  = phandler->adapter;
+
   firstitem = nullptr;
   lastitem = nullptr;
   freelist = nullptr;
+
+  syspkt = adapter->CreateSysTxPacket(128); // actually 64 would be enough
 
   // allocate the arp table
   TArp4TableItem *  items =
@@ -76,7 +80,7 @@ void TArp4Table::Init(TProtocolHandler * ahandler)
   }
 }
 
-TArp4TableItem * TArp4Table::CreateNewItem()
+TArp4TableItem * TArp4Table::CreateNewItem(uint8_t * amacaddr)
 {
   TArp4TableItem *  item;
 
@@ -101,19 +105,21 @@ TArp4TableItem * TArp4Table::CreateNewItem()
     }
   }
 
+  *(uint32_t *)&item->macaddr[0] = *(uint32_t *)&amacaddr[0];
+  *(uint16_t *)&item->macaddr[4] = *(uint16_t *)&amacaddr[4];
+
   item->prev = nullptr;
   item->next = nullptr;
   return item;
 }
 
-void TArp4Table::Update(TIp4Addr aipaddr, uint8_t * amacaddr)
+void TArp4Table::Update(TIp4Addr * aipaddr, uint8_t * amacaddr)
 {
   TArp4TableItem *  item = FindByMac(amacaddr);
 
   if (item)
   {
     // just move to forward
-    item->ipaddr = aipaddr;
 
     // unchain
     if (item->prev)   item->prev->next = item->next;
@@ -124,8 +130,10 @@ void TArp4Table::Update(TIp4Addr aipaddr, uint8_t * amacaddr)
   }
   else
   {
-    item = CreateNewItem();
+    item = CreateNewItem(amacaddr);
   }
+
+  item->ipaddr = *aipaddr;
 
   // add as first
 
@@ -142,12 +150,12 @@ void TArp4Table::Update(TIp4Addr aipaddr, uint8_t * amacaddr)
   }
 }
 
-TArp4TableItem * TArp4Table::FindByIp(TIp4Addr aipaddr)
+TArp4TableItem * TArp4Table::FindByIp(PIp4Addr paddr)
 {
   TArp4TableItem *  item = firstitem;
   while (item)
   {
-    if (item->ipaddr.u32 == aipaddr.u32)
+    if (item->ipaddr.u32 == paddr->u32)
     {
       return item;
     }
@@ -170,6 +178,170 @@ TArp4TableItem * TArp4Table::FindByMac(uint8_t * amacaddr)
   }
   return nullptr;
 }
+
+bool TArp4Table::SendWithArp(TPacketMem * pmem, PIp4Addr paddr)
+{
+  TArp4TableItem * arpitem = FindByIp(paddr);
+  if (arpitem)
+  {
+    // update the destination MAC (this is the first field
+    *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
+    *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
+
+    return adapter->SendTxPacket(pmem);
+  }
+
+  // add to the jobs
+  pmem->next = nullptr;
+  *(PIp4Addr)&pmem->extra[0] = *paddr; // copy the required address to the extra field
+
+  if (lastjob)
+  {
+    lastjob->next = pmem;
+  }
+  else
+  {
+    firstjob = pmem;
+  }
+
+  lastjob = pmem;
+
+  Run();
+
+  return true;
+}
+
+bool TArp4Table::ProcessArpResponse(TPacketMem * pmem)
+{
+  PEthernetHeader rxeh = PEthernetHeader(&pmem->data[0]);
+  PArpHeader      parp = PArpHeader(rxeh + 1);
+
+  Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
+  Run();  // someone probably waits for this
+
+  return true;
+}
+
+void TArp4Table::Run()
+{
+  TPacketMem * pmem = firstjob;
+  if (!pmem)
+  {
+    return;
+  }
+
+  if (0 == phase)  // prepare the request
+  {
+    PEthernetHeader txeh = PEthernetHeader(&syspkt->data[0]);
+    PArpHeader      parp = PArpHeader(txeh + 1);
+
+    int n;
+
+    // setup the mac addresses
+    for (n = 0; n < 6; ++n)
+    {
+      // broadcast:
+      txeh->dest_mac[n] = 0xFF; // broadcast
+      txeh->src_mac[n] = adapter->peth->mac_address[n]; // our mac
+
+      parp->sha[n] = adapter->peth->mac_address[n]; // our mac
+      parp->tha[n] = 0;
+    }
+
+    // setup the IP addresses
+    for (n = 0; n < 4; ++n)
+    {
+      parp->spa[n] = phandler->ipaddress.u8[n];
+      parp->tpa[n] = pmem->extra[n]; // the required address is copied to here
+    }
+
+    txeh->ethertype = 0x0608; // ARP, byte swapped
+
+    parp->htype = 0x0100;
+    parp->ptype = 0x0008;
+    parp->hlen = 6;
+    parp->plen = 4;
+    parp->oper = 0x0100; // request, byte swapped
+
+    adapter->SendTxPacket(syspkt);
+    start_ms = adapter->mscounter;
+
+    trycnt = 1; // reset the try count
+    phase = 1;  // wait until it is sent
+  }
+  else if (1 == phase) // wait until the packet is sent
+  {
+    if (0 == syspkt->status)
+    {
+      phase = 5; // wait for the resolution (with the ARP response)
+    }
+    else if (adapter->mscounter - start_ms > response_timeout_ms)
+    {
+      // something is very wrong!
+      TRACE("Timeout sending ARP request!\n");
+      phase = 9; // re-sending
+    }
+  }
+  else if (5 == phase) // check if the ip is resolved
+  {
+    PIp4Addr paddr = PIp4Addr(&pmem->extra[0]);
+    TArp4TableItem * arpitem = FindByIp(paddr);
+    if (arpitem)
+    {
+      // the address is resolved!, we can finish this job!
+      // update the destination MAC (this is the first field
+      *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
+      *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
+
+      FinishJob(true); // finish the job sending the packet
+
+      phase = 0;  // go to the next job
+    }
+    else if (adapter->mscounter - start_ms > response_timeout_ms) // repeat on timeout
+    {
+      phase = 9; // repeat the request
+    }
+  }
+  else if (9 == phase)
+  {
+    if (trycnt >= max_tries)
+    {
+      FinishJob(false); // give up, free the packet
+
+      phase = 0;  // go to the next
+    }
+    else // try again
+    {
+      ++trycnt;
+      adapter->SendTxPacket(syspkt);
+      start_ms = adapter->mscounter;
+      phase = 1; // wait until it is sent
+    }
+  }
+}
+
+void TArp4Table::FinishJob(bool asend)
+{
+  TPacketMem * pmem = firstjob;
+  if (!pmem)
+  {
+    return;
+  }
+
+  // warning: unchain required first
+  firstjob = firstjob->next;
+  if (!firstjob)  lastjob = nullptr;
+
+  if (asend)
+  {
+    adapter->SendTxPacket(pmem);
+  }
+  else
+  {
+    adapter->ReleaseTxPacket(pmem);
+  }
+}
+
 
 //--------------------------------------------------------------
 
@@ -195,29 +367,12 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 
   // TODO: assemble the UDP package!
 
-  // does it require ARP ?
-  TArp4TableItem * arpitem = phandler->arptable.FindByIp(destaddr);
-  if (arpitem)
+  if (!phandler->SendWithRouting(pmem))
   {
-    // update the destination MAC (this is the first field
-    *(uint32_t *)&pmem->data[0] = *(uint32_t *)&arpitem->macaddr[0];
-    *(uint16_t *)&pmem->data[4] = *(uint16_t *)&arpitem->macaddr[4];
-
-    if (phandler->adapter->SendTxPacket(pmem))
-    {
-      return adatalen;
-    }
-    else
-    {
-      return 0;  // something was not succesful at the ETH HW level
-    }
-  }
-  else // ARP required!
-  {
-    //TODO: request ARP
-
     return -1;
   }
+
+  return adatalen;
 }
 
 int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
@@ -276,6 +431,7 @@ void TIp4Handler::AddUdpSocket(TUdp4Socket * audp)
 
 void TIp4Handler::Run()
 {
+  arptable.Run();
 }
 
 bool TIp4Handler::HandleRxPacket(TPacketMem * pmem)  // return true, if the packet is handled
@@ -313,49 +469,60 @@ bool TIp4Handler::HandleArp()
 
   PArpHeader parp = PArpHeader(rxeh + 1);
 
-  TRACE("ARP request for %u.%u.%u.%u\r\n", parp->tpa[0], parp->tpa[1], parp->tpa[2], parp->tpa[3] );
-
-  if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)
+  if (0x0100 == parp->oper) // ARP request ?
   {
-    TRACE("Answering ARP...\r\n");
+    TRACE("ARP request for %u.%u.%u.%u\r\n", parp->tpa[0], parp->tpa[1], parp->tpa[2], parp->tpa[3] );
 
-    // prepare the answer
-
-    pmem = adapter->AllocateTxPacket();
-    if (!pmem)
+    if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)  // someone want to know my IP
     {
-      return false;
+      // it is worth to put it into the ARP table
+      arptable.Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
+
+      TRACE("Answering ARP...\r\n");
+
+      // prepare the answer
+
+      pmem = adapter->AllocateTxPacket();
+      if (!pmem)
+      {
+        return false;
+      }
+
+      pmem->datalen = sizeof(TEthernetHeader) + sizeof(TArpHeader);
+      memcpy(&pmem->data[0], &rxpkt->data[0], pmem->datalen);
+
+      PEthernetHeader txeh = PEthernetHeader(&pmem->data[0]);
+      parp = PArpHeader(txeh + 1);
+
+      parp->oper = 0x0200; // ARP Reply (byte swapped)
+
+      // fill the ETH addresses
+      for (n = 0; n < 6; ++n)
+      {
+        txeh->dest_mac[n] = txeh->src_mac[n];
+        parp->tha[n] = parp->sha[n];
+        txeh->src_mac[n] = adapter->peth->mac_address[n];
+        parp->sha[n] = adapter->peth->mac_address[n];
+      }
+
+      // fill the IP addresses
+      for (n = 0; n < 4; ++n)
+      {
+        parp->tpa[n] = parp->spa[n];
+        parp->spa[n] = ipaddress.u8[n];
+      }
+
+      // send the packet
+      adapter->SendTxPacket(pmem);  // the tx packet will be released automatically
     }
-
-    pmem->datalen = sizeof(TEthernetHeader) + sizeof(TArpHeader);
-    memcpy(&pmem->data[0], &rxpkt->data[0], pmem->datalen);
-
-    PEthernetHeader txeh = PEthernetHeader(&pmem->data[0]);
-    parp = PArpHeader(txeh + 1);
-
-    parp->oper = 0x0200; // ARP Reply (byte swapped)
-
-    // fill the ETH addresses
-    for (n = 0; n < 6; ++n)
-    {
-      txeh->dest_mac[n] = txeh->src_mac[n];
-      parp->tha[n] = parp->sha[n];
-      txeh->src_mac[n] = adapter->peth->mac_address[n];
-      parp->sha[n] = adapter->peth->mac_address[n];
-    }
-
-    // fill the IP addresses
-    for (n = 0; n < 4; ++n)
-    {
-      parp->tpa[n] = parp->spa[n];
-      parp->spa[n] = ipaddress.u8[n];
-    }
-
-    // send the packet
-    adapter->SendTxPacket(pmem);  // the tx packet will be released automatically
+    // else: ignore it
+  }
+  else if (0x0200 == parp->oper)  // ARP response for me
+  {
+    arptable.ProcessArpResponse(rxpkt);
   }
 
-  return true;
+  return true; // signalize handled
 }
 
 bool TIp4Handler::HandleIcmp()
@@ -421,3 +588,29 @@ bool TIp4Handler::HandleUdp()
   return true;
 }
 
+bool TIp4Handler::LocalAddress(TIp4Addr * aaddr)
+{
+  if ((aaddr->u32 ^ ipaddress.u32) & netmask.u32)
+  {
+    return false;
+  }
+  return true;
+}
+
+bool TIp4Handler::SendWithRouting(TPacketMem * pmem)
+{
+  PIp4Header  txiph  = PIp4Header(&pmem->data[sizeof(TEthernetHeader)]);
+  PIp4Addr    pdstip = PIp4Addr(&txiph->dstaddr[0]);
+
+  // 1. is it a local network packet or it must be sent to the gateway?
+  if (LocalAddress(pdstip))
+  {
+    return arptable.SendWithArp(pmem, pdstip);
+  }
+  else  // send to the gateway
+  {
+    return arptable.SendWithArp(pmem, &gwaddress);
+  }
+
+  return false;
+}

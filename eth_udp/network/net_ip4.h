@@ -29,7 +29,7 @@ typedef struct
     u8[3] = a3;
   }
 //
-} TIp4Addr;
+} TIp4Addr, * PIp4Addr;
 
 typedef struct
 {
@@ -68,6 +68,8 @@ typedef struct TArp4TableItem
 //
 } TArp4TableItem, * PArp4TableItem;
 
+class TIp4Handler;
+
 class TArp4Table
 {
 public:
@@ -75,20 +77,38 @@ public:
   TArp4TableItem *    lastitem  = nullptr;
   TArp4TableItem *    freelist  = nullptr;
 
-  TProtocolHandler *  phandler = nullptr;
+  TNetAdapter *       adapter = nullptr;
+  TIp4Handler *       phandler = nullptr;
 
   uint8_t             max_items = 8;
+  uint8_t             max_tries = 5;  // after so many tries will be given up
+  uint32_t            response_timeout_ms = 500;
 
-  void                Init(TProtocolHandler * ahandler);
-  void                Update(TIp4Addr aipaddr, uint8_t * amacaddr);
-  TArp4TableItem *    FindByIp(TIp4Addr aipaddr);
+
+  TPacketMem *        firstjob = nullptr;
+  TPacketMem *        lastjob = nullptr;
+
+  void                Init(TIp4Handler * ahandler);
+  void                Update(TIp4Addr * aipaddr, uint8_t * amacaddr);
+  TArp4TableItem *    FindByIp(PIp4Addr aipaddr);
   TArp4TableItem *    FindByMac(uint8_t * amacaddr);
 
-protected:
-  TArp4TableItem *    CreateNewItem();
-};
+  bool                SendWithArp(TPacketMem * pmem, PIp4Addr paddr);
+  bool                ProcessArpResponse(TPacketMem * pmem);
 
-class TIp4Handler;
+  void                Run(); // handle resolution state machine
+
+protected:
+  int                 phase = 0;
+  int                 trycnt = 0;
+  uint32_t            start_ms = 0;
+
+  TArp4TableItem *    CreateNewItem(uint8_t * amacaddr);
+
+  TPacketMem *        syspkt = nullptr;
+
+  void                FinishJob(bool asend);
+};
 
 class TUdp4Socket
 {
@@ -140,6 +160,9 @@ public:
   virtual void        Run();
 
   virtual bool        HandleRxPacket(TPacketMem * pmem);  // return true, if the packet is handled
+
+  bool                SendWithRouting(TPacketMem * pmem);
+  bool                LocalAddress(TIp4Addr * aaddr);
 
 public:
   void                AddUdpSocket(TUdp4Socket * audp);
