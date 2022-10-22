@@ -12,6 +12,7 @@
 // ignore traces
 #define TRACE(...)
 #define LTRACE(...)
+#define TRACE_FLUSH(...)
 
 #endif //!defined(Traces__h)
 

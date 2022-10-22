@@ -1,7 +1,6 @@
 /*
  *  file:     traces.h (uart)
  *  brief:    Trace message redirection to UART
- *  version:  1.00
  *  date:     2021-10-02
  *  authors:  nvitya
 */
@@ -22,6 +21,8 @@ extern THwUart   conuart;  // console uart
   // ignore traces
   #define TRACE(...)
 #endif
+
+#define TRACE_FLUSH(...)
 
 #ifdef LTRACES
  #define LTRACE(...)  TRACE( __VA_ARGS__ )
