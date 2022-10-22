@@ -393,13 +393,14 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   iph->offset = 0;
   iph->ttl = 64;
   iph->protocol = 17;
+  iph->csum = 0;
 
   memcpy(pdata, adataptr, adatalen);
 
   udph->sport = __builtin_bswap16(listenport);
   udph->dport = __builtin_bswap16(destport);
   udph->len   = __builtin_bswap16(adatalen + sizeof(TUdp4Header));
-  udph->csum  = calc_udp4_checksum(iph, adatalen);
+  udph->csum  = 0; //calc_udp4_checksum(iph, adatalen);
 
   pmem->datalen = adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader);
 
@@ -413,25 +414,55 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
 
 int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
 {
-  TPacketMem * pmem = rxpkt_first;
+  int err = 0;
 
+  TPacketMem * pmem = rxpkt_first;
   if (!pmem)
   {
     return 0;
   }
 
-  // TODO: copy the UDP data from the packet to the user
+  PEthernetHeader eh    = PEthernetHeader(&pmem->data[0]);
+  PIp4Header      iph   = PIp4Header(eh + 1);
+  PUdp4Header     udph  = PUdp4Header(iph + 1);
+  uint8_t *       pdata = (uint8_t *)(udph + 1);
 
-  unsigned len = 1;
+  uint16_t dlen = __builtin_bswap16(udph->len) - sizeof(TUdp4Header);
+  if (dlen > adatalen)
+  {
+    err = -1;
+  }
+  else
+  {
+    err = dlen;
+    memcpy(adataptr, pdata, dlen); // copy the data
+  }
 
+  // unchain the pmem first
   rxpkt_first = rxpkt_first->next;
   if (!rxpkt_first)  rxpkt_last = nullptr;
 
-  // release the packet
+  // release the packet !
   phandler->adapter->ReleaseRxPacket(pmem);
 
-  return len;
+  return err;
 }
+
+void TUdp4Socket::AddRxPacket(TPacketMem * pmem)
+{
+  pmem->flags = PMEMFLAG_KEEP; // do not release this packet until it is processed !
+  pmem->next = nullptr;
+  if (rxpkt_last)
+  {
+    rxpkt_last->next = pmem;
+  }
+  else
+  {
+    rxpkt_first = pmem;
+  }
+  rxpkt_last = pmem;
+}
+
 
 //--------------------------------------------------------------
 
@@ -611,16 +642,30 @@ bool TIp4Handler::HandleIcmp()
     // send the packet
     adapter->SendTxPacket(pmem);  // the tx packet will be released automatically
   }
-  else
-  {
-    return false;
-  }
 
   return true;
 }
 
 bool TIp4Handler::HandleUdp()
 {
+  // rxeh, rxiph is already set
+  TUdp4Header * udph = (TUdp4Header *)(rxiph + 1);
+
+  uint16_t dport = __builtin_bswap16(udph->dport);
+
+  // search for listeners
+  TUdp4Socket * udp = udp_first;
+  while (udp)
+  {
+    if (udp->listenport == dport)
+    {
+      // got it
+      udp->AddRxPacket(rxpkt);
+      return true;  // returning true here does not releases the Rx packet here
+    }
+    udp = udp->nextsocket;
+  }
+
   return true;
 }
 

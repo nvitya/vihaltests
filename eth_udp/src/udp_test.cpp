@@ -26,6 +26,8 @@ unsigned last_send_time;
 unsigned last_recv_time;
 uint8_t pbuf[1536] __attribute__((aligned(16)));  // alignment is useful for the debugging
 
+const char * udp_test_message = "VIHAL UDP TEST MESSAGE";
+
 //--------------------------------------------------------
 
 void udp_test_init()
@@ -77,7 +79,7 @@ void udp_test_run()
     prev_link_up = true;
 
 
-    if ((send_cnt < 2) && (t - last_send_time > SystemCoreClock / 10))
+    if ((send_cnt < 0) && (t - last_send_time > SystemCoreClock / 10))
     {
       udp.destaddr.Set(192, 168, 2, 1);
       udp.destport = 5000;
@@ -88,7 +90,7 @@ void udp_test_run()
       }
 
       TRACE("Sending UDP...\r\n");
-      udp.Send(&pbuf[0], len);
+      udp.Send((void *)udp_test_message, strlen(udp_test_message));
 
       ++send_cnt;
 
@@ -102,11 +104,14 @@ void udp_test_run()
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
-    // increment data and send it back
+    TRACE("UDP MESSAGE RECEIVED: \"");
     for (i = 0; i < len; ++i)
     {
-      ++(pbuf[i]);
+      TRACE("%c", pbuf[i]);
     }
+    TRACE("\"\r\n");
+
+#if 0
 
     udp.destaddr = udp.srcaddr;
     udp.destport = udp.srcport;
@@ -117,5 +122,7 @@ void udp_test_run()
       // if there are no more place in send the queue
       TRACE("UDP Send Error: %i\r\n", r);
     }
+#endif
+
   }
 }

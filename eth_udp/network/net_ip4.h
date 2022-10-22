@@ -135,6 +135,8 @@ public:
 
   int Send(void * adataptr, unsigned adatalen);
   int Receive(void * adataptr, unsigned adatalen);
+
+  void AddRxPacket(TPacketMem * pmem);
 };
 
 class TIp4Handler : public TProtocolHandler

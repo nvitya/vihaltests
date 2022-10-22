@@ -172,7 +172,7 @@ void TNetAdapter::Run()
     ph = firsthandler;
     while (ph)
     {
-      if (ph->HandleRxPacket(pmem))  // the protocol handler must release the TPacketMem !
+      if (ph->HandleRxPacket(pmem))
       {
         break;
       }
@@ -184,9 +184,8 @@ void TNetAdapter::Run()
       // the packet was not handled
     }
 
-    if (0 == (pmem->flags & PMEMFLAG_KEEP))
+    if (0 == (pmem->flags & PMEMFLAG_KEEP))  // release the packet when not explicitly told to keep it
     {
-      // the packet was not handled, just ignore and release
       peth->ReleaseRxBuf(pmem);
     }
   }
