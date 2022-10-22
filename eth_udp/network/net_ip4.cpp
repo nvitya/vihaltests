@@ -10,6 +10,28 @@
 #include "net_ip4.h"
 #include "traces.h"
 
+uint16_t calc_ip4_header_checksum(TIp4Header * piph)
+{
+  uint32_t sum = 0;
+  uint16_t * pd16 = (uint16_t *)(piph);
+  uint16_t * pd16_end = (uint16_t *)(piph + 1);
+
+  while (pd16 < pd16_end)
+  {
+    sum += __REV16(*pd16++);
+  }
+
+  sum -= __REV16(piph->csum);  // remove the csum
+
+  //  Fold 32-bit sum to 16 bits
+  while (sum >> 16)
+  {
+    sum = (sum & 0xffff) + (sum >> 16);
+  }
+
+  return __REV16(~sum);
+}
+
 uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
 {
   uint32_t n;
@@ -50,7 +72,7 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  return (uint16_t) (~sum);
+  return __REV16(~sum);
 }
 
 //--------------------------------------------------------------
@@ -232,7 +254,7 @@ void TArp4Table::Run()
 
   if (0 == phase)  // prepare the request
   {
-    TRACE("%u Start ARP...\r\n", adapter->mscounter);
+    TRACE("%u Start ARP %d.%d.%d.%d\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
 
     PEthernetHeader txeh = PEthernetHeader(&syspkt->data[0]);
     PArpHeader      parp = PArpHeader(txeh + 1);
@@ -292,7 +314,7 @@ void TArp4Table::Run()
     TArp4TableItem * arpitem = FindByIp(paddr);
     if (arpitem)
     {
-      TRACE("%u ARP resolved, continue sending...\r\n", adapter->mscounter);
+      TRACE("%u ARP %d.%d.%d.%d resolved, continue sending...\r\n", adapter->mscounter, pmem->extra[0], pmem->extra[1], pmem->extra[2], pmem->extra[3]);
 
       // the address is resolved!, we can finish this job!
       // update the destination MAC (this is the first field
@@ -386,21 +408,21 @@ int TUdp4Socket::Send(void * adataptr, unsigned adatalen)
   *PIp4Addr(&iph->srcaddr[0]) = phandler->ipaddress;
   *PIp4Addr(&iph->dstaddr[0]) = destaddr;
 
-  iph->hl_v = 0x45;
-  iph->tos = 0;
-  iph->len = __builtin_bswap16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
-  iph->id = 0x0AA4;
-  iph->offset = 0;
-  iph->ttl = 64;
-  iph->protocol = 17;
-  iph->csum = 0;
-
   memcpy(pdata, adataptr, adatalen);
 
-  udph->sport = __builtin_bswap16(listenport);
-  udph->dport = __builtin_bswap16(destport);
-  udph->len   = __builtin_bswap16(adatalen + sizeof(TUdp4Header));
-  udph->csum  = 0; //calc_udp4_checksum(iph, adatalen);
+  iph->hl_v = 0x45;
+  iph->tos = 0;
+  iph->len = __REV16(adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header));
+  iph->id = 0x0000;
+  iph->fl_offs = __REV16(0x4000);
+  iph->ttl = 64;
+  iph->protocol = 17;
+  iph->csum = calc_ip4_header_checksum(iph);
+
+  udph->sport = __REV16(listenport);
+  udph->dport = __REV16(destport);
+  udph->len   = __REV16(adatalen + sizeof(TUdp4Header));
+  udph->csum  = calc_udp4_checksum(iph, adatalen);
 
   pmem->datalen = adatalen + sizeof(TIp4Header) + sizeof(TUdp4Header) + sizeof(TEthernetHeader);
 
@@ -427,7 +449,7 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
   PUdp4Header     udph  = PUdp4Header(iph + 1);
   uint8_t *       pdata = (uint8_t *)(udph + 1);
 
-  uint16_t dlen = __builtin_bswap16(udph->len) - sizeof(TUdp4Header);
+  uint16_t dlen = __REV16(udph->len) - sizeof(TUdp4Header);
   if (dlen > adatalen)
   {
     err = -1;
@@ -437,6 +459,9 @@ int TUdp4Socket::Receive(void * adataptr, unsigned adatalen)
     err = dlen;
     memcpy(adataptr, pdata, dlen); // copy the data
   }
+
+  srcaddr = *PIp4Addr(&iph->srcaddr[0]);
+  srcport = __REV16(udph->sport);
 
   // unchain the pmem first
   rxpkt_first = rxpkt_first->next;
@@ -538,14 +563,12 @@ bool TIp4Handler::HandleArp()
 
   if (0x0100 == parp->oper) // ARP request ?
   {
-    TRACE("ARP request for %u.%u.%u.%u\r\n", parp->tpa[0], parp->tpa[1], parp->tpa[2], parp->tpa[3] );
-
     if (*(uint32_t *)&(parp->tpa) == ipaddress.u32)  // someone want to know my IP
     {
+      TRACE("ARP request from %u.%u.%u.%u\r\n", parp->spa[0], parp->spa[1], parp->spa[2], parp->spa[3] );
+
       // it is worth to put it into the ARP table
       arptable.Update(PIp4Addr(&parp->spa[0]), &parp->sha[0]);
-
-      TRACE("Answering ARP...\r\n");
 
       // prepare the answer
 
@@ -651,7 +674,7 @@ bool TIp4Handler::HandleUdp()
   // rxeh, rxiph is already set
   TUdp4Header * udph = (TUdp4Header *)(rxiph + 1);
 
-  uint16_t dport = __builtin_bswap16(udph->dport);
+  uint16_t dport = __REV16(udph->dport);
 
   // search for listeners
   TUdp4Socket * udp = udp_first;

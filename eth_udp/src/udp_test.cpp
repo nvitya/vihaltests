@@ -111,8 +111,7 @@ void udp_test_run()
     }
     TRACE("\"\r\n");
 
-#if 0
-
+#if 1
     udp.destaddr = udp.srcaddr;
     udp.destport = udp.srcport;
 

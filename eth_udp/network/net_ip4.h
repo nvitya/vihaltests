@@ -37,7 +37,7 @@ typedef struct
   uint8_t   tos;       /**< Type of service */
   uint16_t  len;       /**< Total length */
   uint16_t  id;        /**< Identification */
-  uint16_t  offset;    /**< Fragment offset field */
+  uint16_t  fl_offs;   /**< Flags + Fragment offset field */
   uint8_t   ttl;       /**< Time to live */
   uint8_t   protocol;  /**< Protocol */
   uint16_t  csum;      /**< Checksum */
@@ -175,6 +175,7 @@ protected:
   bool                HandleUdp();
 };
 
+uint16_t calc_ip4_header_checksum(TIp4Header * piph);
 uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen);
 
 inline void  mac_address_copy(uint8_t * pdst, uint8_t * psrc)
