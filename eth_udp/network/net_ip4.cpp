@@ -37,36 +37,42 @@ uint16_t calc_udp4_checksum(TIp4Header * piph, uint16_t datalen)
   uint32_t n;
   uint32_t sum = 0;
   TUdp4Header * pudp = PUdp4Header(piph + 1); // the UDP header comes after the IP header
+  uint16_t * pd16;
+  uint16_t * pd16_end;  // using this needs fewer registers
 
   // add the two IP addresses first
-  uint16_t * pd16 = (uint16_t *)&piph->srcaddr;
-  for (n = 0; n < 4; ++n)
+  pd16 = (uint16_t *)&piph->srcaddr;
+  pd16_end = pd16 + 4;
+  while (pd16 < pd16_end)
   {
     sum += __REV16(*pd16++);
   }
 
-  sum += piph->protocol; // add the protocol as well
+  sum += piph->protocol; // add the protocol as well (8-bit only)
   sum += __REV16(pudp->len); // add the UDP length
 
   // add the UDP header parts exlusive the checksum
   pd16 = (uint16_t *)pudp;
-  for (n = 0; n < 3; ++n)
+  pd16_end = pd16 + 3;
+  while (pd16 < pd16_end)
   {
     sum += __REV16(*pd16++);
   }
 
   // and then the data
   pd16 = (uint16_t *)(pudp + 1);
-  for (n = 0; n < (datalen >> 1); ++n)
+  pd16_end = pd16 + (datalen >> 1);
+  while (pd16 < pd16_end)
   {
     sum += __REV16(*pd16++);
   }
 
-  if (datalen & 1)
+  if (datalen & 1)  // one byte remained
   {
-    sum += (*pd16 & 0xFF);  // mo byte swapping here, we need just the low byte
+    sum += *(uint8_t *)pd16;
   }
 
+  //  Fold 32-bit sum to 16 bits
   while (sum >> 16)
   {
     sum = (sum & 0xffff) + (sum >> 16);

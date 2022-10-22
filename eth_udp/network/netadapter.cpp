@@ -33,6 +33,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   if (!rx_desc_mem || !tx_desc_mem)
   {
     TRACE("NetAdapter: Error allocating RX/TX descriptors!\r\n");
+    TRACE_FLUSH();
     return false;
   }
 
@@ -40,6 +41,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   if (!rx_pmem)
   {
     TRACE("NetAdapter: Error allocating RX packet buffers!\r\n");
+    TRACE_FLUSH();
     return false;
   }
 
@@ -47,6 +49,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   if (!tx_pmem)
   {
     TRACE("NetAdapter: Error allocating TX packet buffers!\r\n");
+    TRACE_FLUSH();
     return false;
   }
 
@@ -56,6 +59,7 @@ bool TNetAdapter::Init(THwEth * aeth, void * anetmem, unsigned anetmemsize)
   if (!peth->Init(rx_desc_mem, max_rx_packets, tx_desc_mem, max_tx_packets))
   {
     TRACE("NetAdapter: ETH INIT FAILED!\r\n");
+    TRACE_FLUSH();
     return false;
   }
 
@@ -109,8 +113,13 @@ void TNetAdapter::AddHandler(TProtocolHandler * ahandler)
 
 uint8_t * TNetAdapter::AllocateNetMem(unsigned asize)
 {
-  if (asize > NetMemAvailable())
+  if (asize > NetMemFree())
   {
+    TRACE("AllocateNetMem FAILED!\r\n");
+    TRACE_FLUSH();
+
+    __BKPT();  // serious error, change the memory sizes, the adapter configuration
+
     return nullptr;
   }
 

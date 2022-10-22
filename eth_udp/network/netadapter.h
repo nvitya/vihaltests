@@ -57,13 +57,15 @@ public:
 
   uint8_t *           AllocateNetMem(unsigned asize);
   TPacketMem *        CreateSysTxPacket(unsigned asize);  // allocates from the NetMem a usually smaller packet
-  int                 NetMemAvailable() { return netmem_size - netmem_allocated; }
 
   void                AddHandler(TProtocolHandler * ahandler);
 
   bool                IsLinkUp() { return peth->link_up; }
 
   uint32_t            mscounter = 0; // millisecond timer for various timing
+
+  unsigned            NetMemSize() { return netmem_size; }
+  unsigned            NetMemFree() { return netmem_size - netmem_allocated; }
 
 protected: // internal memory management
 

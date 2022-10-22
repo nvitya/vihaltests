@@ -46,6 +46,7 @@ void udp_test_init()
 
   // 2. INITIALIZE THE Adapter
 
+  nadap.max_rx_packets = 12; // use the free space with RX packets
   nadap.Init(&eth, &network_memory[0], sizeof(network_memory));  // Ethernet initialization included
 
   ip4_handler.ipaddress.Set(192, 168, 2, 10);
@@ -55,6 +56,12 @@ void udp_test_init()
 
   // 3. INITIALIZE THE UDP4 SOCKET
   udp.Init(&ip4_handler, 5000);
+
+  TRACE("Network Adapter Info:\r\n");
+  TRACE("  Tx Packets  : %6u\r\n", nadap.max_tx_packets);
+  TRACE("  Rx Packets  : %6u\r\n", nadap.max_rx_packets);
+  TRACE("  Total Memory: %6u bytes\r\n", nadap.NetMemSize());
+  TRACE("  Free Memory : %6u bytes\r\n", nadap.NetMemFree());
 
   last_recv_time = CLOCKCNT;
   last_send_time = CLOCKCNT;
@@ -104,14 +111,15 @@ void udp_test_run()
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
+#if 0 // no traces for benchmarking
     TRACE("UDP MESSAGE RECEIVED: \"");
     for (i = 0; i < len; ++i)
     {
       TRACE("%c", pbuf[i]);
     }
     TRACE("\"\r\n");
+#endif
 
-#if 1
     udp.destaddr = udp.srcaddr;
     udp.destport = udp.srcport;
 
@@ -121,7 +129,5 @@ void udp_test_run()
       // if there are no more place in send the queue
       TRACE("UDP Send Error: %i\r\n", r);
     }
-#endif
-
   }
 }

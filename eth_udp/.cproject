@@ -363,7 +363,7 @@
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash.1545824510" name="Create flash image" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createflash" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createlisting.1121661265" name="Create extended listing" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.createlisting" useByScannerDiscovery="false"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize.1951494089" name="Print size" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.addtools.printsize" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.1174131916" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.none" valueType="enumerated"/>
+							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.1174131916" name="Optimization Level" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level" useByScannerDiscovery="true" value="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.level.more" valueType="enumerated"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength.980164292" name="Message length (-fmessage-length=0)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.messagelength" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar.733974600" name="'char' is signed (-fsigned-char)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.signedchar" useByScannerDiscovery="true" value="true" valueType="boolean"/>
 							<option id="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections.1097542997" name="Function sections (-ffunction-sections)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.optimization.functionsections" useByScannerDiscovery="true" value="true" valueType="boolean"/>
@@ -469,17 +469,18 @@
 		<configuration configurationName="BOARD_MIN_F401">
 			<resource resourceType="PROJECT" workspacePath="/usb_cdc_echo"/>
 		</configuration>
+		<configuration configurationName="BOARD_ENEBO_A"/>
 		<configuration configurationName="BOARD_MIBO64_ATSAM4S">
 			<resource resourceType="PROJECT" workspacePath="/usb_hid"/>
 		</configuration>
 		<configuration configurationName="BOARD_MIN_F103"/>
-		<configuration configurationName="BOARD_ENEBO_A"/>
 		<configuration configurationName="BOARD_XPLAINED_SAME70">
 			<resource resourceType="PROJECT" workspacePath="/usb_cdc_echo"/>
 		</configuration>
 		<configuration configurationName="BOARD_NUCLEO_F746">
 			<resource resourceType="PROJECT" workspacePath="/eth_raw"/>
 		</configuration>
+		<configuration configurationName="BOARD_DISCOVERY_F750"/>
 		<configuration configurationName="BOARD_MIBO64_ATSAME5X">
 			<resource resourceType="PROJECT" workspacePath="/usb_cdc_echo"/>
 		</configuration>
