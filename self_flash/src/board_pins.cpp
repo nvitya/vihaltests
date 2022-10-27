@@ -6,6 +6,7 @@
  *  authors:  nvitya
 */
 
+#include "platform.h"
 #include "board_pins.h"
 
 THwUart   conuart;  // console uart
@@ -112,6 +113,40 @@ void board_pins_init()
   // the writes are forced to single line mode (SSS) because the RP does not support SSM mode at write
   fl_qspi.multi_line_count = 4;
   fl_qspi.speed = 32000000;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+}
+
+#elif defined(BOARD_DISCOVERY_F750)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_K,  3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // QSPI
+
+  uint32_t qspipincfg = 0; //PINCFG_SPEED_MEDIUM | PINCFG_DRIVE_STRONG;
+  hwpinctrl.PinSetup(PORTNUM_B,  6, qspipincfg | PINCFG_AF_10);  // NCS
+  hwpinctrl.PinSetup(PORTNUM_B,  2, qspipincfg | PINCFG_AF_9);   // CLK
+  hwpinctrl.PinSetup(PORTNUM_D, 11, qspipincfg | PINCFG_AF_9);   // IO0
+  hwpinctrl.PinSetup(PORTNUM_D, 12, qspipincfg | PINCFG_AF_9);   // IO1
+  hwpinctrl.PinSetup(PORTNUM_E,  2, qspipincfg | PINCFG_AF_9);   // IO2
+  hwpinctrl.PinSetup(PORTNUM_D, 13, qspipincfg | PINCFG_AF_9);   // IO3
+
+  fl_qspi.multi_line_count = 2;  // there are some problems with quad
+  fl_qspi.speed = 50000000;
   fl_qspi.Init();
 
   spiflash.qspi = &fl_qspi;
