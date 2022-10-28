@@ -122,6 +122,14 @@ void board_pins_init()
 
 #elif defined(BOARD_DISCOVERY_F750)
 
+/* WARNING: for debugging with openocd add this to "Run/Restart commands":
+
+      monitor gdb_breakpoint_override hard
+
+  Without this the instruction stepping did not work for me.
+
+*/
+
 void board_pins_init()
 {
   pin_led_count = 1;
