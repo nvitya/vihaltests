@@ -20,7 +20,7 @@
 #define HAS_SDRAM                 1
 
 #define QSPI_SPEED         50000000
-#define QSPI_LINE_COUNT           2  // there are some problems with quad
+#define QSPI_LINE_COUNT           4
 
 #define FLADDR_APPLICATION        0  // app starts at the position 0 (app header first)
 
