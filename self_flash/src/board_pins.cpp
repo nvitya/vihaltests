@@ -145,7 +145,7 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_E,  2, qspipincfg | PINCFG_AF_9);   // IO2
   hwpinctrl.PinSetup(PORTNUM_D, 13, qspipincfg | PINCFG_AF_9);   // IO3
 
-  fl_qspi.multi_line_count = 2;  // there are some problems with quad
+  fl_qspi.multi_line_count = 4;  // there are some problems with quad here
   fl_qspi.speed = 50000000;
   fl_qspi.Init();
 
