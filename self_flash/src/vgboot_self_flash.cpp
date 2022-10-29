@@ -32,6 +32,7 @@
 #include "clockcnt.h"
 #include "traces.h"
 #include "app_header.h"
+#include "vgboot_utils.h"
 
 #define FLADDR_APPLICATION        0  // app starts at the position 0 (app header first)
 #define SELFFLASH_BUFSIZE      4096

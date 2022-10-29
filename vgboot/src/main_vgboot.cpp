@@ -42,6 +42,7 @@
 #include "board_pins.h"
 
 #include "app_header.h"
+#include "vgboot_utils.h"
 
 volatile unsigned hbcounter = 0;
 
