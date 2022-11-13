@@ -35,6 +35,8 @@ uint8_t databuf[4096];
 
 void test_sd_spi()
 {
+  int i;
+
 	TRACE("SDCARD SPI test begin\r\n");
 
 	if (!sdcard.Init(&sd_spi))
@@ -51,11 +53,28 @@ void test_sd_spi()
 
 	// trace take time, for better scoping no traces here until the end
 
+#if 1
+
 	sdcard.StartReadBlocks(0,  &databuf[0],  4);
 	sdcard.WaitForComplete();
 
-  TRACE("SDCARD initialized, size = %u MB\r\n", sdcard.card_megabytes);
 	show_mem(&databuf[0], 512 * 4);
+
+#else
+
+	for (i = 0; i < 512*4; ++i)
+	{
+	  databuf[i] = (i >> 6);
+	}
+
+  // it is relative safe to write to the second sector
+  sdcard.StartWriteBlocks(1,  &databuf[0],  4);
+  sdcard.WaitForComplete();
+
+#endif
+
+  TRACE("SDCARD initialized, size = %u MB\r\n", sdcard.card_megabytes);
+
 
 	TRACE("SDCARD SPI test end\r\n");
 }
