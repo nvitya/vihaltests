@@ -12,6 +12,10 @@
 
 #include "boards_builtin.h"
 
-#define SD_SPI_USE_DMA      1  // 0 = normal polling, 1 = DMA, (qspi always uses DMA)
+#if defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750) || defined(BOARD_DEV_STM32F407ZE)
+  #define SDCARD_SDMMC 1
+#else
+  #define SDCARD_SPI 1
+#endif
 
 #endif /* BOARD_H_ */

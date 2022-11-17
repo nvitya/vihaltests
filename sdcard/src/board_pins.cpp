@@ -1,8 +1,7 @@
 /*
  *  file:     board_pins.cpp (spiflash)
- *  brief:    SPI Flash Test Board pins
- *  version:  1.00
- *  date:     2021-10-29
+ *  brief:    SDCARD Test Board pins
+ *  created:  2021-10-29
  *  authors:  nvitya
 */
 
@@ -13,7 +12,17 @@ unsigned  pin_led_count = 0;
 
 TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };
 
-THwSpi    sd_spi;
+#if SDCARD_SDMMC
+
+  THwSdmmc      sd_mmc;
+  TSdCardSdmmc  sdcard;
+
+#elif SDCARD_SPI
+
+  THwSpi        sd_spi;
+  TSdCardSpi    sdcard;
+
+#endif
 
 void board_pins_init_leds()
 {
@@ -66,20 +75,6 @@ void board_pins_init()
   fl_spi.DmaAssign(true,  &fl_spi_txdma);
   fl_spi.DmaAssign(false, &fl_spi_rxdma);
 
-}
-
-#elif defined(MCUF_VRV100) //BOARD_VRV100_441)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(PORTNUM_A, 0, false);
-  board_pins_init_leds();
-
-  conuart.Init(1); // UART1
-
-  fl_spi.speed = 8000000;
-  fl_spi.Init(1); // flash
 }
 
 //-------------------------------------------------------------------------------
@@ -189,6 +184,57 @@ void board_pins_init()
     sd_spi.DmaAssign(false, &sd_spi_rxdma);
 
   #endif
+}
+
+#elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_K,  3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // SDCARD Pins
+  hwpinctrl.PinSetup(PORTNUM_C,  8, PINCFG_AF_12); // SDMMC_D0
+  hwpinctrl.PinSetup(PORTNUM_C,  9, PINCFG_AF_12); // SDMMC_D1
+  hwpinctrl.PinSetup(PORTNUM_C, 10, PINCFG_AF_12); // SDMMC_D2
+  hwpinctrl.PinSetup(PORTNUM_C, 11, PINCFG_AF_12); // SDMMC_D3
+  hwpinctrl.PinSetup(PORTNUM_C, 12, PINCFG_AF_12); // SDMMC_CK
+  hwpinctrl.PinSetup(PORTNUM_D,  2, PINCFG_AF_12); // SDMMC_CMD
+
+  sd_mmc.Init();
+}
+
+#elif defined(BOARD_DEV_STM32F407ZE)
+
+void board_pins_init()
+{
+  pin_led_count = 2;
+  pin_led[0].Assign(PORTNUM_F,  9, true);
+  pin_led[1].Assign(PORTNUM_F, 10, true);
+  board_pins_init_leds();
+
+  // USART1
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART1_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
+  conuart.Init(1);
+
+  // SDCARD Pins
+  hwpinctrl.PinSetup(PORTNUM_C,  8, PINCFG_AF_12); // SDMMC_D0
+  hwpinctrl.PinSetup(PORTNUM_C,  9, PINCFG_AF_12); // SDMMC_D1
+  hwpinctrl.PinSetup(PORTNUM_C, 10, PINCFG_AF_12); // SDMMC_D2
+  hwpinctrl.PinSetup(PORTNUM_C, 11, PINCFG_AF_12); // SDMMC_D3
+  hwpinctrl.PinSetup(PORTNUM_C, 12, PINCFG_AF_12); // SDMMC_CK
+  hwpinctrl.PinSetup(PORTNUM_D,  2, PINCFG_AF_12); // SDMMC_CMD
+
+  sdcard.Init();
 }
 
 #elif defined(BOARD_MIBO48_STM32G473)
@@ -471,58 +517,6 @@ void board_pins_init()
   fl_qspi.multi_line_count = 4;
   fl_qspi.speed = 60000000;  // that's 240 MBit/s ...
   fl_qspi.Init();
-}
-
-// LPC
-
-#elif defined(BOARD_XPRESSO_LPC54608)
-
-TGpioPin       fl_spi_cs_pin(4, 6, false);
-THwDmaChannel  fl_spi_txdma;
-THwDmaChannel  fl_spi_rxdma;
-
-void board_pins_init()
-{
-  pin_led_count = 3;
-  pin_led[0].Assign(2,  2, true);
-  pin_led[1].Assign(3,  3, true);
-  pin_led[2].Assign(3, 14, true);
-  board_pins_init_leds();
-
-  hwpinctrl.PinSetup(0, 30, PINCFG_OUTPUT | PINCFG_AF_1); // UART_TX:
-  hwpinctrl.PinSetup(0, 29, PINCFG_INPUT  | PINCFG_AF_1); // UART_RX:
-  conuart.Init(0);
-
-  #define USE_QSPI 0
-  #if USE_QSPI
-    // PIN and DMA setup is done internally in the Init(), because there are no alternavives
-    fl_qspi.multi_line_count = 2;  // in my board the original chip was replaced, to a small dual only one
-    fl_qspi.speed = 30000000;
-    fl_qspi.Init();
-  #else
-
-    // Flexcomm9 - on the first row of the SLAVE PMOD connector
-
-    //hwpinctrl.PinSetup(4, 6, PINCFG_AF_2);  // FC9_CS
-    hwpinctrl.PinSetup(3, 20, PINCFG_AF_1);  // FC9_SCK
-    hwpinctrl.PinSetup(3, 21, PINCFG_AF_1);  // FC9_MOSI
-    hwpinctrl.PinSetup(3, 22, PINCFG_AF_1);  // FC9_MISO
-
-    fl_spi_cs_pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-
-    fl_spi.manualcspin = &fl_spi_cs_pin;
-    //fl_spi.datasample_late = true;
-    fl_spi.speed = 20000000;
-    fl_spi.Init(9);
-
-    #if FL_SPI_USE_DMA
-      fl_spi_txdma.Init(23);
-      fl_spi_rxdma.Init(22);
-
-      fl_spi.DmaAssign(true,  &fl_spi_txdma);
-      fl_spi.DmaAssign(false, &fl_spi_rxdma);
-    #endif
-  #endif
 }
 
 // RP

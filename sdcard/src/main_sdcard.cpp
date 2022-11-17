@@ -13,7 +13,7 @@
 #include "board_pins.h"
 #include "traces.h"
 
-#include "test_sd_spi.h"
+#include "test_sdcard.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -50,11 +50,11 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	board_pins_init();
 
 	TRACE("\r\n-----------------------------\r\n");
-	TRACE("VIHAL SDCARD SPI Test\r\n");
+	TRACE("VIHAL SDCARD Test\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-	test_sd_spi();
+	test_sdcard();
 
 	TRACE("Starting main cycle...\r\n");
 

@@ -1,23 +1,9 @@
-/*
- * test_spi.cpp
- *
- *  Created on: Oct 7, 2021
- *      Author: vitya
- */
 
 #include "string.h"
 
-#include "platform.h"
-#include "hwspi.h"
-#include "hwdma.h"
-#include "hwpins.h"
+#include "board_pins.h"
 #include "clockcnt.h"
 #include "traces.h"
-
-#include "board_pins.h"
-#include "sdcard_spi.h"
-
-TSdCardSpi  sdcard;
 
 void show_mem(void * addr, unsigned len)
 {
@@ -33,17 +19,28 @@ void show_mem(void * addr, unsigned len)
 
 uint8_t databuf[4096];
 
-void test_sd_spi()
+void test_sdcard()
 {
   int i;
 
-	TRACE("SDCARD SPI test begin\r\n");
+#ifdef SDCARD_SDMMC
 
-	if (!sdcard.Init(&sd_spi))
+	TRACE("SDCARD SDMMC test begin\r\n");
+
+	if (!sdcard.Init(&sd_mmc))
 	{
 	  TRACE("SDCARD init error !\r\n");
 	  return;
 	}
+#else
+  TRACE("SDCARD SPI test begin\r\n");
+
+  if (!sdcard.Init(&sd_spi))
+  {
+    TRACE("SDCARD init error !\r\n");
+    return;
+  }
+#endif
 
 	TRACE("Runing SDCARD state machine...\r\n");
 	while (!sdcard.card_initialized)
@@ -55,10 +52,12 @@ void test_sd_spi()
 
 #if 1
 
-	sdcard.StartReadBlocks(0,  &databuf[0],  4);
+#if 1
+
+	sdcard.StartReadBlocks(0,  &databuf[0],  1);
 	sdcard.WaitForComplete();
 
-	show_mem(&databuf[0], 512 * 4);
+	show_mem(&databuf[0], 512);
 
 #else
 
@@ -73,10 +72,12 @@ void test_sd_spi()
 
 #endif
 
+#endif
+
   TRACE("SDCARD initialized, size = %u MB\r\n", sdcard.card_megabytes);
 
 
-	TRACE("SDCARD SPI test end\r\n");
+	TRACE("SDCARD test end\r\n");
 }
 
 
