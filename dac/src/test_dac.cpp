@@ -10,21 +10,28 @@
 unsigned g_last_clock = 0;
 unsigned g_dac_cnt = 0;
 
-uint16_t dac_pattern[1024];
+uint16_t dac_pattern[4096];
 
 void test_dac_init()
 {
-  dac_pattern[0] = 0x0010;
-  dac_pattern[1] = 0x0F20;
-  dac_pattern[2] = 0x0030;
-  dac_pattern[3] = 0x0F40;
+	__NOP();  // for breakpoint
 
+#if 1
   dac.SetTo(0);
   dac.SetTo(0x500);
   dac.SetTo(0xF00);
   dac.SetTo(0x100);
+#endif
 
-  dac.RepeatPattern(&dac_pattern[0], 4);
+  //dac.SetFrequency(500000 / 2);  // the slew rate of the outputs are too slow for 1 MHz output
+
+	for (unsigned n = 0; n < 4096; ++n)
+	{
+		//dac_pattern[n] = (n & 0x3F) + ((15*(n & 1)) << 8);
+		dac_pattern[n] = n; // sawtooth
+	}
+
+  dac.RepeatPattern(&dac_pattern[0], 4096);
 
   g_last_clock = CLOCKCNT;
 }
