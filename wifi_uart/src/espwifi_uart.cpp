@@ -99,6 +99,29 @@ unsigned TEspWifiUart::AddTx(void * asrc, unsigned len) // returns the amount ac
   return len;
 }
 
+void TEspWifiUart::StartCommand(const char *fmt, ...)
+{
+  va_list arglist;
+  va_start(arglist, fmt);
+
+  // allocate format buffer on the stack:
+  char fmtbuf[FMT_BUFFER_SIZE];
+
+  char * pch = &fmtbuf[0];
+  *pch = 0;
+
+  int len = mp_vsnprintf(pch, FMT_BUFFER_SIZE, fmt, arglist);
+
+  if (len > 0)
+  {
+    AddTx(&fmtbuf[0], len);
+  }
+
+  va_end(arglist);
+
+  state = 10; // start a command
+}
+
 void TEspWifiUart::AddTxMessage(const char * fmt, ...)
 {
   va_list arglist;
@@ -165,8 +188,13 @@ void TEspWifiUart::Run()
         {
           TRACE("WiFi Ready detected !\r\n");
 
+          //AddTxMessage("AT\r\n");
+          //AddTxMessage("AT+CWQAP\r\n");  // do not connect to an access point
+
           rxmsglen = 0;
           state = 1;
+
+          StartCommand("AT+CWQAP\r\n");  // do not connect to the stored access point
         }
       }
       else
@@ -176,18 +204,48 @@ void TEspWifiUart::Run()
         rxmsglen = 1;
       }
     }
-    else
+    else if (10 == state)  // running a command
     {
-      if (13 == b)
+      // collect the response until OK or ERROR is detected
+
+      if (rxmsglen < sizeof(rxmsgbuf))
+      {
+        rxmsgbuf[rxmsglen] = b;
+        ++rxmsglen;
+
+        if (MsgOkDetected())
+        {
+          TRACE("CMD OK detected.\r\n");
+          rxmsglen = 0;
+          state = 1;
+        }
+        else if (MsgErrorDetected())
+        {
+          TRACE("CMD ERROR detected.\r\n");
+          rxmsglen = 0;
+          state = 1;
+        }
+      }
+      else
+      {
+        TRACE("WiFi RX buffer overflow\r\n");
+
+        state = 1; // go to idle
+        rxmsglen = 0;  // reset on overflow
+      }
+    }
+    else // idle state (1)
+    {
+      if (10 == b)
       {
         rxmsgbuf[rxmsglen] = 0; // zero terminate the message
-        TRACE("MSG: \"%s\"\r\n", &rxmsgbuf[0]);
+        TRACE("WiFi MSG: \"%s\"\r\n", &rxmsgbuf[0]);
 
         // process the message
 
         rxmsglen = 0;
       }
-      else if (10 == b) // ignore, usually comes after 13
+      else if (13 == b) // ignore, usually comes before 10
       {
 
       }
@@ -212,4 +270,22 @@ void TEspWifiUart::Run()
 
   // Sending buffered tx messages
   StartSendTxBuffer();
+}
+
+bool TEspWifiUart::MsgOkDetected()
+{
+  if (0 == memcmp(&rxmsgbuf[rxmsglen - 6], msg_ok, 6))
+  {
+    return true;
+  }
+  return false;
+}
+
+bool TEspWifiUart::MsgErrorDetected()
+{
+  if (0 == memcmp(&rxmsgbuf[rxmsglen - 9], msg_error, 9))
+  {
+    return true;
+  }
+  return false;
 }

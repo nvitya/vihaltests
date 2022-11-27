@@ -65,6 +65,8 @@ public:
   bool              Init();
   void              Run();  // processes Rx and Tx
 
+  void              StartCommand(const char * fmt, ...);
+
   unsigned          AddTx(void * asrc, unsigned len); // returns the amount actually written
   void              StartSendTxBuffer();
   inline unsigned   TxAvailable() { return sizeof(txbuf[0]) - txlen; }
@@ -72,17 +74,25 @@ public:
 public: // Example text protocol
   void              AddTxMessage(const char * fmt, ...);
 
+
+
 protected:
-
-  uint8_t           rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
-
-  uint8_t           rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
-
-  uint8_t           txbuf[2][UARTCOMM_TXBUF_SIZE];
-
   const char *      msg_ready = "\r\nready\r\n"; // the text for ready
+  const char *      msg_ok    = "\r\nOK\r\n"; // the text for ready
+  const char *      msg_error = "\r\nERROR\r\n"; // the text for ready
+
 
   bool              InitHw();  // board specific implementation
+
+  bool              MsgOkDetected();
+  bool              MsgErrorDetected();
+
+protected: // these big buffers must come to the last
+
+  uint8_t           rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
+  uint8_t           rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
+  uint8_t           txbuf[2][UARTCOMM_TXBUF_SIZE];
+
 };
 
 #endif /* SRC_ESPWIFI_UART_H_ */

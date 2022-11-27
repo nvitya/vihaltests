@@ -82,9 +82,9 @@ bool TEspWifiUart::InitHw()
   pin_rst.Assign(PORTNUM_D, 4, false);
   pin_en.Assign( PORTNUM_D, 3, false);
 
-  hwpinctrl.PinSetup(PORTNUM_D, 5,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2_TX -> ESP-01S-RX !
-  hwpinctrl.PinSetup(PORTNUM_D, 6,  PINCFG_INPUT  | PINCFG_AF_7);  // USART2_RX <- ESP-01S-TX !
+  hwpinctrl.PinSetup(PORTNUM_D, 6,  PINCFG_INPUT  | PINCFG_AF_7 | PINCFG_PULLUP);  // USART2_RX <- ESP-01S-TX !
   uart.Init(2); // USART2
+  hwpinctrl.PinSetup(PORTNUM_D, 5,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART2_TX -> ESP-01S-RX !
 
   dma_tx.Init(1, 6, 4);  // dma1, stream6, ch4 = USART2_TX
   dma_rx.Init(1, 5, 4);  // dma1, stream5, ch4 = USART2_RX
