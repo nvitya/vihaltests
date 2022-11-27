@@ -22,6 +22,8 @@ extern THwUart   conuart;  // console uart
   #define TRACE(...)
 #endif
 
+#define TRACE_FLUSH(...)
+
 #ifdef LTRACES
  #define LTRACE(...)  TRACE( __VA_ARGS__ )
 #else
