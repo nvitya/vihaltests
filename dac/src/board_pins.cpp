@@ -140,7 +140,8 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_ANALOGUE | PINCFG_OUTPUT);  // DAC1_OUT1
   hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_ANALOGUE | PINCFG_OUTPUT);  // DAC1_OUT2
 
-  dac.dmach.Init(0, 5, 67); // 67 = DAC1_CH1
+  // Warning the DMA1/DMA2 cannot access the DTCM, use linker scipt where the data placed to AXI RAM or AHB RAM
+  dac.dmach.Init(1, 1, 67); // use dma1, stream1 for old-style DMA with DMAMUX 67 = DAC1_CH1
   dac.Init(1, 1);  // DAC1_CH1
 }
 
