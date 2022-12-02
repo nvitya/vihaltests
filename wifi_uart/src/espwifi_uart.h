@@ -33,66 +33,119 @@
 #include "hwuart.h"
 #include "hwdma.h"
 #include "hwpins.h"
+#include "net_ip4.h"
 
 #define UARTCOMM_RXBUF_SIZE       256  // circular buffer
 #define UARTCOMM_TXBUF_SIZE       256  // one tx response must fit into it, allocated two times
 
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
+class TEspAtUdpSocket;
+
 class TEspWifiUart
 {
 protected:
-  uint8_t           state = 0;
+  uint8_t             state = 0;
 
-  uint16_t          rxmsglen = 0;
-  uint16_t          rxdmapos = 0;
+  uint16_t            rxmsglen = 0;
+  uint16_t            rxdmapos = 0;
 
-  uint16_t          txbufwr = 0;
-  uint16_t          txlen = 0;
+  uint16_t            txbufwr = 0;
+  uint16_t            txlen = 0;
 
 public:
-  bool              initialized = false;
+  bool                initialized = false;
+  bool                link_up = false;
 
-  THwUart           uart;
-  THwDmaChannel     dma_rx;
-  THwDmaChannel     dma_tx;
-  TGpioPin          pin_rst;
-  TGpioPin          pin_en;
+  THwUart             uart;
+  THwDmaChannel       dma_rx;
+  THwDmaChannel       dma_tx;
+  TGpioPin            pin_rst;
+  TGpioPin            pin_en;
 
-  THwDmaTransfer    dmaxfer_tx;
-  THwDmaTransfer    dmaxfer_rx;
+  THwDmaTransfer      dmaxfer_tx;
+  THwDmaTransfer      dmaxfer_rx;
 
-  bool              Init();
-  void              Run();  // processes Rx and Tx
+  bool                Init();
+  void                Run();  // processes Rx and Tx
+  void                RunRx();
 
-  void              StartCommand(const char * fmt, ...);
+public:
+  TIp4Addr            ipaddress;
+  TIp4Addr            netmask;
+  TIp4Addr            gwaddress;
+  TIp4Addr            dns;
+  TIp4Addr            dns2;
 
-  unsigned          AddTx(void * asrc, unsigned len); // returns the amount actually written
-  void              StartSendTxBuffer();
-  inline unsigned   TxAvailable() { return sizeof(txbuf[0]) - txlen; }
+  const char *        ssid = "SSID";
+  const char *        password = "PASSWORD";
 
-public: // Example text protocol
-  void              AddTxMessage(const char * fmt, ...);
+  TEspAtUdpSocket *   udp_first = nullptr;
+  TEspAtUdpSocket *   udp_last  = nullptr;
+
+
+  void                AddUdpSocket(TEspAtUdpSocket * audp);
+
+  bool                IsLinkUp() { return link_up; }
+
+  void                StartCommand(const char * fmt, ...);
+
+  unsigned            AddTx(void * asrc, unsigned len); // returns the amount actually written
+  void                StartSendTxBuffer();
+  inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
+
+public:
+  void                AddTxMessage(const char * fmt, ...);
 
 
 
 protected:
-  const char *      msg_ready = "\r\nready\r\n"; // the text for ready
-  const char *      msg_ok    = "\r\nOK\r\n"; // the text for ready
-  const char *      msg_error = "\r\nERROR\r\n"; // the text for ready
+  const char *        msg_ready = "\r\nready\r\n"; // the text for ready
+  const char *        msg_ok    = "\r\nOK\r\n"; // the text for ready
+  const char *        msg_error = "\r\nERROR\r\n"; // the text for ready
 
 
-  bool              InitHw();  // board specific implementation
+  bool                InitHw();  // board specific implementation
 
-  bool              MsgOkDetected();
-  bool              MsgErrorDetected();
+  bool                MsgOkDetected();
+  bool                MsgErrorDetected();
 
 protected: // these big buffers must come to the last
 
-  uint8_t           rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
-  uint8_t           rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
-  uint8_t           txbuf[2][UARTCOMM_TXBUF_SIZE];
+  uint8_t             rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
+  uint8_t             rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
+  uint8_t             txbuf[2][UARTCOMM_TXBUF_SIZE];
 
+};
+
+class TEspAtUdpSocket
+{
+public:
+public:
+  TIp4Addr          destaddr;
+  uint16_t          destport = 0;
+
+  TIp4Addr          srcaddr;
+  uint16_t          srcport = 0;
+
+  uint16_t          listenport = 0;
+
+  uint16_t          idcounter = 0;
+
+  TEspWifiUart *    pwifim = nullptr;
+
+  TPacketMem *      rxpkt_first = nullptr;
+  TPacketMem *      rxpkt_last  = nullptr;
+
+  TPacketMem *      txpkt_first = nullptr;  // waiting for address resolution
+  TPacketMem *      txpkt_last  = nullptr;
+
+  TEspAtUdpSocket *     nextsocket = nullptr;
+
+  void Init(TEspWifiUart * awifim, uint16_t alistenport);
+
+  int Send(void * adataptr, unsigned adatalen);
+  int Receive(void * adataptr, unsigned adatalen);
 };
 
 #endif /* SRC_ESPWIFI_UART_H_ */

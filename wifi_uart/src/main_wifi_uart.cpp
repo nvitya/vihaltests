@@ -15,6 +15,7 @@
 #include "traces.h"
 
 #include "board_pins.h"
+#include "udp_test.h"
 
 volatile unsigned hbcounter = 0;
 
@@ -53,11 +54,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   mcu_interrupts_enable();
 
-	if (!wifi.Init())
-	{
-	  TRACE("Error initializing the WiFi module !\r\n");
-	}
-
+  udp_test_init();
 
 	TRACE("Starting main cycle...\r\n");
 
@@ -73,6 +70,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 		t1 = CLOCKCNT;
 
 		wifi.Run();
+
+		udp_test_run();
+
 		tracebuf.Run();
 
 		if (t1-t0 > hbclocks)

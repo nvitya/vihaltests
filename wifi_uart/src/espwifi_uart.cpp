@@ -38,6 +38,9 @@ bool TEspWifiUart::Init()
 {
   initialized = false;
 
+  udp_first = nullptr;
+  udp_last  = nullptr;
+
   if (!InitHw()) // must be provided externally
   {
     return false;
@@ -162,7 +165,7 @@ void TEspWifiUart::StartSendTxBuffer()
   }
 }
 
-void TEspWifiUart::Run()
+void TEspWifiUart::RunRx()
 {
   // RX processing
   uint16_t newrxdmapos = sizeof(rxdmabuf) - dma_rx.Remaining();
@@ -272,6 +275,11 @@ void TEspWifiUart::Run()
   StartSendTxBuffer();
 }
 
+void TEspWifiUart::Run()
+{
+  RunRx();
+}
+
 bool TEspWifiUart::MsgOkDetected()
 {
   if (0 == memcmp(&rxmsgbuf[rxmsglen - 6], msg_ok, 6))
@@ -289,3 +297,41 @@ bool TEspWifiUart::MsgErrorDetected()
   }
   return false;
 }
+
+void TEspWifiUart::AddUdpSocket(TEspAtUdpSocket * audp)
+{
+  if (udp_last)
+  {
+    udp_last->nextsocket = audp;
+  }
+  else
+  {
+    udp_last = audp;
+    udp_first = audp;
+  }
+
+  audp->nextsocket = nullptr;
+}
+
+//--------------------------------------------------------
+
+void TEspAtUdpSocket::Init(TEspWifiUart * awifim, uint16_t alistenport)
+{
+  pwifim = awifim;
+  listenport = alistenport;
+
+  pwifim->AddUdpSocket(this);
+}
+
+int TEspAtUdpSocket::Send(void * adataptr, unsigned adatalen)
+{
+  return -1;
+}
+
+int TEspAtUdpSocket::Receive(void * adataptr, unsigned adatalen)
+{
+  int err = 0;
+
+  return err;
+}
+
