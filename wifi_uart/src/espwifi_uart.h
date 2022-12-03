@@ -46,7 +46,20 @@ class TEspWifiUart
 {
 protected:
   uint8_t             state = 0;
+  uint8_t             initstate = 0;
+  unsigned            prev_state_time = 0;
+  unsigned            cmd_start_time = 0;
+  unsigned            us_clocks = 0;
+  unsigned            ms_clocks = 0;
+  unsigned            cmd_timeout_clocks = 0;
+  bool                cmd_error = 0;
+  bool                cmd_ignore_error = false;
 
+  unsigned            initial_uart_speed = 115200;
+  unsigned            uart_speed = 1000000;  // 2 MBit/s easily to realize on most targets
+
+  uint16_t            curlinestart = 0;
+  uint16_t            curlinelen = 0;
   uint16_t            rxmsglen = 0;
   uint16_t            rxdmapos = 0;
 
@@ -55,7 +68,6 @@ protected:
 
 public:
   bool                initialized = false;
-  bool                link_up = false;
 
   THwUart             uart;
   THwDmaChannel       dma_rx;
@@ -69,6 +81,8 @@ public:
   bool                Init();
   void                Run();  // processes Rx and Tx
   void                RunRx();
+
+  void                RunInit(); // initialization state-machine
 
 public:
   TIp4Addr            ipaddress;
@@ -86,31 +100,36 @@ public:
 
   void                AddUdpSocket(TEspAtUdpSocket * audp);
 
-  bool                IsLinkUp() { return link_up; }
+  bool                IsLinkUp() { return (0 == initstate); }
 
   void                StartCommand(const char * fmt, ...);
 
-  unsigned            AddTx(void * asrc, unsigned len); // returns the amount actually written
-  void                StartSendTxBuffer();
-  inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
-
-public:
-  void                AddTxMessage(const char * fmt, ...);
-
-
-
 protected:
-  const char *        msg_ready = "\r\nready\r\n"; // the text for ready
-  const char *        msg_ok    = "\r\nOK\r\n"; // the text for ready
-  const char *        msg_error = "\r\nERROR\r\n"; // the text for ready
+  bool                cmd_running = false;
+  bool                cmd_echo_received = false;
+  bool                ready_received = false;
+  bool                wifi_got_ip = false;
+  bool                wifi_connected = false;
+
+  const char *        msg_ready = "ready";
+  const char *        msg_ok    = "OK";
+  const char *        msg_error = "ERROR";
 
 
   bool                InitHw();  // board specific implementation
 
+  void                ResetConnection();
   bool                MsgOkDetected();
   bool                MsgErrorDetected();
 
+  void                ProcessRxMessage();
+
 protected: // these big buffers must come to the last
+
+  unsigned            AddTx(void * asrc, unsigned len); // returns the amount actually written
+  void                AddTxMessage(const char * fmt, ...);
+  void                StartSendTxBuffer();
+  inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
 
   uint8_t             rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
   uint8_t             rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
