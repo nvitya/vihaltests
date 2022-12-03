@@ -40,6 +40,8 @@
 
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
+#define ESPWIFI_MAX_SOCKETS   5
+
 class TEspAtUdpSocket;
 
 class TEspWifiUart
@@ -47,6 +49,7 @@ class TEspWifiUart
 protected:
   uint8_t             state = 0;
   uint8_t             initstate = 0;
+  uint8_t             initsocknum = 0;
   unsigned            prev_state_time = 0;
   unsigned            cmd_start_time = 0;
   unsigned            us_clocks = 0;
@@ -56,7 +59,7 @@ protected:
   bool                cmd_ignore_error = false;
 
   unsigned            initial_uart_speed = 115200;
-  unsigned            uart_speed = 1000000;  // 2 MBit/s easily to realize on most targets
+  unsigned            uart_speed = 1000000;  // 1 MBit/s can be easily realized on the most targets
 
   uint16_t            curlinestart = 0;
   uint16_t            curlinelen = 0;
@@ -94,9 +97,8 @@ public:
   const char *        ssid = "SSID";
   const char *        password = "PASSWORD";
 
-  TEspAtUdpSocket *   udp_first = nullptr;
-  TEspAtUdpSocket *   udp_last  = nullptr;
 
+  TEspAtUdpSocket *   sockets[ESPWIFI_MAX_SOCKETS] = {0};
 
   void                AddUdpSocket(TEspAtUdpSocket * audp);
 
@@ -110,6 +112,8 @@ protected:
   bool                ready_received = false;
   bool                wifi_got_ip = false;
   bool                wifi_connected = false;
+
+  TEspAtUdpSocket *   cursock = nullptr;
 
   const char *        msg_ready = "ready";
   const char *        msg_ok    = "OK";
@@ -140,6 +144,10 @@ protected: // these big buffers must come to the last
 class TEspAtUdpSocket
 {
 public:
+
+  int               socketnum = -1;
+  bool              initialized = false;
+
 public:
   TIp4Addr          destaddr;
   uint16_t          destport = 0;
@@ -153,13 +161,6 @@ public:
 
   TEspWifiUart *    pwifim = nullptr;
 
-  TPacketMem *      rxpkt_first = nullptr;
-  TPacketMem *      rxpkt_last  = nullptr;
-
-  TPacketMem *      txpkt_first = nullptr;  // waiting for address resolution
-  TPacketMem *      txpkt_last  = nullptr;
-
-  TEspAtUdpSocket *     nextsocket = nullptr;
 
   void Init(TEspWifiUart * awifim, uint16_t alistenport);
 

@@ -23,6 +23,8 @@
  *  brief:    UART (AT) WiFi Driver for Espressif Modules
  *  date:     2022-11-27
  *  authors:  nvitya
+ *  notes:
+ *    Currently tested with ESP AT Firmware v2.2.0 using an ESP-01S module
 */
 
 #include "string.h"
@@ -36,10 +38,14 @@
 
 bool TEspWifiUart::Init()
 {
+  unsigned n;
+
   initialized = false;
 
-  udp_first = nullptr;
-  udp_last  = nullptr;
+  for (n = 0; n < ESPWIFI_MAX_SOCKETS; ++n)
+  {
+    sockets[n] = nullptr;
+  }
 
   if (!InitHw()) // must be provided externally
   {
@@ -152,38 +158,20 @@ void TEspWifiUart::RunInit()
 
   else if (10 == initstate)
   {
-    StartCommand("AT+UART_CUR?");
-    //StartCommand("AT+GMR");
-    //initstate = 17;
-    //initstate = 20;
-    ++initstate;
-  }
-  else if (11 == initstate)
-  {
     TRACE("ESP-AT: switch to %u bit/s\r\n", uart_speed);
 
     StartCommand("AT+UART_CUR=%u,8,1,0,0", uart_speed);
     ++initstate;
   }
-  else if (12 == initstate) // wait until the TX message is sent
+  else if (11 == initstate) // wait until the TX message is sent
   {
     uart.SetBaudRate(uart_speed);
 
     TRACE("ESP-AT: high speed uart configured.\r\n");
-    StartCommand("AT+UART_CUR?");
-    ++initstate;
-  }
-  else if (13 == initstate)
-  {
     initstate = 20;
   }
 
-  else if (17 == initstate)
-  {
-    // stay here
-  }
-
-  // prepare the connections
+  // prepare station
 
   else if (20 == initstate)
   {
@@ -211,18 +199,49 @@ void TEspWifiUart::RunInit()
   else if (23 == initstate) // show the remote IP address in the +IPD data
   {
     StartCommand("AT+CIPDINFO=1");
-    ++initstate;
+
+    for (unsigned n; n < ESPWIFI_MAX_SOCKETS; ++n)
+    {
+      if (sockets[n])  sockets[n]->initialized = false;
+    }
+    initsocknum = 0;
+    initstate = 50; // add sockets
   }
-  else if (24 == initstate) // processing CIPMUX=1 result
+
+  // prepare the UDP sockets
+
+  else if (50 == initstate)
   {
-    StartCommand("AT+CIPSTART=1,\"UDP\",\"%u.%u.%u.%u\",5000,5000,2",
-        0,0,0,0
-    );
-    ++initstate;
+    cursock = nullptr;
+    while ((initsocknum < ESPWIFI_MAX_SOCKETS) && (!sockets[initsocknum] || sockets[initsocknum]->initialized))
+    {
+      ++initsocknum;
+    }
+
+    if (initsocknum < ESPWIFI_MAX_SOCKETS)
+    {
+      cursock = sockets[initsocknum];
+
+      StartCommand("AT+CIPSTART=%i,\"UDP\",\"%u.%u.%u.%u\",%u,%u,2",
+          cursock->socketnum,
+          0,0,0,0,  // destination IP address
+          cursock->listenport,
+          cursock->listenport
+          // mode = 2 is the last parameter: allows to specify destination for every send
+      );
+      ++initstate;
+    }
+    else
+    {
+      // no more sockets to initialize
+      initstate = 200; // finish initialization
+    }
   }
-  else if (25 == initstate)
+  else if (51 == initstate) // process UDP socket initialization result
   {
-    initstate = 200; // the end so far
+    // initialize the next UDP socket
+    ++initsocknum;
+    initstate = 50;
   }
 
 
@@ -440,17 +459,17 @@ bool TEspWifiUart::MsgErrorDetected()
 
 void TEspWifiUart::AddUdpSocket(TEspAtUdpSocket * audp)
 {
-  if (udp_last)
+  unsigned n = 0;
+  while (n < ESPWIFI_MAX_SOCKETS)
   {
-    udp_last->nextsocket = audp;
+    if ((sockets[n] == audp) || (sockets[n] == nullptr))
+    {
+      audp->socketnum = n;
+      sockets[n] = audp;
+      return;
+    }
+    ++n;
   }
-  else
-  {
-    udp_last = audp;
-    udp_first = audp;
-  }
-
-  audp->nextsocket = nullptr;
 }
 
 //--------------------------------------------------------
