@@ -96,6 +96,7 @@ bool TEspWifiUart::Init(void * anetmem, unsigned anetmemsize)
   rxmsglen = 0;
   txlen = 0;
   state = 0;
+  txstate = 0;
   cmd_running = false;
   initstate = 1;  // start initialization
   prev_state_time = CLOCKCNT;
@@ -170,7 +171,19 @@ void TEspWifiUart::RunInit()
   }
   else if (4 == initstate)
   {
-    StartCommand("AT+CWMODE=1");
+    if (disable_command_echo)
+    {
+      StartCommand("ATE0");  // disable command echo
+    }
+    else
+    {
+      StartCommand("ATE1");  // enable command echo
+    }
+    ++initstate;
+  }
+  else if (5 == initstate)
+  {
+    StartCommand("AT+CWMODE=1"); // set station mode
     initstate = 10;
   }
 
@@ -335,7 +348,14 @@ void TEspWifiUart::StartCommand(const char *fmt, ...)
 
   if (len > 0)
   {
-    TRACE("ESP-AT -> \"%s\"\r\n", &fmtbuf[0]);
+    if (0 == memcmp("AT+CWJAP", &fmtbuf[0], 8)) // do not print the WIFI secrets !
+    {
+      TRACE("ESP-AT -> \"AT+CWJAP=\"***\",\"***\"\"\r\n");
+    }
+    else
+    {
+      TRACE("ESP-AT -> \"%s\"\r\n", &fmtbuf[0]);
+    }
 
     AddTx(&fmtbuf[0], len);
     AddTx((void *)"\r\n", 2);
@@ -502,6 +522,85 @@ void TEspWifiUart::RunRx()
   }
 }
 
+void TEspWifiUart::RunTx()
+{
+  TEspPmem * pmem = sending_first;
+  if (!pmem)
+  {
+    return;
+  }
+
+  if (0 == txstate)
+  {
+    if (!cmd_running)
+    {
+      StartCommand("AT+CIPSEND=%u,%u,\"%u.%u.%u.%u\",%u",
+          pmem->psocket->socketnum,
+          pmem->datalen,
+          pmem->ip_addr.u8[0], pmem->ip_addr.u8[1], pmem->ip_addr.u8[2], pmem->ip_addr.u8[3],
+          pmem->ip_port
+      );
+      send_start_time = CLOCKCNT;
+      ++txstate;
+    }
+  }
+  else if (1 == txstate) // waiting for command result
+  {
+    if (cmd_running)
+    {
+      return;
+    }
+
+    if (rxmsglen < 1)
+    {
+      if (CLOCKCNT - send_start_time > 1000 * ms_clocks)
+      {
+        TRACE("ESP-AT: send timeout\r\n");
+        ++data_send_error_count;
+        RemoveSendingPacket(pmem);
+        txstate = 0;
+      }
+
+      return;
+    }
+
+    if (rxmsgbuf[0] != '>')
+    {
+      ++data_send_error_count;
+      RemoveSendingPacket(pmem);
+      txstate = 0;
+      return;
+    }
+
+    rxmsglen = 0; // clear the '>' from the buffer, otherwise it will be processed
+
+    //TRACE("ESP-AT: send data prompt detected.\r\n")
+
+    AddTx(&pmem->data[0], pmem->datalen);
+    send_start_time = CLOCKCNT;
+    txstate = 10;
+  }
+  else if (10 == txstate)
+  {
+    // Let the RX state machine to process the messages
+
+    if (CLOCKCNT - send_start_time > 2000 * ms_clocks)
+    {
+      TRACE("ESP-AT: send timeout\r\n");
+      ++data_send_error_count;
+      RemoveSendingPacket(pmem);
+      txstate = 0;
+      return;
+    }
+  }
+  else if (11 == txstate) // send finished
+  {
+    TRACE("ESP-AT: send finished.\r\n");
+    RemoveSendingPacket(pmem);
+    txstate = 0;
+  }
+}
+
 void TEspWifiUart::Run()
 {
   RunRx();
@@ -516,16 +615,16 @@ void TEspWifiUart::Run()
     }
   }
 
-  if (!cmd_running)
+  if (initstate)
   {
-    if (initstate)
+    if (!cmd_running)
     {
       RunInit();
     }
-    else
-    {
-      // run transactions
-    }
+  }
+  else
+  {
+    RunTx();
   }
 
   StartSendTxBuffer();  // Sending buffered tx messages
@@ -580,7 +679,7 @@ void TEspWifiUart::ProcessRxMessage()
       return;
     }
 
-    if (!cmd_echo_received)
+    if (!cmd_echo_received && sp.CheckSymbol("AT+"))
     {
       cmd_echo_received = true;
       return;
@@ -599,7 +698,26 @@ void TEspWifiUart::ProcessRxMessage()
     }
   }
 
-  if (sp.CheckSymbol("+IPD,"))  // asynchronous data messages
+  if (10 == txstate) // expecting send result ?
+  {
+    if (sp.CheckSymbol("SEND OK"))
+    {
+      txstate = 11; // go on the send finished
+    }
+    else if (sp.CheckSymbol("ERROR"))
+    {
+      TRACE("ESP-AT: Error sending data\r\n");
+      ++data_send_error_count;
+      txstate = 11;
+    }
+    else if (sp.CheckSymbol("Recv "))  // "Recv 123 bytes"
+    {
+      // just ignore this info message
+    }
+
+    return;
+  }
+  else if (sp.CheckSymbol("+IPD,"))  // asynchronous data messages
   {
     //  "+IPD,0,10,"192.168.0.99",58145:0123456789"
 
@@ -670,7 +788,7 @@ void TEspWifiUart::ProcessRxMessage()
     }
 
     pmem->datalen = dlen;
-    pmem->ip_addr = sp_ipaddr;
+    pmem->ip_addr = sp_ipaddr;  // acquired in ParseIpAddr()
     pmem->ip_port = srcport;
     memcpy(&pmem->data[0], sp.readptr, dlen);
     psock->AddRxPacket(pmem);
@@ -724,6 +842,65 @@ bool TEspWifiUart::ParseIpAddr()
   return true;
 }
 
+void TEspWifiUart::AddSendingPacket(TEspPmem * apmem)
+{
+  if (sending_first)
+  {
+    // check if already added !
+    TEspPmem * pmem = sending_first;
+    while (pmem)
+    {
+      if (pmem == apmem)
+      {
+        return; // already added
+      }
+      pmem = pmem->next;
+    }
+
+    apmem->next = nullptr;
+    sending_last->next = apmem;
+    sending_last = apmem;
+  }
+  else
+  {
+    apmem->next = nullptr;
+    sending_first = apmem;
+    sending_last = apmem;
+  }
+}
+
+void TEspWifiUart::RemoveSendingPacket(TEspPmem * apmem)
+{
+  TEspPmem * pmem_prev = nullptr;
+  TEspPmem * pmem = sending_first;
+  while (pmem)
+  {
+    if (pmem == apmem)
+    {
+      if (pmem_prev)
+      {
+        pmem_prev->next = pmem->next;
+      }
+
+      if (pmem == sending_last)
+      {
+        sending_last = pmem_prev;
+      }
+
+      if (pmem == sending_first)
+      {
+        sending_first = pmem->next;
+      }
+
+      ReleasePmem(pmem);
+      return;
+    }
+
+    pmem_prev = pmem;
+    pmem = pmem->next;
+  }
+}
+
 //-----------------------------------------------------------------------------
 
 void TEspAtUdpSocket::Init(TEspWifiUart * awifim, uint16_t alistenport)
@@ -742,7 +919,42 @@ void TEspAtUdpSocket::Reset()
 
 int TEspAtUdpSocket::Send(void * adataptr, unsigned adatalen)
 {
-  return -1;
+  TEspPmem * pmem;
+
+  pmem = pwifim->AllocatePmem();
+  if (!pmem)
+  {
+    return 0;  // no free packet !
+  }
+
+  if (pmem->max_datalen < adatalen)
+  {
+    pwifim->ReleasePmem(pmem);
+    return -1;
+  }
+
+  pmem->ip_addr = destaddr;
+  pmem->ip_port = destport;
+  pmem->datalen = adatalen;
+
+  memcpy(&pmem->data[0], adataptr, adatalen);
+
+  // add to the sending packet chain
+  pmem->next = nullptr;
+  if (txpkt_last)
+  {
+    txpkt_last->next = pmem;
+  }
+  else
+  {
+    txpkt_first = pmem;
+  }
+  txpkt_last = pmem;
+
+  pmem->psocket = this;
+  pwifim->AddSendingPacket(pmem);
+
+  return adatalen;
 }
 
 int TEspAtUdpSocket::Receive(void * adataptr, unsigned adatalen)
@@ -791,3 +1003,4 @@ void TEspAtUdpSocket::AddRxPacket(TEspPmem *pmem)
   }
   rxpkt_last = pmem;
 }
+

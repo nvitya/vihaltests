@@ -54,6 +54,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   mcu_interrupts_enable();
 
+  tracebuf.waitsend = false;
+
   udp_test_init();
 
 	TRACE("Starting main cycle...\r\n");

@@ -41,25 +41,28 @@
 
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
-
 #define ESPWIFI_MAX_SOCKETS   5
 #define ESPWIFI_MAX_EXPCMDR   4
 
 class TEspAtUdpSocket;
 
-#define ESPWIFI_MAX_PACKET_SIZE  1520
-#define ESPWIFI_PMEM_HEAD_SIZE     16
+#ifndef ESPWIFI_MAX_PACKET_SIZE
+  #define ESPWIFI_MAX_PACKET_SIZE  1516
+#endif
+
+#define ESPWIFI_PMEM_HEAD_SIZE     20
 
 typedef struct TEspPmem  // 1.5 kByte
 {
-  uint16_t         datalen;
-  uint16_t         max_datalen;
-  uint16_t         ip_port;
-  uint16_t         _reserved;
-  TIp4Addr         ip_addr;
-  TEspPmem *       next;
+  uint16_t           datalen;
+  uint16_t           max_datalen;
+  uint16_t           ip_port;
+  uint16_t           _reserved;
+  TIp4Addr           ip_addr;
+  TEspAtUdpSocket *  psocket;
+  TEspPmem *         next;
 
-  uint8_t          data[ESPWIFI_MAX_PACKET_SIZE];
+  uint8_t            data[ESPWIFI_MAX_PACKET_SIZE];
 //
 } TEspPmem, * PEspPmem;
 
@@ -70,10 +73,12 @@ class TEspWifiUart
 
 protected:
   uint8_t             state = 0;
+  uint8_t             txstate = 0;
   uint8_t             initstate = 0;
   uint8_t             initsocknum = 0;
   unsigned            prev_state_time = 0;
   unsigned            cmd_start_time = 0;
+  unsigned            send_start_time = 0;
   unsigned            us_clocks = 0;
   unsigned            ms_clocks = 0;
   unsigned            cmd_timeout_clocks = 0;
@@ -115,9 +120,12 @@ public:  // settings
   unsigned            initial_uart_speed = 115200;
   unsigned            uart_speed = 1000000;  // 1 MBit/s can be easily realized on the most targets
 
+  bool                disable_command_echo = true; // disable command echo
+
 public:
   bool                initialized = false;
   unsigned            invalid_ipd_count = 0;  // number of invalid +IPD (data) messages
+  unsigned            data_send_error_count = 0;
   TEspAtUdpSocket *   sockets[ESPWIFI_MAX_SOCKETS] = {0};
 
   bool                Init(void * anetmem, unsigned anetmemsize);
@@ -150,11 +158,15 @@ protected:
 
   TIp4Addr            sp_ipaddr;
 
+  TEspPmem *          sending_first = nullptr;
+  TEspPmem *          sending_last = nullptr;
+
   bool                InitHw();  // board specific implementation
 
   void                ResetConnection();
 
   void                RunRx();
+  void                RunTx();
   void                RunInit(); // initialization state-machine
   void                ProcessRxMessage();
 
@@ -169,6 +181,9 @@ protected:
   void                AddTxMessage(const char * fmt, ...);
   void                StartSendTxBuffer();
   inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
+
+  void                AddSendingPacket(TEspPmem * apmem);
+  void                RemoveSendingPacket(TEspPmem * apmem);
 
 protected: // these big buffers must come to the last
 
@@ -203,6 +218,8 @@ public:
   TEspPmem *        rxpkt_last  = nullptr;
   TEspPmem *        txpkt_first = nullptr;
   TEspPmem *        txpkt_last  = nullptr;
+
+  TEspAtUdpSocket * sending_next = nullptr;
 
   void              Init(TEspWifiUart * awifim, uint16_t alistenport);
 
