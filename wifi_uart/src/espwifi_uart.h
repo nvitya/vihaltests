@@ -41,13 +41,33 @@
 
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
+
 #define ESPWIFI_MAX_SOCKETS   5
 #define ESPWIFI_MAX_EXPCMDR   4
 
 class TEspAtUdpSocket;
 
+#define ESPWIFI_MAX_PACKET_SIZE  1520
+#define ESPWIFI_PMEM_HEAD_SIZE     16
+
+typedef struct TEspPmem  // 1.5 kByte
+{
+  uint16_t         datalen;
+  uint16_t         max_datalen;
+  uint16_t         ip_port;
+  uint16_t         _reserved;
+  TIp4Addr         ip_addr;
+  TEspPmem *       next;
+
+  uint8_t          data[ESPWIFI_MAX_PACKET_SIZE];
+//
+} TEspPmem, * PEspPmem;
+
+
 class TEspWifiUart
 {
+  friend class TEspAtUdpSocket;
+
 protected:
   uint8_t             state = 0;
   uint8_t             initstate = 0;
@@ -98,16 +118,10 @@ public:  // settings
 public:
   bool                initialized = false;
   unsigned            invalid_ipd_count = 0;  // number of invalid +IPD (data) messages
-
-  bool                Init();
-  void                Run();  // processes Rx and Tx
-  void                RunRx();
-
-  void                RunInit(); // initialization state-machine
-
-public:
-
   TEspAtUdpSocket *   sockets[ESPWIFI_MAX_SOCKETS] = {0};
+
+  bool                Init(void * anetmem, unsigned anetmemsize);
+  void                Run();  // processes Rx and Tx
 
   void                AddUdpSocket(TEspAtUdpSocket * audp);
 
@@ -115,8 +129,15 @@ public:
 
   void                StartCommand(const char * fmt, ...);
 
+  unsigned            NetMemSize() { return netmem_size; }
+  unsigned            NetMemFree() { return netmem_size - netmem_allocated; }
+
 protected:
-  void                ExpectCmdResponse(uint8_t aidx, const char * fmt, ...);
+
+  uint8_t *           netmem = nullptr;
+  unsigned            netmem_size = 0;
+  unsigned            netmem_allocated = 0;
+  TEspPmem *          first_free_pmem = nullptr;
 
   char                expected_cmd_response[ESPWIFI_MAX_EXPCMDR][32];
   uint8_t             cmd_responses = 0;
@@ -127,24 +148,29 @@ protected:
   bool                wifi_got_ip = false;
   bool                wifi_connected = false;
 
-  TIp4Addr            ipaddr;
-  bool                ParseIpAddr();
-
-
-  //TEspAtUdpSocket *   cursock = nullptr;
+  TIp4Addr            sp_ipaddr;
 
   bool                InitHw();  // board specific implementation
 
   void                ResetConnection();
 
+  void                RunRx();
+  void                RunInit(); // initialization state-machine
   void                ProcessRxMessage();
 
-protected: // these big buffers must come to the last
+  uint8_t *           AllocateNetMem(unsigned asize);
+  TEspPmem *          AllocatePmem();
+  void                ReleasePmem(TEspPmem * apmem);
+
+  void                ExpectCmdResponse(uint8_t aidx, const char * fmt, ...);
+  bool                ParseIpAddr();
 
   unsigned            AddTx(void * asrc, unsigned len); // returns the amount actually written
   void                AddTxMessage(const char * fmt, ...);
   void                StartSendTxBuffer();
   inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
+
+protected: // these big buffers must come to the last
 
   uint8_t             rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
   uint8_t             rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
@@ -173,6 +199,10 @@ public:
 
   TEspWifiUart *    pwifim = nullptr;
 
+  TEspPmem *        rxpkt_first = nullptr;
+  TEspPmem *        rxpkt_last  = nullptr;
+  TEspPmem *        txpkt_first = nullptr;
+  TEspPmem *        txpkt_last  = nullptr;
 
   void              Init(TEspWifiUart * awifim, uint16_t alistenport);
 
@@ -180,6 +210,8 @@ public:
   int               Receive(void * adataptr, unsigned adatalen);
 
   void              Reset();
+
+  void              AddRxPacket(TEspPmem * pmem);
 };
 
 #endif /* SRC_ESPWIFI_UART_H_ */

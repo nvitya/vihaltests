@@ -21,6 +21,9 @@ unsigned send_cnt = 0;
 unsigned last_send_time;
 unsigned last_recv_time;
 
+// combined buffer for storeing packets
+uint8_t network_memory[6 * 1024] __attribute__((aligned(32)));
+
 uint8_t pbuf[1536] __attribute__((aligned(16)));  // 16 alignment is useful for the debugging
 
 const char * udp_test_message = "VIHAL UDP TEST MESSAGE";
@@ -41,7 +44,7 @@ void udp_test_init()
   wifi.gwaddress.Set(192, 168, 0, 1);
   wifi.dns.Set(192, 168, 0, 1);
 
-  if (!wifi.Init())
+  if (!wifi.Init(&network_memory[0], sizeof(network_memory)))
   {
     TRACE("Error initializing the WiFi module !\r\n");
     return;
@@ -95,7 +98,7 @@ void udp_test_run()
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
-#if 0 // no traces for benchmarking
+#if 1 // no traces for benchmarking
     TRACE("UDP MESSAGE RECEIVED: \"");
     for (i = 0; i < len; ++i)
     {

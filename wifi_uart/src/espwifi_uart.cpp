@@ -36,11 +36,31 @@
 
 // the TEspWifiUart::InitHw() are moved to the board_pins.cpp
 
-bool TEspWifiUart::Init()
+bool TEspWifiUart::Init(void * anetmem, unsigned anetmemsize)
 {
   unsigned n;
 
   initialized = false;
+
+  netmem = (uint8_t *)anetmem;
+  netmem_size = anetmemsize;
+  netmem_allocated = 0;
+
+  first_free_pmem = nullptr;
+  while (NetMemFree() >= sizeof(TEspPmem))
+  {
+    TEspPmem * pmem = (TEspPmem *)AllocateNetMem(sizeof(TEspPmem));
+    if (!pmem)
+    {
+      break;
+    }
+
+    pmem->datalen = 0;
+    pmem->max_datalen = sizeof(pmem->data);
+
+    pmem->next = first_free_pmem;
+    first_free_pmem = pmem;
+  }
 
   for (n = 0; n < ESPWIFI_MAX_SOCKETS; ++n)
   {
@@ -377,6 +397,45 @@ void TEspWifiUart::ExpectCmdResponse(uint8_t aidx, const char * fmt, ...)
   va_end(arglist);
 }
 
+uint8_t * TEspWifiUart::AllocateNetMem(unsigned asize)
+{
+  if (asize > NetMemFree())
+  {
+    TRACE("AllocateNetMem FAILED!\r\n");
+    TRACE_FLUSH();
+
+    __BKPT();  // serious error, change the memory sizes, the adapter configuration
+
+    return nullptr;
+  }
+
+  uint8_t * result = &netmem[netmem_allocated];
+  netmem_allocated += asize;
+
+  return result;
+}
+
+TEspPmem * TEspWifiUart::AllocatePmem()
+{
+  if (first_free_pmem)
+  {
+    TEspPmem * result = first_free_pmem;
+    first_free_pmem = first_free_pmem->next;
+    return result;
+  }
+  else
+  {
+    return nullptr;
+  }
+}
+
+void TEspWifiUart::ReleasePmem(TEspPmem * apmem)
+{
+  apmem->next = first_free_pmem;
+  first_free_pmem = apmem;
+}
+
+
 void TEspWifiUart::StartSendTxBuffer()
 {
   if (txlen && !dma_tx.Active())
@@ -574,7 +633,7 @@ void TEspWifiUart::ProcessRxMessage()
       ++invalid_ipd_count; // IP address quote is missing, mandatory for the UDP
       return;
     }
-    if (!ParseIpAddr())
+    if (!ParseIpAddr()) // result goes to the sp_ipaddr
     {
       ++invalid_ipd_count; // invalid IP address
       return;
@@ -595,6 +654,26 @@ void TEspWifiUart::ProcessRxMessage()
       ++invalid_ipd_count;  // data marker is missing
       return;
     }
+
+    TEspPmem * pmem = AllocatePmem();
+    if (!pmem)
+    {
+      TRACE("ESP-AT: no more pme to store RX data!\r\n");
+      return;
+    }
+
+    if (dlen > pmem->max_datalen)
+    {
+      TRACE("ESP-AT: data chunk does not fit into a pmem buffer!\r\n");
+      ReleasePmem(pmem);
+      return;
+    }
+
+    pmem->datalen = dlen;
+    pmem->ip_addr = sp_ipaddr;
+    pmem->ip_port = srcport;
+    memcpy(&pmem->data[0], sp.readptr, dlen);
+    psock->AddRxPacket(pmem);
 
     TRACE("ESP-AT: %i bytes received for socket %i\r\n", dlen, psock->socketnum);
     TRACE("ESP-AT:   \"%s\"\r\n", &rxmsgbuf[0]);
@@ -639,7 +718,7 @@ bool TEspWifiUart::ParseIpAddr()
       TRACE("Invalid IP\r\n");
       return false;
     }
-    ipaddr.u8[n] = sp.PrevToInt();
+    sp_ipaddr.u8[n] = sp.PrevToInt();
   }
 
   return true;
@@ -670,5 +749,45 @@ int TEspAtUdpSocket::Receive(void * adataptr, unsigned adatalen)
 {
   int err = 0;
 
+  TEspPmem * pmem = rxpkt_first;
+  if (!pmem)
+  {
+    return 0;
+  }
+
+  if (pmem->datalen > adatalen)
+  {
+    err = -1;
+  }
+  else
+  {
+    err = pmem->datalen;
+    memcpy(adataptr, &pmem->data[0], pmem->datalen); // copy the data
+  }
+
+  srcaddr = pmem->ip_addr;
+  srcport = pmem->ip_port;
+
+  // unchain the pmem first
+  rxpkt_first = rxpkt_first->next;
+  if (!rxpkt_first)  rxpkt_last = nullptr;
+
+  // release the packet !
+  pwifim->ReleasePmem(pmem);
+
   return err;
+}
+
+void TEspAtUdpSocket::AddRxPacket(TEspPmem *pmem)
+{
+  pmem->next = nullptr;
+  if (rxpkt_last)
+  {
+    rxpkt_last->next = pmem;
+  }
+  else
+  {
+    rxpkt_first = pmem;
+  }
+  rxpkt_last = pmem;
 }
