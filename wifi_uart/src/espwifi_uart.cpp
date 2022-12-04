@@ -200,11 +200,6 @@ void TEspWifiUart::RunInit()
   {
     StartCommand("AT+CIPDINFO=1");
 
-    for (unsigned n; n < ESPWIFI_MAX_SOCKETS; ++n)
-    {
-      if (sockets[n])  sockets[n]->initialized = false;
-    }
-    initsocknum = 0;
     initstate = 50; // add sockets
   }
 
@@ -212,7 +207,15 @@ void TEspWifiUart::RunInit()
 
   else if (50 == initstate)
   {
-    cursock = nullptr;
+    for (unsigned n; n < ESPWIFI_MAX_SOCKETS; ++n)
+    {
+      if (sockets[n])  sockets[n]->Reset();
+    }
+    initsocknum = 0;
+    ++initstate;
+  }
+  else if (51 == initstate)
+  {
     while ((initsocknum < ESPWIFI_MAX_SOCKETS) && (!sockets[initsocknum] || sockets[initsocknum]->initialized))
     {
       ++initsocknum;
@@ -220,15 +223,18 @@ void TEspWifiUart::RunInit()
 
     if (initsocknum < ESPWIFI_MAX_SOCKETS)
     {
-      cursock = sockets[initsocknum];
+      TEspAtUdpSocket * psock = sockets[initsocknum];
 
       StartCommand("AT+CIPSTART=%i,\"UDP\",\"%u.%u.%u.%u\",%u,%u,2",
-          cursock->socketnum,
+          psock->socketnum,
           0,0,0,0,  // destination IP address
-          cursock->listenport,
-          cursock->listenport
+          psock->listenport,  // remote (destination) port, can not be 0 ?
+          psock->listenport   // local port
           // mode = 2 is the last parameter: allows to specify destination for every send
       );
+
+      ExpectCmdResponse(0, "%i,CONNECT", psock->socketnum);
+
       ++initstate;
     }
     else
@@ -237,11 +243,17 @@ void TEspWifiUart::RunInit()
       initstate = 200; // finish initialization
     }
   }
-  else if (51 == initstate) // process UDP socket initialization result
+  else if (52 == initstate) // process UDP socket initialization result
   {
+    if (cmd_responses & 1)
+    {
+      TRACE("ESP-AT: UDP socket connected.\r\n");
+      sockets[initsocknum]->connected = true;
+    }
+
     // initialize the next UDP socket
     ++initsocknum;
-    initstate = 50;
+    initstate = 51;
   }
 
 
@@ -311,6 +323,12 @@ void TEspWifiUart::StartCommand(const char *fmt, ...)
 
   va_end(arglist);
 
+  for (int i = 0; i < ESPWIFI_MAX_EXPCMDR; ++i)
+  {
+    expected_cmd_response[i][0] = 0;
+  }
+  cmd_responses = 0;
+
   cmd_ignore_error = false;
   cmd_running = true;
   cmd_echo_received = false;
@@ -342,6 +360,21 @@ void TEspWifiUart::ResetConnection()
 {
   wifi_connected = false;
   wifi_got_ip = false;
+}
+
+void TEspWifiUart::ExpectCmdResponse(uint8_t aidx, const char * fmt, ...)
+{
+  if (aidx >= ESPWIFI_MAX_EXPCMDR)  return;
+
+  va_list arglist;
+  va_start(arglist, fmt);
+
+  char * pch = &expected_cmd_response[aidx][0];
+  *pch = 0;
+
+  int len = mp_vsnprintf(pch, FMT_BUFFER_SIZE, fmt, arglist);
+
+  va_end(arglist);
 }
 
 void TEspWifiUart::StartSendTxBuffer()
@@ -439,24 +472,6 @@ void TEspWifiUart::Run()
   StartSendTxBuffer();  // Sending buffered tx messages
 }
 
-bool TEspWifiUart::MsgOkDetected()
-{
-  if (0 == memcmp(&rxmsgbuf[rxmsglen - 6], msg_ok, 6))
-  {
-    return true;
-  }
-  return false;
-}
-
-bool TEspWifiUart::MsgErrorDetected()
-{
-  if (0 == memcmp(&rxmsgbuf[rxmsglen - 9], msg_error, 9))
-  {
-    return true;
-  }
-  return false;
-}
-
 void TEspWifiUart::AddUdpSocket(TEspAtUdpSocket * audp)
 {
   unsigned n = 0;
@@ -472,7 +487,165 @@ void TEspWifiUart::AddUdpSocket(TEspAtUdpSocket * audp)
   }
 }
 
-//--------------------------------------------------------
+void TEspWifiUart::ProcessRxMessage()
+{
+  sp.Init((char *)&rxmsgbuf[0], rxmsglen);
+
+  if (!ready_received)  // check for ready
+  {
+    if (sp.CheckSymbol("ready"))
+    {
+      TRACE("ESP-AT: ready detected.\r\n");
+      ready_received = true;
+      return;
+    }
+
+    return; // at the beginning there comes garbage stop here
+  }
+
+  unsigned n;
+
+  if (cmd_running)
+  {
+    if (sp.CheckSymbol("OK"))
+    {
+      cmd_running = false;
+      cmd_error = false;
+      return;
+    }
+
+    if (sp.CheckSymbol("ERROR"))
+    {
+      cmd_running = false;
+      cmd_error = true;
+      return;
+    }
+
+    if (!cmd_echo_received)
+    {
+      cmd_echo_received = true;
+      return;
+    }
+
+    // processing command additional data
+    // like "n,CONNECT" for UDP socket connections
+
+    for (n = 0; n < ESPWIFI_MAX_EXPCMDR; ++n)
+    {
+      if ((expected_cmd_response[n][0] != 0) && sp.CheckSymbol(&expected_cmd_response[n][0]))
+      {
+        cmd_responses |= (1 << n);
+        return;
+      }
+    }
+  }
+
+  if (sp.CheckSymbol("+IPD,"))  // asynchronous data messages
+  {
+    //  "+IPD,0,10,"192.168.0.99",58145:0123456789"
+
+    if (!sp.ReadDecimalNumbers())
+    {
+      ++invalid_ipd_count;  // invalid socket id
+      return;
+    }
+
+    int i = sp.PrevToInt();
+    if ((i < 0) || (i >= ESPWIFI_MAX_SOCKETS) || !sockets[i])
+    {
+      ++invalid_ipd_count;  // invalid socket
+      return;
+    }
+
+    TEspAtUdpSocket * psock = sockets[i];
+
+    sp.CheckSymbol(","); // skip comma
+
+    if (!sp.ReadDecimalNumbers())
+    {
+      ++invalid_ipd_count; // invalid data length
+      return;
+    }
+    int dlen = sp.PrevToInt();
+
+    // UDP source IP address
+    if (!sp.CheckSymbol(",\""))
+    {
+      ++invalid_ipd_count; // IP address quote is missing, mandatory for the UDP
+      return;
+    }
+    if (!ParseIpAddr())
+    {
+      ++invalid_ipd_count; // invalid IP address
+      return;
+    }
+    sp.CheckSymbol("\","); // skip closing quote and comma
+
+    // source Port
+    if (!sp.ReadDecimalNumbers())
+    {
+      ++invalid_ipd_count;  // invalid string
+      return;
+    }
+
+    int srcport = sp.PrevToInt();
+
+    if (!sp.CheckSymbol(":")) // finally the data marker
+    {
+      ++invalid_ipd_count;  // data marker is missing
+      return;
+    }
+
+    TRACE("ESP-AT: %i bytes received for socket %i\r\n", dlen, psock->socketnum);
+    TRACE("ESP-AT:   \"%s\"\r\n", &rxmsgbuf[0]);
+
+    return;
+  }
+  else if (sp.CheckSymbol("WIFI CONNECTED"))
+  {
+    TRACE("ESP-AT: Wifi Connected.\r\n");
+    wifi_connected = true;
+    return;
+  }
+  else if (sp.CheckSymbol("WIFI GOT IP"))
+  {
+    TRACE("ESP-AT: Wifi got IP.\r\n");
+    wifi_got_ip = true;
+    return;
+  }
+  else  // some other asynchronous messages
+  {
+    TRACE("ESP-AT: Unprocessed msg: \"%s\"\r\n", &rxmsgbuf[0]);
+  }
+}
+
+bool TEspWifiUart::ParseIpAddr()
+{
+  for (int n = 0; n < 4; ++n)
+  {
+    sp.SkipSpaces();
+    if (n > 0)
+    {
+      if (!sp.CheckSymbol("."))
+      {
+        TRACE("Invalid IP\r\n");
+        return false;
+      }
+      sp.SkipSpaces();
+    }
+
+    if (!sp.ReadDecimalNumbers())
+    {
+      TRACE("Invalid IP\r\n");
+      return false;
+    }
+    ipaddr.u8[n] = sp.PrevToInt();
+  }
+
+  return true;
+}
+
+//-----------------------------------------------------------------------------
 
 void TEspAtUdpSocket::Init(TEspWifiUart * awifim, uint16_t alistenport)
 {
@@ -480,6 +653,12 @@ void TEspAtUdpSocket::Init(TEspWifiUart * awifim, uint16_t alistenport)
   listenport = alistenport;
 
   pwifim->AddUdpSocket(this);
+}
+
+void TEspAtUdpSocket::Reset()
+{
+  initialized = false;
+  connected = false;
 }
 
 int TEspAtUdpSocket::Send(void * adataptr, unsigned adatalen)
@@ -492,61 +671,4 @@ int TEspAtUdpSocket::Receive(void * adataptr, unsigned adatalen)
   int err = 0;
 
   return err;
-}
-
-void TEspWifiUart::ProcessRxMessage()
-{
-  if (!ready_received)
-  {
-    // check for ready
-    if (memcmp(&rxmsgbuf[0], msg_ready, 5) == 0)
-    {
-      TRACE("ESP-AT: ready detected.\r\n");
-      ready_received = true;
-      return;
-    }
-
-    return; // at the beginning there comes garbage stop here
-  }
-
-  if (cmd_running)
-  {
-    if (memcmp(&rxmsgbuf[0], msg_ok, 2) == 0)
-    {
-      cmd_running = false;
-      cmd_error = false;
-      return;
-    }
-
-    if (memcmp(&rxmsgbuf[0], msg_error, 5) == 0)
-    {
-      cmd_running = false;
-      cmd_error = true;
-      return;
-    }
-
-    if (!cmd_echo_received)
-    {
-      cmd_echo_received = true;
-      return;
-    }
-  }
-
-  if (0 == memcmp(&rxmsgbuf[0], "WIFI CONNECTED", 14))
-  {
-    TRACE("ESP-AT: Wifi Connected.\r\n");
-    wifi_connected = true;
-    return;
-  }
-
-  if (0 == memcmp(&rxmsgbuf[0], "WIFI GOT IP", 11))
-  {
-    TRACE("ESP-AT: Wifi got IP.\r\n");
-    wifi_got_ip = true;
-    return;
-  }
-
-  // some other asynchronous messages
-
-  TRACE("ESP-AT: Unprocessed msg: \"%s\"\r\n", &rxmsgbuf[0]);
 }

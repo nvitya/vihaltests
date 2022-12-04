@@ -34,6 +34,7 @@
 #include "hwdma.h"
 #include "hwpins.h"
 #include "net_ip4.h"
+#include "strparse.h"
 
 #define UARTCOMM_RXBUF_SIZE       256  // circular buffer
 #define UARTCOMM_TXBUF_SIZE       256  // one tx response must fit into it, allocated two times
@@ -41,6 +42,7 @@
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
 #define ESPWIFI_MAX_SOCKETS   5
+#define ESPWIFI_MAX_EXPCMDR   4
 
 class TEspAtUdpSocket;
 
@@ -58,8 +60,7 @@ protected:
   bool                cmd_error = 0;
   bool                cmd_ignore_error = false;
 
-  unsigned            initial_uart_speed = 115200;
-  unsigned            uart_speed = 1000000;  // 1 MBit/s can be easily realized on the most targets
+  TStrParseObj        sp;
 
   uint16_t            curlinestart = 0;
   uint16_t            curlinelen = 0;
@@ -69,8 +70,10 @@ protected:
   uint16_t            txbufwr = 0;
   uint16_t            txlen = 0;
 
-public:
-  bool                initialized = false;
+  THwDmaTransfer      dmaxfer_tx;
+  THwDmaTransfer      dmaxfer_rx;
+
+public:  // required resources
 
   THwUart             uart;
   THwDmaChannel       dma_rx;
@@ -78,16 +81,8 @@ public:
   TGpioPin            pin_rst;
   TGpioPin            pin_en;
 
-  THwDmaTransfer      dmaxfer_tx;
-  THwDmaTransfer      dmaxfer_rx;
+public:  // settings
 
-  bool                Init();
-  void                Run();  // processes Rx and Tx
-  void                RunRx();
-
-  void                RunInit(); // initialization state-machine
-
-public:
   TIp4Addr            ipaddress;
   TIp4Addr            netmask;
   TIp4Addr            gwaddress;
@@ -97,6 +92,20 @@ public:
   const char *        ssid = "SSID";
   const char *        password = "PASSWORD";
 
+  unsigned            initial_uart_speed = 115200;
+  unsigned            uart_speed = 1000000;  // 1 MBit/s can be easily realized on the most targets
+
+public:
+  bool                initialized = false;
+  unsigned            invalid_ipd_count = 0;  // number of invalid +IPD (data) messages
+
+  bool                Init();
+  void                Run();  // processes Rx and Tx
+  void                RunRx();
+
+  void                RunInit(); // initialization state-machine
+
+public:
 
   TEspAtUdpSocket *   sockets[ESPWIFI_MAX_SOCKETS] = {0};
 
@@ -107,24 +116,26 @@ public:
   void                StartCommand(const char * fmt, ...);
 
 protected:
+  void                ExpectCmdResponse(uint8_t aidx, const char * fmt, ...);
+
+  char                expected_cmd_response[ESPWIFI_MAX_EXPCMDR][32];
+  uint8_t             cmd_responses = 0;
+
   bool                cmd_running = false;
   bool                cmd_echo_received = false;
   bool                ready_received = false;
   bool                wifi_got_ip = false;
   bool                wifi_connected = false;
 
-  TEspAtUdpSocket *   cursock = nullptr;
+  TIp4Addr            ipaddr;
+  bool                ParseIpAddr();
 
-  const char *        msg_ready = "ready";
-  const char *        msg_ok    = "OK";
-  const char *        msg_error = "ERROR";
 
+  //TEspAtUdpSocket *   cursock = nullptr;
 
   bool                InitHw();  // board specific implementation
 
   void                ResetConnection();
-  bool                MsgOkDetected();
-  bool                MsgErrorDetected();
 
   void                ProcessRxMessage();
 
@@ -147,6 +158,7 @@ public:
 
   int               socketnum = -1;
   bool              initialized = false;
+  bool              connected = false;
 
 public:
   TIp4Addr          destaddr;
@@ -162,10 +174,12 @@ public:
   TEspWifiUart *    pwifim = nullptr;
 
 
-  void Init(TEspWifiUart * awifim, uint16_t alistenport);
+  void              Init(TEspWifiUart * awifim, uint16_t alistenport);
 
-  int Send(void * adataptr, unsigned adatalen);
-  int Receive(void * adataptr, unsigned adatalen);
+  int               Send(void * adataptr, unsigned adatalen);
+  int               Receive(void * adataptr, unsigned adatalen);
+
+  void              Reset();
 };
 
 #endif /* SRC_ESPWIFI_UART_H_ */
