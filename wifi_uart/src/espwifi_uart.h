@@ -37,7 +37,7 @@
 #include "strparse.h"
 
 #define UARTCOMM_RXBUF_SIZE       256  // circular buffer
-#define UARTCOMM_TXBUF_SIZE       256  // one tx response must fit into it, allocated two times
+#define UARTCOMM_TXBUF_SIZE      2048  // one tx response must fit into it, allocated two times
 
 #define UARTCOMM_MAX_RX_MSG_LEN  2048  // maximal length of a parsed message
 
@@ -76,6 +76,7 @@ protected:
   uint8_t             txstate = 0;
   uint8_t             initstate = 0;
   uint8_t             initsocknum = 0;
+  unsigned            ipd_rx_remaining = 0;
   unsigned            prev_state_time = 0;
   unsigned            cmd_start_time = 0;
   unsigned            send_start_time = 0;
@@ -92,7 +93,6 @@ protected:
   uint16_t            rxmsglen = 0;
   uint16_t            rxdmapos = 0;
 
-  uint16_t            txbufwr = 0;
   uint16_t            txlen = 0;
 
   THwDmaTransfer      dmaxfer_tx;
@@ -118,7 +118,7 @@ public:  // settings
   const char *        password = "PASSWORD";
 
   unsigned            initial_uart_speed = 115200;
-  unsigned            uart_speed = 1000000;  // 1 MBit/s can be easily realized on the most targets
+  unsigned            uart_speed = 3000000;  // 1 MBit/s can be easily realized on the most targets
 
   bool                disable_command_echo = true; // disable command echo
 
@@ -156,6 +156,12 @@ protected:
   bool                wifi_got_ip = false;
   bool                wifi_connected = false;
 
+  int                 ipd_sock_num = 0;
+  TIp4Addr            ipd_ip_addr;
+  uint16_t            ipd_port = 0;
+  uint16_t            ipd_data_len = 0;
+  uint16_t            ipd_data_start = 0;
+
   TIp4Addr            sp_ipaddr;
 
   TEspPmem *          sending_first = nullptr;
@@ -169,6 +175,8 @@ protected:
   void                RunTx();
   void                RunInit(); // initialization state-machine
   void                ProcessRxMessage();
+  void                ProcessIpdStart();
+  void                ProcessIpdData();
 
   uint8_t *           AllocateNetMem(unsigned asize);
   TEspPmem *          AllocatePmem();
@@ -180,7 +188,7 @@ protected:
   unsigned            AddTx(void * asrc, unsigned len); // returns the amount actually written
   void                AddTxMessage(const char * fmt, ...);
   void                StartSendTxBuffer();
-  inline unsigned     TxAvailable() { return sizeof(txbuf[0]) - txlen; }
+  inline unsigned     TxAvailable() { return sizeof(txbuf) - txlen; }
 
   void                AddSendingPacket(TEspPmem * apmem);
   void                RemoveSendingPacket(TEspPmem * apmem);
@@ -189,7 +197,7 @@ protected: // these big buffers must come to the last
 
   uint8_t             rxmsgbuf[UARTCOMM_MAX_RX_MSG_LEN];  // parsed message buffer
   uint8_t             rxdmabuf[UARTCOMM_RXBUF_SIZE];  // circular buffer, might contain more messages
-  uint8_t             txbuf[2][UARTCOMM_TXBUF_SIZE];
+  uint8_t             txbuf[UARTCOMM_TXBUF_SIZE];
 
 };
 

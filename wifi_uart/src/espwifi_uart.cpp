@@ -87,6 +87,7 @@ bool TEspWifiUart::Init(void * anetmem, unsigned anetmemsize)
 
   // start the DMA receive with circular DMA buffer
   rxdmapos = 0;
+  ipd_rx_remaining = 0;
   dmaxfer_rx.bytewidth = 1;
   dmaxfer_rx.count = sizeof(rxdmabuf);
   dmaxfer_rx.dstaddr = &rxdmabuf[0];
@@ -321,7 +322,7 @@ unsigned TEspWifiUart::AddTx(void * asrc, unsigned len) // returns the amount ac
   if (len > available)  len = available;
 
   uint8_t * srcp = (uint8_t *)asrc;
-  uint8_t * dstp = &txbuf[txbufwr][txlen];
+  uint8_t * dstp = &txbuf[txlen];
   uint8_t * endp = dstp + len;
   while (dstp < endp)
   {
@@ -348,6 +349,7 @@ void TEspWifiUart::StartCommand(const char *fmt, ...)
 
   if (len > 0)
   {
+#if 0
     if (0 == memcmp("AT+CWJAP", &fmtbuf[0], 8)) // do not print the WIFI secrets !
     {
       TRACE("ESP-AT -> \"AT+CWJAP=\"***\",\"***\"\"\r\n");
@@ -356,6 +358,7 @@ void TEspWifiUart::StartCommand(const char *fmt, ...)
     {
       TRACE("ESP-AT -> \"%s\"\r\n", &fmtbuf[0]);
     }
+#endif
 
     AddTx(&fmtbuf[0], len);
     AddTx((void *)"\r\n", 2);
@@ -465,12 +468,10 @@ void TEspWifiUart::StartSendTxBuffer()
     dmaxfer_tx.flags = 0;
     dmaxfer_tx.bytewidth = 1;
     dmaxfer_tx.count = txlen;
-    dmaxfer_tx.srcaddr = &txbuf[txbufwr][0];
+    dmaxfer_tx.srcaddr = &txbuf[0];
 
     uart.DmaStartSend(&dmaxfer_tx);
 
-    // change the buffer
-    txbufwr ^= 1;
     txlen = 0;
   }
 }
@@ -489,31 +490,64 @@ void TEspWifiUart::RunRx()
   {
     uint8_t b = rxdmabuf[rxdmapos];
 
-    if (10 == b)
-    {
-      rxmsgbuf[rxmsglen] = 0; // zero terminate the message
-
-      if (rxmsglen > 0)
-      {
-        ProcessRxMessage();
-        rxmsglen = 0;
-      }
-    }
-    else if (13 == b) // ignore, usually comes before 10
-    {
-
-    }
-    else
+    if (ipd_rx_remaining > 0)
     {
       if (rxmsglen < sizeof(rxmsgbuf))
       {
         rxmsgbuf[rxmsglen] = b;
         ++rxmsglen;
       }
+
+      --ipd_rx_remaining;
+      if (0 == ipd_rx_remaining)
+      {
+        if (ipd_data_start + ipd_data_len > sizeof(rxmsgbuf))
+        {
+          // the data does not fit into our buffer, just ignore it.
+        }
+        else // process the IPD data
+        {
+          ProcessIpdData();
+        }
+        rxmsglen = 0;
+      }
+    }
+    else
+    {
+      if (10 == b)
+      {
+        rxmsgbuf[rxmsglen] = 0; // zero terminate the message
+
+        if (rxmsglen > 0)
+        {
+          ProcessRxMessage();
+          rxmsglen = 0;
+        }
+      }
+      else if (13 == b) // ignore, usually comes before 10
+      {
+
+      }
       else
       {
-        // TODO: figure out something better
-        rxmsglen = 0;  // reset on overflow
+        if (rxmsglen < sizeof(rxmsgbuf))
+        {
+          rxmsgbuf[rxmsglen] = b;
+          ++rxmsglen;
+
+          if (':' == b)  // special case for +IPD messages
+          {
+            if (0 == memcmp("+IPD", &rxmsgbuf[0], 4))
+            {
+              ProcessIpdStart(); // sets the ipd_rx_remaining
+            }
+          }
+        }
+        else
+        {
+          // TODO: figure out something better
+          rxmsglen = 0;  // reset on overflow
+        }
       }
     }
 
@@ -595,7 +629,7 @@ void TEspWifiUart::RunTx()
   }
   else if (11 == txstate) // send finished
   {
-    TRACE("ESP-AT: send finished.\r\n");
+    //TRACE("ESP-AT: send finished.\r\n");
     RemoveSendingPacket(pmem);
     txstate = 0;
   }
@@ -717,87 +751,6 @@ void TEspWifiUart::ProcessRxMessage()
 
     return;
   }
-  else if (sp.CheckSymbol("+IPD,"))  // asynchronous data messages
-  {
-    //  "+IPD,0,10,"192.168.0.99",58145:0123456789"
-
-    if (!sp.ReadDecimalNumbers())
-    {
-      ++invalid_ipd_count;  // invalid socket id
-      return;
-    }
-
-    int i = sp.PrevToInt();
-    if ((i < 0) || (i >= ESPWIFI_MAX_SOCKETS) || !sockets[i])
-    {
-      ++invalid_ipd_count;  // invalid socket
-      return;
-    }
-
-    TEspAtUdpSocket * psock = sockets[i];
-
-    sp.CheckSymbol(","); // skip comma
-
-    if (!sp.ReadDecimalNumbers())
-    {
-      ++invalid_ipd_count; // invalid data length
-      return;
-    }
-    int dlen = sp.PrevToInt();
-
-    // UDP source IP address
-    if (!sp.CheckSymbol(",\""))
-    {
-      ++invalid_ipd_count; // IP address quote is missing, mandatory for the UDP
-      return;
-    }
-    if (!ParseIpAddr()) // result goes to the sp_ipaddr
-    {
-      ++invalid_ipd_count; // invalid IP address
-      return;
-    }
-    sp.CheckSymbol("\","); // skip closing quote and comma
-
-    // source Port
-    if (!sp.ReadDecimalNumbers())
-    {
-      ++invalid_ipd_count;  // invalid string
-      return;
-    }
-
-    int srcport = sp.PrevToInt();
-
-    if (!sp.CheckSymbol(":")) // finally the data marker
-    {
-      ++invalid_ipd_count;  // data marker is missing
-      return;
-    }
-
-    TEspPmem * pmem = AllocatePmem();
-    if (!pmem)
-    {
-      TRACE("ESP-AT: no more pme to store RX data!\r\n");
-      return;
-    }
-
-    if (dlen > pmem->max_datalen)
-    {
-      TRACE("ESP-AT: data chunk does not fit into a pmem buffer!\r\n");
-      ReleasePmem(pmem);
-      return;
-    }
-
-    pmem->datalen = dlen;
-    pmem->ip_addr = sp_ipaddr;  // acquired in ParseIpAddr()
-    pmem->ip_port = srcport;
-    memcpy(&pmem->data[0], sp.readptr, dlen);
-    psock->AddRxPacket(pmem);
-
-    TRACE("ESP-AT: %i bytes received for socket %i\r\n", dlen, psock->socketnum);
-    TRACE("ESP-AT:   \"%s\"\r\n", &rxmsgbuf[0]);
-
-    return;
-  }
   else if (sp.CheckSymbol("WIFI CONNECTED"))
   {
     TRACE("ESP-AT: Wifi Connected.\r\n");
@@ -814,6 +767,104 @@ void TEspWifiUart::ProcessRxMessage()
   {
     TRACE("ESP-AT: Unprocessed msg: \"%s\"\r\n", &rxmsgbuf[0]);
   }
+}
+
+void TEspWifiUart::ProcessIpdStart()
+{
+  ipd_data_len = 0;
+  ipd_rx_remaining = 0;
+
+  sp.Init((char *)&rxmsgbuf[0], rxmsglen);
+
+  if (!sp.CheckSymbol("+IPD,"))
+  {
+    return;
+  }
+
+  //  "+IPD,0,10,"192.168.0.99",58145:0123456789"
+
+  if (!sp.ReadDecimalNumbers())
+  {
+    ++invalid_ipd_count;  // invalid socket id
+    return;
+  }
+
+  int i = sp.PrevToInt();
+  if ((i < 0) || (i >= ESPWIFI_MAX_SOCKETS) || !sockets[i])
+  {
+    ++invalid_ipd_count;  // invalid socket
+    return;
+  }
+
+  ipd_sock_num = i;
+
+  sp.CheckSymbol(","); // skip comma
+
+  if (!sp.ReadDecimalNumbers())
+  {
+    ++invalid_ipd_count; // invalid data length
+    return;
+  }
+  ipd_data_len = sp.PrevToInt();
+
+  // UDP source IP address
+  if (!sp.CheckSymbol(",\""))
+  {
+    ++invalid_ipd_count; // IP address quote is missing, mandatory for the UDP
+    return;
+  }
+  if (!ParseIpAddr()) // result goes to the sp_ipaddr
+  {
+    ++invalid_ipd_count; // invalid IP address
+    return;
+  }
+  ipd_ip_addr = sp_ipaddr;
+
+  sp.CheckSymbol("\","); // skip closing quote and comma
+
+  // source Port
+  if (!sp.ReadDecimalNumbers())
+  {
+    ++invalid_ipd_count;  // invalid string
+    return;
+  }
+  ipd_port = sp.PrevToInt();
+
+  if (!sp.CheckSymbol(":")) // finally the data marker
+  {
+    ++invalid_ipd_count;  // data marker is missing
+    return;
+  }
+
+  ipd_data_start = (uint8_t *)sp.readptr - &rxmsgbuf[0]; // here comes the data
+  ipd_rx_remaining = ipd_data_len;
+}
+
+void TEspWifiUart::ProcessIpdData()
+{
+  TEspAtUdpSocket * psock = sockets[ipd_sock_num];
+  TEspPmem * pmem = AllocatePmem();
+  if (!pmem)
+  {
+    TRACE("ESP-AT: no more pme to store RX data!\r\n");
+    return;
+  }
+
+  if (ipd_data_len > pmem->max_datalen)
+  {
+    TRACE("ESP-AT: data chunk does not fit into a pmem buffer!\r\n");
+    ReleasePmem(pmem);
+    return;
+  }
+
+  pmem->datalen = ipd_data_len;
+  pmem->ip_addr = ipd_ip_addr;  // acquired in ParseIpAddr()
+  pmem->ip_port = ipd_port;
+  memcpy(&pmem->data[0], &rxmsgbuf[ipd_data_start], ipd_data_len);
+  psock->AddRxPacket(pmem);
+
+  //TRACE("ESP-AT: %i bytes received for socket %i\r\n", ipd_data_len, psock->socketnum);
+  //TRACE("ESP-AT:   \"%s\"\r\n", &rxmsgbuf[0]);
 }
 
 bool TEspWifiUart::ParseIpAddr()

@@ -98,7 +98,7 @@ void udp_test_run()
   len = udp.Receive(&pbuf[0], sizeof(pbuf));
   if (len > 0)
   {
-#if 1 // no traces for benchmarking
+#if 0 // no traces for benchmarking
     TRACE("UDP MESSAGE RECEIVED: \"");
     for (i = 0; i < len; ++i)
     {
