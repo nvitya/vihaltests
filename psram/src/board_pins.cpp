@@ -95,8 +95,7 @@ void board_pins_init()
     hwpinctrl.PinSetup(PORTNUM_A,  6, qspipincfg | PINCFG_AF_10);   // IO3
 
     fl_qspi.speed = SystemCoreClock / 2;
-    // the QSPI unit in the MCU can not provide proper timing / control in quad mode for this device
-    fl_qspi.multi_line_count = 1;
+    fl_qspi.multi_line_count = 4;
     fl_qspi.idleclk_high = false;
     fl_qspi.datasample_late = false;
     fl_qspi.Init();

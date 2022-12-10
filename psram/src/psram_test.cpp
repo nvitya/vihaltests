@@ -115,6 +115,8 @@ void psram_test_init()
   if (fl_qspi.initialized)
   {
     psram.qspi = &fl_qspi;
+    psram.single_line_read = true;
+    TRACE("Warning: QSPI single line read!\r\n");
     spispeed = fl_qspi.speed;
     lanes = fl_qspi.multi_line_count;
     driver = "QSPI";
@@ -126,6 +128,7 @@ void psram_test_init()
   }
 
   TRACE("driver = %s, speed = %u, lanes = %u\r\n", driver, spispeed, lanes);
+
 
   //test_dma();
   //test_dma();
