@@ -543,6 +543,36 @@ void board_pins_init()
   conuart.Init(0);
 }
 
+// IMXRT
+
+#elif defined(BOARD_EVK_IMXRT1020)
+
+TGpioPin  led1pin(1, 5, false); // GPIO_AD_B0_05 = GPIO_1_5
+
+#define LED_COUNT 1
+
+void setup_board()
+{
+  led1pin.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+}
+
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 5, false);  // GPIO_AD_B0_05 = GPIO_1_5
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+}
+
+
 #else
   #error "Define board_pins_init here"
 #endif
