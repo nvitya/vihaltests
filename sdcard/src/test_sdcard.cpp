@@ -71,7 +71,39 @@ void test_sdcard()
     {
       TRACE("  OK\r\n");
     }
+
+#if 1
+    TRACE("Writing SDCARD/2...\r\n");
+    // it is relative safe to write to the second sector
+    sdcard.StartWriteBlocks(2,  &databuf[512],  1);
+    sdcard.WaitForComplete();
+    if (sdcard.errorcode)
+    {
+      TRACE("  Write error: %i\r\n", sdcard.errorcode);
+    }
+    else
+    {
+      TRACE("  OK\r\n");
+    }
+#endif
+#if 0
+    TRACE("Writing SDCARD/3...\r\n");
+    // it is relative safe to write to the second sector
+    sdcard.StartWriteBlocks(3,  &databuf[512*2],  1);
+    sdcard.WaitForComplete();
+    if (sdcard.errorcode)
+    {
+      TRACE("  Write error: %i\r\n", sdcard.errorcode);
+    }
+    else
+    {
+      TRACE("  OK\r\n");
+    }
+#endif
   #endif
+
+    // the card is not ready, still working on the write !!!!
+    //delay_ms(50);
 
 
   #if 1
@@ -86,9 +118,9 @@ void test_sdcard()
     else
     {
       TRACE("  OK\r\n");
+      //show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
     }
 
-    show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
 
     TRACE("Reading SDCARD...\r\n");
 
@@ -101,9 +133,9 @@ void test_sdcard()
     else
     {
       TRACE("  OK\r\n");
+      //show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
     }
 
-    show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
 
   #endif
 
