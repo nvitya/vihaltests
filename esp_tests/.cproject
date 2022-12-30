@@ -28,7 +28,7 @@
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.debugging.level.590987499" name="Debug level" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.debugging.level" useByScannerDiscovery="true" value="ilg.gnumcueclipse.managedbuild.cross.riscv.option.debugging.level.max" valueType="enumerated"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.debugging.format.1607381761" name="Debug format" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.debugging.format" useByScannerDiscovery="true"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.name.798654193" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.name" useByScannerDiscovery="false" value="xPack GNU RISC-V Embedded GCC" valueType="string"/>
-							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.prefix.146624950" name="Prefix" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.prefix" useByScannerDiscovery="false" value="riscv-none-embed-" valueType="string"/>
+							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.prefix.146624950" name="Prefix" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.prefix" useByScannerDiscovery="false" value="riscv-none-elf-" valueType="string"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.c.1450241920" name="C compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.c" useByScannerDiscovery="false" value="gcc" valueType="string"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.cpp.1519229910" name="C++ compiler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.cpp" useByScannerDiscovery="false" value="g++" valueType="string"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.ar.1606868068" name="Archiver" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.command.ar" useByScannerDiscovery="false" value="ar" valueType="string"/>
@@ -40,7 +40,8 @@
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.base.516522576" name="Architecture" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.base" useByScannerDiscovery="false" value="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.arch.rv32i" valueType="enumerated"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.multiply.448178866" name="Multiply extension (RVM)" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.multiply" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.optimization.freestanding.1525114052" name="Assume freestanding environment (-ffreestanding)" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.optimization.freestanding" useByScannerDiscovery="true" value="true" valueType="boolean"/>
-							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.id.1788758746" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.id" useByScannerDiscovery="false" value="2273142912" valueType="string"/>
+							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.id.1788758746" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.toolchain.id" useByScannerDiscovery="false" value="2273142913" valueType="string"/>
+							<option id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.extensions.468305218" name="Other extensions" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.target.isa.extensions" value="_zicsr" valueType="string"/>
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="ilg.gnumcueclipse.managedbuild.cross.riscv.targetPlatform.103795505" isAbstract="false" osList="all" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.targetPlatform"/>
 							<builder buildPath="${workspace_loc:/esp_tests}/Debug" id="ilg.gnumcueclipse.managedbuild.cross.riscv.builder.1420743966" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.builder"/>
 							<tool id="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler.287550102" name="GNU RISC-V Cross Assembler" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.tool.assembler">
@@ -55,7 +56,7 @@
 									<listOptionValue builtIn="false" value="BOARD_NODEMCU_ESP32C3"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="ilg.gnumcueclipse.managedbuild.cross.riscv.option.cpp.compiler.include.paths.1406933803" name="Include paths (-I)" superClass="ilg.gnumcueclipse.managedbuild.cross.riscv.option.cpp.compiler.include.paths" useByScannerDiscovery="true" valueType="includePath">
-									<listOptionValue builtIn="false" value="../src"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/core/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/rv32i/core}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/rv32i/ESP/src}&quot;"/>

@@ -9,27 +9,37 @@
 #include "esp_tests.h"
 
 #include "hwpins.h"
+#include "hwqspi.h"
 #include "hwuart.h"
 #include "hwspi.h"
 #include "traces.h"
 
+THwQspi   qspi;
 THwSpi    spi;
 TGpioPin  pin_spi_cs;
 TGpioPin  pin_spifl_cs;
 
-uint8_t txbuf[256];
-uint8_t rxbuf[256];
+uint8_t txbuf[4*1024];
+uint8_t rxbuf[4*1024];
 
 #if defined(BOARD_NODEMCU_ESP32C3)
 
 void spi_prepare()
 {
+  pin_spifl_cs.Assign(0, 14, false);
+  pin_spifl_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
+  //hwpinctrl.PadSetup(PAD_GPIO14, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
+
+  // the FSPI = SPI2 = the general purpose SPI
+
+  hwpinctrl.PadSetup(PAD_GPIO10, FSPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_2);         // CS0,  AF_2 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO2,  FSPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_2);         // MISO, AF_2 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO7,  FSPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_2);         // MOSI, AF_2 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO6,  FSPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_2);         // CLK,  AF_2 = direct routing
+
+
   pin_spi_cs.Assign(0, 3, false);
   pin_spi_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
-  //hwpinctrl.PadSetup(PAD_GPIO3, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
-  hwpinctrl.PadSetup(PAD_GPIO2, FSPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_2);         // MISO, AF_2 = direct routing
-  hwpinctrl.PadSetup(PAD_GPIO7, FSPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_2);         // MOSI, AF_2 = direct routing
-  hwpinctrl.PadSetup(PAD_GPIO6, FSPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_2);         // CLK,  AF_2 = direct routing
 
   spi.manualcspin = &pin_spi_cs;
   spi.speed = 1000000;
@@ -38,18 +48,14 @@ void spi_prepare()
 
 void spiflash_prepare()
 {
-  pin_spifl_cs.Assign(0, 14, false);
-  pin_spifl_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // CS as GPIO
-  //hwpinctrl.PadSetup(PAD_GPIO14, SIG_GPIO_OUT_IDX, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // CS as GPIO
+  // the normal SPI flash (SPI1) is coupled to the "SPIxxx" pins
   hwpinctrl.PadSetup(PAD_GPIO14, SPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
   hwpinctrl.PadSetup(PAD_GPIO17, SPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_0);         // MISO, AF_0 = direct routing
   hwpinctrl.PadSetup(PAD_GPIO16, SPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_0);         // MOSI, AF_0 = direct routing
   hwpinctrl.PadSetup(PAD_GPIO15, SPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CLK,  AF_0 = direct routing
 
-  spi.manualcspin = &pin_spifl_cs;
-  spi.speed = 2000000;
-  //spi.Init(0);
-  spi.Init(1);
+  qspi.speed = 4000000;
+  qspi.Init();
 }
 
 #elif defined(BOARD_ESP32_DEVKIT)
@@ -109,23 +115,37 @@ void spi_test()
 }
 
 
+
 void spiflash_test()
 {
-  //unsigned n;
+  unsigned n;
 
   TRACE("Testing SPI FLASH...\r\n");
 
   spiflash_prepare();
 
-  txbuf[0] = 0x9F;
-  txbuf[1] = 0x00;
-  txbuf[2] = 0x00;
-  txbuf[3] = 0x00;
-
-  spi.StartTransfer(0, 0, 0, 4, &txbuf[0], &rxbuf[0]);
-  spi.WaitFinish();
+  qspi.StartReadData(0x9F, 0, &rxbuf[0], 4);
+  qspi.WaitFinish();
 
   TRACE("SPI RX = %02X %02X %02X %02X\r\n", rxbuf[0], rxbuf[1], rxbuf[2], rxbuf[3]);
+
+  TRACE("Reading 64 bytes:\r\n");
+
+  unsigned rlen = 256;
+
+  qspi.StartReadData(0x03 | QSPICM_ADDR3, 0, &rxbuf[0], rlen);
+  //qspi.StartReadData(0x0B | QSPICM_ADDR3 | QSPICM_DUMMY1, 0, &rxbuf[0], 64);
+  qspi.WaitFinish();
+
+  TRACE("RX data:\r\n");
+  for (n = 0; n < rlen; ++n)
+  {
+    TRACE(" %02X", rxbuf[n]);
+    if (15 == (n & 15))
+    {
+      TRACE("\r\n");
+    }
+  }
 
   TRACE("SPI Flash finished.\r\n");
 }
@@ -175,8 +195,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-  spi_test();
-  //spiflash_test();
+  //spi_test();
+  spiflash_test();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
@@ -202,7 +222,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
       for (unsigned n = 0; n < pin_led_count; ++n)
       {
-        pin_led[n].SetTo((hbcounter >> n) & 1);
+        //pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
       //TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
