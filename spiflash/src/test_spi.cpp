@@ -22,6 +22,8 @@
   #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
 #elif defined(MCUF_KENDRYTE)
   #define TEST_START_ADDR  0x400000  // start at 4M
+#elif defined(MCUF_ESP)
+  #define TEST_START_ADDR  0x010000  // start at 64k
 #else
   #define TEST_START_ADDR  0x000000
 #endif
