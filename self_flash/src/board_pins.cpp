@@ -63,6 +63,38 @@ void board_pins_init()
   spiflash.Init();
 }
 
+#elif defined(BOARD_NODEMCU_ESP32C3)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(0, 3, false);
+  pin_led[1].Assign(0, 4, false);
+  pin_led[2].Assign(0, 5, false);
+  board_pins_init_leds();
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+
+  // the normal SPI flash (SPI1) is coupled to the "SPIxxx" pins
+  hwpinctrl.PadSetup(PAD_GPIO12, SPIWP_OUT_IDX,   PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO13, SPIHD_OUT_IDX,   PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO14, SPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO17, SPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_0);         // MISO, AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO16, SPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_0);         // MOSI, AF_0 = direct routing
+  hwpinctrl.PadSetup(PAD_GPIO15, SPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CLK,  AF_0 = direct routing
+
+  fl_qspi.speed = 20000000;
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+}
+
 #elif defined(BOARD_MAIX_BIT)
 
 void board_pins_init()
