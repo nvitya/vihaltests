@@ -94,7 +94,7 @@ const vihal_esp_image_header_t  application_header =
   .reserved       = {0, 0, 0, 0, 0, 0, 0, 0},
   .hash_appended  = 0,         // If 1, a SHA256 digest "simple hash" (of the entire image) is appended after the checksum.
 
-  .load_addr      = unsigned(&application_header),  // load address of the first segment
+  .load_addr      = unsigned(&application_header) + sizeof(vihal_esp_image_header_t),  // load address of the first segment
   .data_len       = unsigned(&__app_image_end) - unsigned(&application_header) - sizeof(vihal_esp_image_header_t) // size of the first segment
 };
 
