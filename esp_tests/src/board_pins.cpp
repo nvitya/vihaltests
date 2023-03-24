@@ -73,6 +73,21 @@ void board_pins_init()
   conuart.Init(0);
 }
 
+#elif defined(BOARD_WEMOS_C3MINI)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 7, false);
+  board_pins_init_leds();
+
+  // for now, external UART adapter is required
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+}
 //-------------------------------------------------------------------------------
 // Xtensa (ESP32)
 //-------------------------------------------------------------------------------
