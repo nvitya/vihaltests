@@ -69,7 +69,7 @@ const TAppHeader application_header =
 
 #endif
 
-#if defined(BOARD_NODEMCU_ESP32C3)
+#if defined(BOARD_NODEMCU_ESP32C3) || defined(BOARD_WEMOS_C3MINI)
 
 // a valid (second stage bootloader) example at flash address 0:
 //   E9 03 02 20 00 E0 3C 40 EE 00 00 00 05 00 00 00
