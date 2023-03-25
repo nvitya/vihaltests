@@ -18,6 +18,11 @@
 
 THwUsbSerialEsp usbser;
 
+THwDmaChannel   txdma;
+THwDmaTransfer  txfer;
+
+uint8_t dmabuf[256];
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
 	// after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -51,6 +56,21 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("ESP Tests\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
+
+  txdma.Init(0, GDMA_PERI_SEL_UHCI0);
+  conuart.DmaAssign(true, &txdma);
+
+  unsigned n;
+  for (n = 0; n < 64; ++n)
+  {
+    dmabuf[n] = 64 + n;
+  }
+
+  txfer.bytewidth = 1;
+  txfer.srcaddr = &dmabuf;
+  txfer.count = 64;
+  txfer.flags = 0;
+  conuart.DmaStartSend(&txfer);
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
