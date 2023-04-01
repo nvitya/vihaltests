@@ -14,14 +14,46 @@
 #include "hwspi.h"
 #include "traces.h"
 
+#include "test_i2c.h"
+
 #include "hwusbserial_esp.h"
 
 THwUsbSerialEsp usbser;
 
 THwDmaChannel   txdma;
+THwDmaChannel   rxdma;
 THwDmaTransfer  txfer;
+THwDmaTransfer  rxfer;
 
 uint8_t dmabuf[256];
+uint8_t dmabuf2[256];
+
+void uart_dma_init()
+{
+  //txdma.Init(0, GDMA_PERI_SEL_UHCI0);
+  //conuart.DmaAssign(true, &txdma);
+
+  rxdma.Init(0, GDMA_PERI_SEL_UHCI0);
+  conuart.DmaAssign(false, &rxdma);
+
+  unsigned n;
+  for (n = 0; n < 64; ++n)
+  {
+    dmabuf[n] = 48 + n;
+  }
+
+  txfer.bytewidth = 1;
+  txfer.srcaddr = &dmabuf;
+  txfer.count = 8;
+  txfer.flags = 0;
+  //conuart.DmaStartSend(&txfer);
+
+  rxfer.bytewidth = 1;
+  rxfer.dstaddr = &dmabuf2;
+  rxfer.count = 256;
+  rxfer.flags = 0;
+  conuart.DmaStartRecv(&rxfer);
+}
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -57,20 +89,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-  txdma.Init(0, GDMA_PERI_SEL_UHCI0);
-  conuart.DmaAssign(true, &txdma);
+  //uart_dma_init();
 
-  unsigned n;
-  for (n = 0; n < 64; ++n)
-  {
-    dmabuf[n] = 64 + n;
-  }
-
-  txfer.bytewidth = 1;
-  txfer.srcaddr = &dmabuf;
-  txfer.count = 64;
-  txfer.flags = 0;
-  conuart.DmaStartSend(&txfer);
+  test_i2c();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
@@ -106,7 +127,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
       TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
-      usbser.printf("USB-CDC hb = %u\r\n", hbcounter);
+      //usbser.printf("USB-CDC hb = %u\r\n", hbcounter);
       //usbser.Flush();
 
       t0 = t1;

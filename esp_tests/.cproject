@@ -316,6 +316,7 @@
 		<configuration configurationName="BOARD_ESP32_DEVKIT">
 			<resource resourceType="PROJECT" workspacePath="/esp_tests"/>
 		</configuration>
+		<configuration configurationName="BOARD_WEMOS_C3MINI"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">
