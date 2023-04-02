@@ -37,6 +37,31 @@ void board_pins_init_leds()
 // Risc-V (RV32I)
 //-------------------------------------------------------------------------------
 
+#elif defined(BOARD_WEMOS_C3MINI)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 7, false);
+  board_pins_init_leds();
+
+  // for now, external UART adapter is required
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+
+  // I2C0
+  hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SDA
+  hwpinctrl.PadInput(PAD_GPIO1, I2CEXT0_SDA_IN_IDX);
+  hwpinctrl.PadSetup(PAD_GPIO0, I2CEXT0_SCL_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SCL
+  hwpinctrl.PadInput(PAD_GPIO0, I2CEXT0_SCL_IN_IDX);
+  i2c.Init(0);
+
+  // no DMA support for I2C by Espressif, but it has at least a 32 byte fifo
+}
+
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
@@ -381,36 +406,6 @@ void board_pins_init()
     i2c.DmaAssign(false, &i2c_rxdma);
   #endif
 }
-
-//-------------------------------------------------------------------------------
-// Risc-V: RV32I
-//-------------------------------------------------------------------------------
-
-#elif defined(BOARD_WEMOS_C3MINI)
-
-void board_pins_init()
-{
-  pin_led_count = 1;
-  pin_led[0].Assign(0, 7, false);
-  board_pins_init_leds();
-
-  // for now, external UART adapter is required
-
-  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
-  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
-  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
-  conuart.Init(0);
-
-  // I2C0
-  hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SDA
-  hwpinctrl.PadInput(PAD_GPIO1, I2CEXT0_SDA_IN_IDX);
-  hwpinctrl.PadSetup(PAD_GPIO0, I2CEXT0_SCL_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SCL
-  hwpinctrl.PadInput(PAD_GPIO0, I2CEXT0_SCL_IN_IDX);
-  i2c.Init(0);
-
-  // no DMA support for I2C by Espressif, but it has at least a 32 byte fifo
-}
-
 
 #else
   #error "Define board_pins_init here"
