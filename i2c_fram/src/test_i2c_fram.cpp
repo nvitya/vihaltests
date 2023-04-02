@@ -44,6 +44,14 @@ void test_i2c_fram()
 
   i2c.StartRead(&itra, I2CADDR, addr | I2CEX_2, &rxbuf[0], len);
   i2c.WaitFinish(&itra);
+  if (itra.error)
+  {
+    TRACE("  I2C error = %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+  }
 
   show_mem(&rxbuf[0], len);
 
@@ -64,7 +72,14 @@ void test_i2c_fram()
 
   i2c.StartWrite(&itra, I2CADDR, addr + incoffs | I2CEX_2, &txbuf[0], 4);
   i2c.WaitFinish(&itra);
-  if (itra.error)  { TRACE(" I2C error = %i\r\n", itra.error); }
+  if (itra.error)
+  {
+    TRACE("  I2C error = %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+  }
 
   TRACE("Write finished.\r\n");
 
@@ -72,33 +87,45 @@ void test_i2c_fram()
 
   i2c.StartRead(&itra, I2CADDR, addr | I2CEX_2, &rxbuf[0], len);
   i2c.WaitFinish(&itra);
-  if (itra.error)  { TRACE(" I2C error = %i\r\n", itra.error); }
+  if (itra.error)
+  {
+    TRACE("  I2C error = %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+  }
 
   show_mem(&rxbuf[0], len);
 
 #if 1
-  TRACE("Testing wrong device read\r\n");
+  TRACE("Testing wrong device read...\r\n");
 
   i2c.StartRead(&itra, 0x7E, addr | I2CEX_2, &rxbuf[0], len);
   i2c.WaitFinish(&itra);
   if (itra.error)
   {
-    TRACE("I2C read error: %i\r\n", itra.error);
+    TRACE("  I2C read error: %i\r\n", itra.error);
   }
   else
   {
-    TRACE("I2C ERROR MISSING!\\r\n");
+    TRACE("  I2C ERROR MISSING!\\r\n");
     show_mem(&rxbuf[0], len);
   }
 #endif
 
   TRACE("Reading memory after error again at %04X...\r\n", addr);
-
   i2c.StartRead(&itra, I2CADDR, addr | I2CEX_2, &rxbuf[0], len);
   i2c.WaitFinish(&itra);
-  if (itra.error)  { TRACE(" I2C error = %i\r\n", itra.error); }
-
-  show_mem(&rxbuf[0], len);
+  if (itra.error)
+  {
+    TRACE(" !!! I2C error = %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+    show_mem(&rxbuf[0], len);
+  }
 
 #endif
 
