@@ -34,14 +34,15 @@ void test_i2c_interface()
 {
 
 #if 1 // very simple read test with 1 byte addressing
-  i2c.StartRead(&itra, I2CADDR, 0 | I2CEX_1, &rxbuf[0], 4); // read byte with 1 byte addressing
+  i2c.StartRead(&itra, I2CADDR, 0 | I2CEX_2, &rxbuf[0], 128); // read byte with 1 byte addressing
   i2c.WaitFinish(&itra);
   if (itra.error)
   {
     TRACE("Read error: %i\r\n", itra.error);
+    return;
   }
 
-  show_mem(&rxbuf[0], 4);
+  show_mem(&rxbuf[0], 128);
 
   return;
 
@@ -114,11 +115,12 @@ void test_i2c()
 {
   TRACE("I2C Test\r\n");
 
-  hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_IN_IDX, PINCFG_INPUT);  // SDA
-  hwpinctrl.PadSetup(PAD_GPIO0, I2CEXT0_SCL_IN_IDX, PINCFG_INPUT);  // SCL
+  //hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_IN_IDX,  PINCFG_INPUT);   // SDA
+  hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SDA
+  hwpinctrl.PadInput(PAD_GPIO1, I2CEXT0_SDA_IN_IDX);
 
-  hwpinctrl.PadSetup(PAD_GPIO1, I2CEXT0_SDA_OUT_IDX, PINCFG_OUTPUT);  // SDA
-  hwpinctrl.PadSetup(PAD_GPIO0, I2CEXT0_SCL_OUT_IDX, PINCFG_OUTPUT);  // SCL
+  hwpinctrl.PadSetup(PAD_GPIO0, I2CEXT0_SCL_OUT_IDX, PINCFG_OUTPUT | PINCFG_OPENDRAIN);  // SCL
+  hwpinctrl.PadInput(PAD_GPIO0, I2CEXT0_SCL_IN_IDX);
 
   i2c.Init(0);
 

@@ -125,7 +125,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-      TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
+      //TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
 
       //usbser.printf("USB-CDC hb = %u\r\n", hbcounter);
       //usbser.Flush();
