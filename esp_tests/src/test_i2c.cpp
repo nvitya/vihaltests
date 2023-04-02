@@ -33,7 +33,7 @@ TI2cTransaction itra;
 void test_i2c_interface()
 {
 
-#if 1 // very simple read test with 1 byte addressing
+#if 0 // very simple read test with 2 byte addressing
   i2c.StartRead(&itra, I2CADDR, 0 | I2CEX_2, &rxbuf[0], 128); // read byte with 1 byte addressing
   i2c.WaitFinish(&itra);
   if (itra.error)
@@ -46,6 +46,28 @@ void test_i2c_interface()
 
   return;
 
+#endif
+
+#if 1 // long (chunked write)
+  for (int i = 0; i < 128; ++i)
+  {
+    txbuf[i] = 0x80 + i;
+  }
+
+  TRACE("Long write test...\r\n");
+
+  i2c.StartWrite(&itra, I2CADDR, 0x100 | I2CEX_2, &txbuf[0], 128);
+  i2c.WaitFinish(&itra);
+  if (itra.error)
+  {
+    TRACE("  Write without addressing error: %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+  }
+
+  return;
 #endif
 
 #if 0
