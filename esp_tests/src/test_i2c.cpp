@@ -48,7 +48,7 @@ void test_i2c_interface()
 
 #endif
 
-#if 1 // long (chunked write)
+#if 0 // long (chunked) write
   for (int i = 0; i < 128; ++i)
   {
     txbuf[i] = 0x80 + i;
@@ -60,7 +60,7 @@ void test_i2c_interface()
   i2c.WaitFinish(&itra);
   if (itra.error)
   {
-    TRACE("  Write without addressing error: %i\r\n", itra.error);
+    TRACE("  i2c error: %i\r\n", itra.error);
   }
   else
   {
@@ -69,6 +69,25 @@ void test_i2c_interface()
 
   return;
 #endif
+
+#if 1 // long (chunked) read
+  TRACE("Long read test at 0x100 ...\r\n");
+
+  i2c.StartRead(&itra, I2CADDR, 0x100 | I2CEX_2, &rxbuf[0], 128);
+  i2c.WaitFinish(&itra);
+  if (itra.error)
+  {
+    TRACE("  i2c error: %i\r\n", itra.error);
+  }
+  else
+  {
+    TRACE("  OK.\r\n");
+  }
+  show_mem(&rxbuf[0], 128);
+
+  return;
+#endif
+
 
 #if 0
 
