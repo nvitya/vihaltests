@@ -13,7 +13,7 @@
 
 THwI2c  i2c;
 
-void show_mem(void * addr, unsigned len)
+static void show_mem(void * addr, unsigned len)
 {
   unsigned char * cp = (unsigned char *)addr;
   TRACE("Dumping memory at %08X, len = %u\r\n", addr, len);
@@ -25,8 +25,8 @@ void show_mem(void * addr, unsigned len)
   TRACE("\r\n");
 }
 
-uint8_t rxbuf[1024];
-uint8_t txbuf[1024];
+static uint8_t rxbuf[1024];
+static uint8_t txbuf[1024];
 
 TI2cTransaction itra;
 

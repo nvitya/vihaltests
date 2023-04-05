@@ -50,8 +50,7 @@ uint8_t adc_shift = 6; // keep only the highest 10 bits
 // STM32
 
 #elif defined(BOARD_MIN_F103) || defined(BOARD_MIN_F401) || defined(BOARD_MIN_F411) \
-    || defined(BOARD_MIBO64_STM32F405) \
-    || defined(BOARD_MIBO48_STM32G473)
+    || defined(BOARD_MIBO64_STM32F405)
 
 void adc_setup()
 {
@@ -63,18 +62,17 @@ void adc_setup()
   adc_ch_y = 1;
 }
 
-#elif defined(BOARD_MIBO48_STM32F303)
+#elif defined(BOARD_MIBO48_STM32F303) || defined(BOARD_MIBO48_STM32G473)
 
 void adc_setup()
 {
-  hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ch0
-  hwpinctrl.PinSetup(PORTNUM_A, 1, PINCFG_INPUT | PINCFG_ANALOGUE); // ch1
+  hwpinctrl.PinSetup(PORTNUM_A, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ch1
+  hwpinctrl.PinSetup(PORTNUM_A, 1, PINCFG_INPUT | PINCFG_ANALOGUE); // ch2
 
   adc_num = 1;
   adc_ch_x = 1;
   adc_ch_y = 2;
 }
-
 
 #elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743) || defined(BOARD_NUCLEO_H723)
 

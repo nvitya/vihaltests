@@ -15,6 +15,7 @@
 #include "traces.h"
 
 #include "test_i2c.h"
+#include "test_spi.h"
 
 #include "hwusbserial_esp.h"
 
@@ -91,7 +92,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   //uart_dma_init();
 
-  test_i2c();
+  //test_i2c();
+  test_spi();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
