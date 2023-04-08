@@ -73,6 +73,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   mscounter_init();
 
+  TRACE("Initializing board display...\r\n");
+
+  board_display_init();
 	tft_disp_test_init();
 
   TRACE("Starting main loop.\r\n");

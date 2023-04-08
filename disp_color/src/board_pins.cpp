@@ -54,6 +54,10 @@ void init_spi_display()
   //lcd.mirrorx = true;
   disp.Init(LCD_CTRL_ST7735R, 128, 160);
   disp.SetRotation(1);
+
+  //disp.FillScreen(0x0000);
+  //disp.FillRect(10, 10, 4, 4, 0xFF00);
+
 #endif
 }
 
@@ -103,7 +107,10 @@ void board_pins_init()
   // SPI1
   disp.spi.speed = SystemCoreClock / 4;
   disp.spi.Init(0);
+}
 
+void board_display_init()
+{
   // special display init for the integrated display:
   disp.invert_color = true;
   disp.shift_x = 26;
@@ -112,6 +119,82 @@ void board_pins_init()
 
   disp.SetRotation(3);
 }
+
+#elif defined(BOARD_WEMOS_C3MINI)
+
+#if SPI_SELF_FLASHING
+  THwQspi    fl_qspi;
+  TSpiFlash  spiflash;
+#endif
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 7, false);
+  board_pins_init_leds();
+
+  // for now, external UART adapter is required
+
+  //hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT);
+  hwpinctrl.PadSetup(PAD_U0TXD, U0TXD_OUT_IDX, PINCFG_OUTPUT | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
+  conuart.Init(0);
+
+  // LCD control
+/*
+ * Y:    CS      4
+ * OR:   RESET   3
+ * BL:   CD      2
+ * W:    MOSI    1
+ * GRY:  SCK     0
+ * PUR:  LED
+ */
+
+  uint32_t speed_flag = 0; //PINCFG_SPEED_FAST;
+
+  hwpinctrl.PadSetup(PAD_GPIO0, FSPICLK_OUT_IDX, PINCFG_OUTPUT | speed_flag);  // SPI2_SCK
+  hwpinctrl.PadSetup(PAD_GPIO1, FSPID_OUT_IDX,   PINCFG_OUTPUT | speed_flag);  // SPI2_MOSI
+
+  disp.pin_reset.Assign(0, 3, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B1: RESET
+
+  disp.pin_cs.Assign(0, 4, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1 | speed_flag);
+
+  disp.pin_cd.Assign(0, 2, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1 | speed_flag);
+
+  // SPI1
+  disp.spi.speed = 20000000; // seems to be the maximal working speed
+  disp.spi.Init(2);
+
+  #if SPI_SELF_FLASHING
+    // the normal SPI flash (SPI1) is coupled to the "SPIxxx" pins
+    hwpinctrl.PadSetup(PAD_GPIO12, SPIWP_OUT_IDX,   PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+    hwpinctrl.PadSetup(PAD_GPIO13, SPIHD_OUT_IDX,   PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+    hwpinctrl.PadSetup(PAD_GPIO14, SPICS0_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CS0,  AF_0 = direct routing
+    hwpinctrl.PadSetup(PAD_GPIO17, SPIQ_IN_IDX,     PINCFG_INPUT  | PINCFG_AF_0);         // MISO, AF_0 = direct routing
+    hwpinctrl.PadSetup(PAD_GPIO16, SPID_OUT_IDX,    PINCFG_OUTPUT | PINCFG_AF_0);         // MOSI, AF_0 = direct routing
+    hwpinctrl.PadSetup(PAD_GPIO15, SPICLK_OUT_IDX,  PINCFG_OUTPUT | PINCFG_AF_0);         // CLK,  AF_0 = direct routing
+
+    fl_qspi.speed = 20000000;
+    fl_qspi.multi_line_count = 4;
+    fl_qspi.Init();
+
+    spiflash.qspi = &fl_qspi;
+    spiflash.has4kerase = true;
+    spiflash.Init();
+  #endif
+}
+
+void board_display_init()
+{
+  init_spi_display();
+}
+
+//-------------------------------------------------------------------------------
+// ARM Cortex-M
+//-------------------------------------------------------------------------------
 
 #elif defined(BOARD_MIN_F103)
 
@@ -143,7 +226,10 @@ void board_pins_init()
   // SPI1
   disp.spi.speed = 36000000; // max speed for this MCU
   disp.spi.Init(1);
+}
 
+void board_display_init()
+{
   init_spi_display();
 }
 
@@ -176,7 +262,10 @@ void board_pins_init()
   // SPI1
   disp.spi.speed = SystemCoreClock / 2; // max speed for this MCU
   disp.spi.Init(1);
+}
 
+void board_display_init()
+{
   init_spi_display();
 }
 
@@ -211,7 +300,10 @@ void board_pins_init()
   // SPI1
   disp.spi.speed = SystemCoreClock / 2; // max speed for this MCU
   disp.spi.Init(1);
+}
 
+void board_display_init()
+{
   init_spi_display();
 }
 
@@ -365,6 +457,10 @@ void board_pins_init()
 
   sdram_init();
 
+}
+
+void board_display_init()
+{
   lcd_init();
 }
 
@@ -418,13 +514,16 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);  // USART1_RX
   conuart.Init(1);
 
+}
+
+void board_display_init()
+{
   disp.mirrorx = true;
   //disp.Init(LCD_CTRL_HX8357B, 480, 320);
   //disp.Init(LCD_CTRL_UNKNOWN, 480, 320);
   disp.Init(LCD_CTRL_HX8357B, 320, 480);
   //disp.SetRotation(0);
 }
-
 
 // ATSAM
 
@@ -451,11 +550,14 @@ void board_pins_init()
   hwpinctrl.PinSetup(0, 9, PINCFG_OUTPUT | PINCFG_AF_0); // UART_TXD
   conuart.Init(0);  // UART
 
+}
+
+void board_display_init()
+{
   disp.mirrorx = true;
   disp.Init(LCD_CTRL_HX8357B, 320, 480);
   disp.SetRotation(3);
 }
-
 
 #elif defined(BOARD_VERTIBO_A)
 
@@ -483,7 +585,10 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
   conuart.baudrate = 115200;
   conuart.Init(0);
+}
 
+void board_display_init()
+{
   #if VERTIBO_A_LCD_800x480
 
     disp.mirrorx = true;
@@ -502,7 +607,6 @@ void board_pins_init()
     disp.SetRotation(1);
 
   #endif
-
 }
 
 // LPC
@@ -572,10 +676,12 @@ void board_pins_init()
   // SPI1
   disp.spi.speed = SystemCoreClock / 4;
   disp.spi.Init(1);
-
-  init_spi_display();
 }
 
+void board_display_init()
+{
+  init_spi_display();
+}
 
 #else
   #error "Define board_pins_init here"

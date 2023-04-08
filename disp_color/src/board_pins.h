@@ -25,6 +25,7 @@ extern THwUart    conuart;  // console uart
 #endif
 
 void board_pins_init();
+void board_display_init();
 
 #if 0
 
@@ -39,7 +40,8 @@ void board_pins_init();
       || defined(BOARD_MIBO64_STM32F405) \
       || defined(BOARD_MIBO48_STM32G473) \
       || defined(BOARD_RPI_PICO) \
-      || defined(BOARD_LONGAN_NANO)
+      || defined(BOARD_LONGAN_NANO) \
+      || defined(MCUF_ESP)
 
 #define DISP_SPI
 
