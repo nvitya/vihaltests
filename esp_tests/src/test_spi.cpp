@@ -56,11 +56,15 @@ void test_spi()
   for (i = 0; i < 1024; ++i)
   {
     txbuf[i] = 0x80 + i;
+    rxbuf[i] = 0x55;
   }
 
-  //spi.StartTransfer(0, 0,  0, 256, &txbuf[0], nullptr);
-  spi.StartTransfer(0, 0,  0, 16, &txbuf[0], nullptr);
+  unsigned len = 256;
+
+  spi.StartTransfer(0xAA, 0x12345678,  SPITR_CMD1 | SPITR_ADDR3, len, &txbuf[0], &rxbuf[0]);
   spi.WaitFinish();
+
+  show_mem(&rxbuf[0], len);
 
   TRACE("SPI Test finished.\r\n");
 }

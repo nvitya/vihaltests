@@ -98,8 +98,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   //uart_dma_init();
 
   //test_i2c();
-  //test_spi();
-  test_dma();
+  test_spi();
+  //test_dma();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
