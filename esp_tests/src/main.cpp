@@ -16,10 +16,13 @@
 
 #include "test_i2c.h"
 #include "test_spi.h"
+#include "test_dma.h"
 
 #include "hwusbserial_esp.h"
 
 THwUsbSerialEsp usbser;
+
+#if 0
 
 THwDmaChannel   txdma;
 THwDmaChannel   rxdma;
@@ -55,6 +58,8 @@ void uart_dma_init()
   rxfer.flags = 0;
   conuart.DmaStartRecv(&rxfer);
 }
+
+#endif
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -93,7 +98,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   //uart_dma_init();
 
   //test_i2c();
-  test_spi();
+  //test_spi();
+  test_dma();
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 	unsigned hbcounter = 0;
