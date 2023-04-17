@@ -20,8 +20,8 @@
   #define SPI_DISPLAY_WIDTH    160  // for 160x80
 
 #else
-  //#define SPI_DISPLAY_WIDTH    128  // for 128x160
-  #define SPI_DISPLAY_WIDTH    240  // for 240x320
+  #define SPI_DISPLAY_WIDTH    128  // for 128x160
+  //#define SPI_DISPLAY_WIDTH    240  // for 240x320
 #endif
 
 #include "boards_builtin.h"
