@@ -43,6 +43,18 @@ uint8_t adc_shift = 6; // keep only the highest 10 bits
 // Risc-V (RV32I)
 //-------------------------------------------------------------------------------
 
+#elif defined(BOARD_WEMOS_C3MINI)
+
+void adc_setup()
+{
+  hwpinctrl.PinSetup(0, 0, PINCFG_INPUT | PINCFG_ANALOGUE); // ch0
+  hwpinctrl.PinSetup(0, 1, PINCFG_INPUT | PINCFG_ANALOGUE); // ch1
+
+  adc_num = 1;
+  adc_ch_x = 0;
+  adc_ch_y = 1;
+}
+
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
