@@ -449,6 +449,20 @@ void board_pins_init()
   //uartx2.Init(3); // UART3
 }
 
+#elif defined(BOARD_WIO_TERMINAL)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 15, false);
+  board_pins_init_leds();
+
+  // SERCOM2
+  hwpinctrl.PinSetup(PORTNUM_B, 26, PINCFG_OUTPUT | PINCFG_AF_C);  // PAD[0] = TXD
+  hwpinctrl.PinSetup(PORTNUM_B, 27, PINCFG_INPUT  | PINCFG_AF_C | PINCFG_PULLUP);  // PAD[1] = RXD
+  conuart.Init(2);
+}
+
 #elif defined(BOARD_MIBO64_ATSAME5X)
 
 void board_pins_init()
