@@ -76,13 +76,20 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("Initializing board display...\r\n");
 
   board_display_init();
-	tft_disp_test_init();
-
-  TRACE("Starting main loop.\r\n");
 
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 
 	unsigned t0, t1;
+
+	TRACE("Benchmarking full screen fill...\r\n");
+	t0 = CLOCKCNT;
+	disp.FillScreen(0x8000);
+	t1 = CLOCKCNT;
+	TRACE("  %u us\r\n", (t1 - t0) / (SystemCoreClock / 1000000));
+
+  TRACE("Starting main loop.\r\n");
+
+  tft_disp_test_init();
 
 	t0 = CLOCKCNT;
 

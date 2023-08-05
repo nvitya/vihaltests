@@ -41,7 +41,8 @@ void board_display_init();
       || defined(BOARD_MIBO48_STM32G473) \
       || defined(BOARD_RPI_PICO) \
       || defined(BOARD_LONGAN_NANO) \
-      || defined(MCUF_ESP)
+      || defined(MCUF_ESP) \
+      || defined(BOARD_WIO_TERMINAL)
 
 #define DISP_SPI
 

@@ -527,6 +527,60 @@ void board_display_init()
 
 // ATSAM
 
+#elif defined(BOARD_WIO_TERMINAL)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 15, false);
+  board_pins_init_leds();
+
+  // SERCOM2
+  hwpinctrl.PinSetup(PORTNUM_B, 26, PINCFG_OUTPUT | PINCFG_AF_C);  // PAD[0] = TXD
+  hwpinctrl.PinSetup(PORTNUM_B, 27, PINCFG_INPUT  | PINCFG_AF_C | PINCFG_PULLUP);  // PAD[1] = RXD
+  conuart.Init(2);
+
+/*
+    LCD-MISO | B18 - SERCOM7.2
+    LCD-MOSI | B19 - SERCOM7.3
+    LCD-SCK  | B20 - SERCOM7.1
+    LCD-CS   | B21 - SERCOM7.0
+    LCD-BLED | C05
+    LCD-D/C  | C06
+    LCD-RST  | C07
+ */
+
+
+  // LCD control
+  hwpinctrl.PinSetup(PORTNUM_B, 20, PINCFG_OUTPUT | PINCFG_AF_D); // SERCOM7[1] = SCK
+  hwpinctrl.PinSetup(PORTNUM_B, 19, PINCFG_OUTPUT | PINCFG_AF_D); // SERCOM7[3] = MOSI
+
+  disp.pin_reset.Assign(PORTNUM_C, 7, false);
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // B0: RESET
+
+  disp.pin_cs.Assign(PORTNUM_B, 21, false);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  disp.pin_cd.Assign(PORTNUM_C, 6, false);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // LCD Backlight
+  hwpinctrl.PinSetup(PORTNUM_C, 5, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // turn the LCD backlight on
+
+  // SPI1
+  //disp.spi.speed = 30000000;
+  disp.spi.speed = SystemCoreClock / 2; // max speed for this MCU
+  disp.spi.data_out_pinout = 2;  // PAD3 = MOSI
+  disp.spi.Init(7);
+}
+
+void board_display_init()
+{
+  disp.mirrorx = true;
+  disp.Init(LCD_CTRL_ILI9341, 240, 320);
+  disp.SetRotation(3);
+}
+
 #elif defined(BOARD_ARDUINO_DUE)
 
 /* 16 bit parallel display module designed to arduino mega connected to DUE
