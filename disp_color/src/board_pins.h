@@ -42,6 +42,7 @@ void board_display_init();
       || defined(BOARD_RPI_PICO) \
       || defined(BOARD_LONGAN_NANO) \
       || defined(MCUF_ESP) \
+      || defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
       || defined(BOARD_WIO_TERMINAL)
 
 #define DISP_SPI

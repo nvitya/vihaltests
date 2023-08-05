@@ -307,6 +307,44 @@ void board_display_init()
   init_spi_display();
 }
 
+#elif defined(BOARD_NUCLEO_F446) || defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_B,  0, false);
+  pin_led[1].Assign(PORTNUM_B,  7, false);
+  pin_led[2].Assign(PORTNUM_B, 14, false);
+  board_pins_init_leds();
+
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
+
+  // LCD control
+  hwpinctrl.PinSetup(PORTNUM_C, 10, PINCFG_OUTPUT | PINCFG_AF_6); // SPI3_SCK
+  hwpinctrl.PinSetup(PORTNUM_C, 12, PINCFG_OUTPUT | PINCFG_AF_6); // SPI3_MOSI
+
+  disp.pin_reset.Assign( PORTNUM_F,  6, false);
+  disp.pin_cs.Assign(    PORTNUM_F,  7, false);
+  disp.pin_cd.Assign(    PORTNUM_C, 11, false);
+
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // SPI1
+  disp.spi.speed = 32000000;
+  disp.spi.Init(3);
+}
+
+void board_display_init()
+{
+  init_spi_display();
+}
+
+
 //----------------------------------------------------------------------------------------------------
 // EMBEDDED LCD CONROLLER WITH FRAMEBUFFER
 //----------------------------------------------------------------------------------------------------
