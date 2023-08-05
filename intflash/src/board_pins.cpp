@@ -58,6 +58,19 @@ void board_pins_init()
   conuart.Init(0); // USART0
 }
 
+#elif defined(BOARD_WIO_LITE_RV)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A,  8, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_0);  // USART0_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_0);  // USART0_RX
+  conuart.Init(0); // USART0
+}
+
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
