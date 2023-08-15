@@ -24,6 +24,4 @@ public:
   void          Start();
 };
 
-extern TPioAppWave  piowave;
-
 #endif /* SRC_PIOAPP_WAVE_H_ */

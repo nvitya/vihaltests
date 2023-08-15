@@ -45,7 +45,7 @@ public:
 
 class THwRpPioSm
 {
-public:
+public:  // optimization hint: the first 32 variables / addresses are accessed faster, they must be ordered by their size
   uint8_t        devnum = 0;
   uint8_t        smnum  = 0;
   uint8_t        sideset_len = 0;
@@ -53,6 +53,17 @@ public:
 
   pio_sm_hw_t *  regs = nullptr;
   pio_hw_t *     dregs = nullptr;
+
+  uint32_t       rx_fifo_emtpy_bit = 0;
+  uint32_t       tx_fifo_full_bit = 0;
+
+  uint8_t *      tx_msb8  = nullptr;
+  uint16_t *     tx_msb16 = nullptr;
+  uint32_t *     tx_lsb   = nullptr;
+
+  uint8_t *      rx_msb8  = nullptr;
+  uint16_t *     rx_msb16 = nullptr;
+  uint32_t *     rx_lsb   = nullptr;
 
   THwRpPioPrg *  prg = nullptr;
   uint32_t       pinctrl = 0;
@@ -70,10 +81,27 @@ public:
 
   void SetPinDir(uint32_t apin, unsigned aoutput);
 
+  void SetOutShift(bool shift_right, bool autopull, unsigned threshold);
+  void SetInShift(bool shift_right, bool autopush, unsigned threshold);
+
   void SetupPinsSideSet(unsigned abase, unsigned acount);
   void SetupPinsSet(unsigned abase, unsigned acount);
   void SetupPinsOut(unsigned abase, unsigned acount);
   void SetupPinsIn(unsigned abase, unsigned acount);
+
+  bool TrySend32(uint32_t adata);
+  bool TrySend16(uint16_t adata);
+  bool TrySend8(uint8_t adata);
+
+  bool TryRecv32(uint32_t * adata);
+  bool TryRecv16(uint16_t * adata);
+  bool TryRecv8(uint8_t * adata);
+
+  bool TrySendMsb8(uint8_t adata);
+  bool TrySendMsb16(uint16_t adata);
+
+  bool TryRecvMsb8(uint8_t * adata);
+  bool TryRecvMsb16(uint16_t * adata);
 
 public:
   void SetupPioPins(unsigned abase, unsigned acount);
@@ -83,7 +111,8 @@ public:
 class THwRpPioApp
 {
 public:
-  bool    initialized = false;
+  bool      initialized = false;
+  uint8_t   prgoffset = 0;
 
   virtual ~THwRpPioApp() { }
 };

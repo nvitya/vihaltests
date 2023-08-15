@@ -7,13 +7,11 @@
 
 #include <pioapp_wave.h>
 
-TPioAppWave  piowave;
-
 bool TPioAppWave::Init(uint8_t adevnum, uint8_t asmnum, uint8_t apinnum)
 {
   initialized = false;
 
-  prg.Init(adevnum, 0);  // offset=0, entry=offset
+  prg.Init(adevnum, prgoffset);  // offset=0, entry=offset
   prg.Add(0xe001); //  0: set    pins, 1    [0]
   prg.Add(0xe000); //  1: set    pins, 0    [0]
   // wrap is configured automatically between the first and the last line of code

@@ -10,22 +10,45 @@
 #include "hwrppio_instructions.h"
 #include <hwrppio.h>
 
-void THwRpPioPrg::Init(uint8_t adevnum, uint8_t aoffset)
+uint8_t hwpio_reset_done[2];  // will be initialized with zeroes as it goes to the .bss
+
+pio_hw_t * hwpio_init_and_get_regs(uint8_t adevnum)
 {
   uint32_t reset_mask;
+  pio_hw_t * dregs;
 
-  if (1 == adevnum)
+  if (0 == adevnum)
+  {
+    dregs = pio0_hw;
+    reset_mask = RESETS_RESET_PIO0_BITS;
+  }
+  else if (1 == adevnum)
   {
     dregs = pio1_hw;
     reset_mask = RESETS_RESET_PIO1_BITS;
   }
   else
   {
-    dregs = pio0_hw;
-    reset_mask = RESETS_RESET_PIO0_BITS;
+    return nullptr;
+  }
+
+  if (0 == hwpio_reset_done[adevnum])
+  {
+    rp_reset_control(reset_mask, true); // issue the reset
+    hwpio_reset_done[adevnum] = 1;
   }
 
   rp_reset_control(reset_mask, false); // remove reset
+  return dregs;
+}
+
+void THwRpPioPrg::Init(uint8_t adevnum, uint8_t aoffset)
+{
+  dregs = hwpio_init_and_get_regs(adevnum);
+  if (!dregs)
+  {
+    return;
+  }
 
   offset = aoffset;
   entry = aoffset;
@@ -50,23 +73,12 @@ void THwRpPioPrg::Clear()
 
 bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
 {
-  uint32_t reset_mask;
-
   initialized = false;
   devnum = adevnum;
   smnum  = asmnum;
 
-  if (0 == adevnum)
-  {
-    dregs = pio0_hw;
-    reset_mask = RESETS_RESET_PIO0_BITS;
-  }
-  else if (1 == adevnum)
-  {
-    dregs = pio1_hw;
-    reset_mask = RESETS_RESET_PIO1_BITS;
-  }
-  else
+  dregs = hwpio_init_and_get_regs(adevnum);
+  if (!dregs)
   {
     return false;
   }
@@ -76,9 +88,24 @@ bool THwRpPioSm::Init(uint8_t adevnum, uint8_t asmnum)
     return false;
   }
 
-  rp_reset_control(reset_mask, false); // remove reset
-
   regs = &dregs->sm[smnum];
+
+  Stop();  // ensure that the state machine is not running
+
+  tx_lsb   = (uint32_t *)&dregs->txf[smnum];
+  tx_msb8 = (uint8_t *)tx_lsb;
+  tx_msb8 += 3;
+  tx_msb16 = (uint16_t *)tx_lsb;
+  tx_msb16 += 1;
+
+  rx_lsb   = (uint32_t *)&dregs->rxf[smnum];
+  rx_msb8 = (uint8_t *)rx_lsb;
+  rx_msb8 += 3;
+  rx_msb16 = (uint16_t *)rx_lsb;
+  rx_msb16 += 1;
+
+  tx_fifo_full_bit  = (1 << (16 + smnum));
+  rx_fifo_emtpy_bit = (1 << ( 8 + smnum));
 
   SetClkDiv(clkdiv);
 
@@ -125,7 +152,7 @@ void THwRpPioSm::SetupPinsOut(unsigned abase, unsigned acount)
 void THwRpPioSm::SetupPinsIn(unsigned abase, unsigned acount)
 {
   pinctrl &= ~((0x1F  << 15));
-  pinctrl |=  ((abase <<  0));
+  pinctrl |=  ((abase << 15));
   regs->pinctrl = pinctrl;
   SetupPioPins(abase, acount);
 }
@@ -192,4 +219,137 @@ void THwRpPioSm::Stop()
   uint32_t tmp = (dregs->ctrl & 0xF);
   tmp &= ~(1 << smnum); // start the state machine
   dregs->ctrl = tmp;
+}
+
+void THwRpPioSm::SetOutShift(bool shift_right, bool autopull, unsigned threshold)
+{
+  shiftctrl &= ~(PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPULL_BITS | PIO_SM0_SHIFTCTRL_PULL_THRESH_BITS);
+  if (shift_right)  shiftctrl |= PIO_SM0_SHIFTCTRL_OUT_SHIFTDIR_BITS;
+  if (autopull)     shiftctrl |= PIO_SM0_SHIFTCTRL_AUTOPULL_BITS;
+  shiftctrl |= ((threshold & 0x1F) << PIO_SM0_SHIFTCTRL_PULL_THRESH_LSB);
+
+  regs->shiftctrl = shiftctrl;
+}
+
+void THwRpPioSm::SetInShift(bool shift_right, bool autopush, unsigned threshold)
+{
+  shiftctrl &= ~(PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS | PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS | PIO_SM0_SHIFTCTRL_PUSH_THRESH_BITS);
+  if (shift_right)  shiftctrl |= PIO_SM0_SHIFTCTRL_IN_SHIFTDIR_BITS;
+  if (autopush)     shiftctrl |= PIO_SM0_SHIFTCTRL_AUTOPUSH_BITS;
+  shiftctrl |= ((threshold & 0x1F) << PIO_SM0_SHIFTCTRL_PUSH_THRESH_LSB);
+
+  regs->shiftctrl = shiftctrl;
+}
+
+bool THwRpPioSm::TrySend32(uint32_t adata)
+{
+  if (dregs->fstat & tx_fifo_full_bit) // TX FIFO FULL ?
+  {
+    return false;
+  }
+
+  *tx_lsb = adata;
+  return true;
+}
+
+bool THwRpPioSm::TrySend16(uint16_t adata)
+{
+  if (dregs->fstat & tx_fifo_full_bit) // TX FIFO FULL ?
+  {
+    return false;
+  }
+
+  *tx_lsb = adata;
+  return true;
+}
+
+bool THwRpPioSm::TrySend8(uint8_t adata)
+{
+  if (dregs->fstat & tx_fifo_full_bit) // TX FIFO FULL ?
+  {
+    return false;
+  }
+
+  *tx_lsb = adata;
+  return true;
+}
+
+
+bool THwRpPioSm::TryRecv32(uint32_t * adata)
+{
+  if (dregs->fstat & rx_fifo_emtpy_bit) // RX FIFO EMPTY ?
+  {
+    return false;
+  }
+
+  *adata = *rx_lsb;
+  return true;
+}
+
+bool THwRpPioSm::TryRecv16(uint16_t * adata)
+{
+  if (dregs->fstat & rx_fifo_emtpy_bit) // RX FIFO EMPTY ?
+  {
+    return false;
+  }
+
+  *adata = *(uint16_t *)rx_lsb;
+  return true;
+}
+
+bool THwRpPioSm::TryRecv8(uint8_t * adata)
+{
+  if (dregs->fstat & rx_fifo_emtpy_bit) // RX FIFO EMPTY ?
+  {
+    return false;
+  }
+
+  *adata = *(uint8_t *)rx_lsb;
+  return true;
+}
+
+
+bool THwRpPioSm::TrySendMsb8(uint8_t adata)
+{
+  if (dregs->fstat & tx_fifo_full_bit) // TX FIFO FULL ?
+  {
+    return false;
+  }
+
+  *tx_msb8 = adata;
+  return true;
+}
+
+bool THwRpPioSm::TryRecvMsb8(uint8_t * adata)
+{
+  if (dregs->fstat & rx_fifo_emtpy_bit) // RX FIFO EMPTY ?
+  {
+    return false;
+  }
+
+  *adata = *rx_msb8;
+  return true;
+}
+
+
+bool THwRpPioSm::TrySendMsb16(uint16_t adata)
+{
+  if (dregs->fstat & tx_fifo_full_bit) // TX FIFO FULL ?
+  {
+    return false;
+  }
+
+  *tx_msb16 = adata;
+  return true;
+}
+
+bool THwRpPioSm::TryRecvMsb16(uint16_t * adata)
+{
+  if (dregs->fstat & rx_fifo_emtpy_bit) // RX FIFO EMPTY ?
+  {
+    return false;
+  }
+
+  *adata = *rx_msb16;
+  return true;
 }
