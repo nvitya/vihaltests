@@ -29,7 +29,7 @@ const bootblock_header_t application_header =
 #endif
 
 
-#if defined(BOARD_RPI_PICO)
+#if defined(MCUF_RP)
 
 extern const TAppHeader application_header;  // this is required, otherwise it will be removed by the linker
 
