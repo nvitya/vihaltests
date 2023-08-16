@@ -23,7 +23,6 @@ extern THwUart    conuart;  // console uart
 
   #include "hwspi.h"
   #include "spiflash.h"
-  extern THwSpi     fl_spi; // for the VRV100 self-flashing
   extern TSpiFlash  spiflash;
 
 #endif

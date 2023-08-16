@@ -37,6 +37,14 @@ void board_pins_init_leds()
   }
 }
 
+#if SPI_SELF_FLASHING
+
+  #include "hwspi.h"
+  TSpiFlash  spiflash;
+
+#endif
+
+
 #if 0  // to use elif everywhere
 
 //-------------------------------------------------------------------------------
@@ -67,15 +75,7 @@ void board_show_hexnum(unsigned ahexnum)
   *hexnum = ahexnum;
 }
 
-#if SPI_SELF_FLASHING
-
-  #include "hwspi.h"
-  #include "spiflash.h"
-
-  THwSpi     fl_spi;
-  TSpiFlash  spiflash;
-
-#endif
+THwSpi     fl_spi;
 
 void board_pins_init()
 {
@@ -87,16 +87,12 @@ void board_pins_init()
 
   conuart.Init(1); // UART1
 
-  #if SPI_SELF_FLASHING
+  fl_spi.speed = 10000000;
+  fl_spi.Init(1); // flash
 
-    fl_spi.speed = 10000000;
-    fl_spi.Init(1); // flash
-
-    spiflash.spi = &fl_spi;
-    spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
-    spiflash.Init();
-
-  #endif
+  spiflash.spi = &fl_spi;
+  spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
+  spiflash.Init();
 }
 
 #elif defined(BOARD_NODEMCU_ESP32C3)
@@ -546,6 +542,8 @@ void board_pins_init()
 
 #elif defined(BOARD_RPI_PICO)
 
+THwQspi    fl_qspi;
+
 void board_pins_init()
 {
   pin_led_count = 1;
@@ -555,6 +553,48 @@ void board_pins_init()
   hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
   hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
   conuart.Init(0);
+
+  // because of the transfers are unidirectional the same DMA channel can be used here:
+  fl_qspi.txdmachannel = 7;
+  fl_qspi.rxdmachannel = 7;
+  // for read speeds over 24 MHz dual or quad mode is required.
+  // the writes are forced to single line mode (SSS) because the RP does not support SSM mode at write
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 32000000;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+}
+
+#elif defined(BOARD_RPI_PICOW)
+
+THwQspi    fl_qspi;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  // because of the transfers are unidirectional the same DMA channel can be used here:
+  fl_qspi.txdmachannel = 7;
+  fl_qspi.rxdmachannel = 7;
+  // for read speeds over 24 MHz dual or quad mode is required.
+  // the writes are forced to single line mode (SSS) because the RP does not support SSM mode at write
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 32000000;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+
 }
 
 // IMXRT
