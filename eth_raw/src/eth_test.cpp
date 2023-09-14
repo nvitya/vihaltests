@@ -11,10 +11,10 @@
 
 uint8_t   my_ip_address[4] = {192, 168, 2, 10};
 
-__attribute__((aligned(32)))
+__attribute__((aligned(64)))
 uint8_t   eth_rx_desc_mem[sizeof(HW_ETH_DMA_DESC) * ETH_RX_PACKETS];
 
-__attribute__((aligned(32)))
+__attribute__((aligned(64)))
 uint8_t   eth_tx_desc_mem[sizeof(HW_ETH_DMA_DESC) * ETH_TX_PACKETS];
 
 uint8_t   eth_rx_packet_mem[sizeof(TPacketMem) * ETH_RX_PACKETS]   __attribute__((aligned(16)));

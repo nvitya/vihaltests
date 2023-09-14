@@ -331,6 +331,50 @@ void board_pins_init()
   delay_us(100);
 }
 
+// IMXRT
+
+#elif defined(BOARD_EVK_IMXRT1020)
+
+TGpioPin  pin_eth_reset(1, 4, false); // IOMUXC_GPIO_AD_B0_04_GPIO1_IO04
+TGpioPin  pin_eth_irq(1, 22, false);
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 5, false);  // GPIO_AD_B0_05 = GPIO_1_5
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+
+
+  unsigned pinflags = PINCFG_SPEED_FAST;
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_EMC_40_ENET_MDIO, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_EMC_41_ENET_MDC, 0);
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_08_ENET_REF_CLK1, pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_09_ENET_RDATA01,  pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_10_ENET_RDATA00,  pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_11_ENET_RX_EN,    pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_12_ENET_RX_ER,    pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_13_ENET_TX_EN,    pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_14_ENET_TDATA00,  pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_15_ENET_TDATA01,  pinflags);
+
+  eth.phy_address = 2;
+
+  pin_eth_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // issue reset
+  pin_eth_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // pull up before reset
+
+  delay_us(10);
+
+  pin_eth_reset.Set1(); // start the phy
+
+  delay_us(100);
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
