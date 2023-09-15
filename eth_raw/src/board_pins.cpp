@@ -333,7 +333,7 @@ void board_pins_init()
 
 // IMXRT
 
-#elif defined(BOARD_EVK_IMXRT1020)
+#elif defined(BOARD_EVK_IMXRT1020) || defined(BOARD_EVK_IMXRT1024)
 
 TGpioPin  pin_eth_reset(1, 4, false); // IOMUXC_GPIO_AD_B0_04_GPIO1_IO04
 TGpioPin  pin_eth_irq(1, 22, false);
@@ -341,7 +341,11 @@ TGpioPin  pin_eth_irq(1, 22, false);
 void board_pins_init()
 {
   pin_led_count = 1;
-  pin_led[0].Assign(1, 5, false);  // GPIO_AD_B0_05 = GPIO_1_5
+#if defined(BOARD_EVK_IMXRT1024)
+  pin_led[0].Assign(1, 24, false);  // GPIO_AD_B1_08 = GPIO_1_24
+#else
+  pin_led[0].Assign(1, 5, false);   // GPIO_AD_B0_05 = GPIO_1_5
+#endif
   board_pins_init_leds();
 
   hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
