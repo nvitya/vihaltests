@@ -355,6 +355,8 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
   }
 }
 
+bool prev_link_up = false;
+
 void eth_test_run()
 {
   uint32_t n;
@@ -364,6 +366,19 @@ void eth_test_run()
   PEthernetHeader peh;
 
   eth.PhyStatusPoll(); // must be called regularly
+
+  if (eth.link_up != prev_link_up)
+  {
+    if (eth.link_up)
+    {
+      TRACE("eth link up.\r\n");
+    }
+    else
+    {
+      TRACE("eth link down.\r\n");
+    }
+    prev_link_up = eth.link_up;
+  }
 
   if (eth.TryRecv(&pmem))
   {
