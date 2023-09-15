@@ -375,6 +375,54 @@ void board_pins_init()
   delay_us(100);
 }
 
+#elif defined(BOARD_EVK_IMXRT1050) || defined(BOARD_EVK_IMXRT1050A)
+
+TGpioPin  pin_eth_reset(1, 9, false); // IOMUXC_GPIO_AD_B0_09_GPIO1_IO09 = USER_LED !!!
+TGpioPin  pin_eth_irq(1,  10, false); // IOMUXC_GPIO_AD_B0_10_GPIO1_IO10
+
+void board_pins_init()
+{
+  // the on board led 1-9 is connected to the ENET Reset signal, so here a different one
+  // will be used
+
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 19, false);  // GPIO_AD_B1_03 = GPIO_1_19 = Arduino D7
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_12_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_13_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+
+  unsigned pinflags = PINCFG_SPEED_FAST;
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_EMC_40_ENET_MDC,  0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_EMC_41_ENET_MDIO, 0);
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_04_ENET_RX_DATA00,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_05_ENET_RX_DATA01,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_06_ENET_RX_EN,       pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_07_ENET_TX_DATA00,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_08_ENET_TX_DATA01,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_09_ENET_TX_EN,       pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_10_ENET_REF_CLK,     pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_B1_11_ENET_RX_ER,       pinflags);
+
+  //hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_10_GPIO1_IO10,    0);  // ENET_INT
+  //hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_09_GPIO1_IO09,    0);  // ENET_RST = USER_LED !!!
+  //hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B1_03_GPIO1_IO19,    0);  // Arduino D7
+
+  eth.phy_address = 2;
+
+  pin_eth_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // issue reset
+  pin_eth_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // pull up before reset
+
+  delay_us(10);
+
+  pin_eth_reset.Set1(); // start the phy
+
+  delay_us(100);
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
