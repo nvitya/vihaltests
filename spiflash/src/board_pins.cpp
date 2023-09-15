@@ -532,6 +532,25 @@ void board_pins_init()
   #endif
 }
 
+// IMXRT
+
+#elif defined(BOARD_EVK_IMXRT1020)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 5, false);  // GPIO_AD_B0_05 = GPIO_1_5
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 60000000;
+  fl_qspi.Init();
+}
+
 // RP
 
 #elif defined(BOARD_RPI_PICO)

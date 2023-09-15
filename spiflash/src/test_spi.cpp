@@ -18,7 +18,7 @@
 
 #include "board_pins.h"
 
-#if defined(MCU_VRV100) | defined(MCUF_RP)
+#if defined(MCU_VRV100) | defined(MCUF_RP) | defined(MCUF_IMXRT)
   #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
 #elif defined(MCUF_KENDRYTE)
   #define TEST_START_ADDR  0x400000  // start at 4M
@@ -338,7 +338,7 @@ void test_spiflash()
 
 #if 1
 	test_simple_rw();
-	//test_spiflash_reliability();
+	test_spiflash_reliability();
 #else
 	TRACE("SPI FLASH R/W tests are deactivated.\r\n");
 #endif

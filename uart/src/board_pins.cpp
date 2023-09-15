@@ -613,6 +613,19 @@ void board_pins_init()
 }
 
 
+#elif defined(BOARD_EVK_IMXRT1050) || defined(BOARD_EVK_IMXRT1050A)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 9, false);  // GPIO_AD_B0_09 = GPIO_1_9
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_12_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_13_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
