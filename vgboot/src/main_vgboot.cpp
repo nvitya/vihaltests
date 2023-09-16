@@ -44,6 +44,10 @@
 #include "app_header.h"
 #include "vgboot_utils.h"
 
+#if SPI_SELF_FLASHING
+  #include "spi_self_flashing.h"
+#endif
+
 volatile unsigned hbcounter = 0;
 
 void fatal_error()  // fast blinking all leds
@@ -111,7 +115,14 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	TRACE("\r\nVGBOOT START: %s\r\n", BOARD_NAME);
 
-	board_init(); // second stage of the initialization
+	board_init(); // second stage of the board specific initializations
+
+#if HAS_SDRAM
+  if (hwsdram.initialized)
+  {
+    TRACE("SDRAM: %u MByte\r\n", hwsdram.byte_size >> 20);
+  }
+#endif
 
   if (!spiflash.Init())
   {
@@ -119,52 +130,67 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
     fatal_error();
   }
 
-  spiflash.StartReadMem(FLADDR_APPLICATION, &apphead, sizeof(apphead));
-  spiflash.WaitForComplete();
-
-  __DSB();
-
-  if (apphead.signature != APP_HEADER_SIGNATURE)
+#if SPI_SELF_FLASHING
+  if (self_flashing)
   {
-    TRACE("! APP HEADER SIGNATURE ERROR: %08X\r\n", apphead.signature);
-    fatal_error();
+    spi_self_flashing(&spiflash);
   }
+#endif
 
-  csum = vgboot_checksum(&apphead, sizeof(apphead) - 4);  // skip the checksum from the calculation
-  if (apphead.csum_head != csum)
+  // Loading the application
+  if (!board_app_start_inhibited())
   {
-    TRACE("! APP HEADER CHECKSUM ERROR: %08X != %08X\r\n", apphead.csum_head, csum);
-    fatal_error();
+    spiflash.StartReadMem(FLADDR_APPLICATION, &apphead, sizeof(apphead));
+    spiflash.WaitForComplete();
+
+    __DSB();
+
+    if (apphead.signature != APP_HEADER_SIGNATURE)
+    {
+      TRACE("! APP HEADER SIGNATURE ERROR: %08X\r\n", apphead.signature);
+      fatal_error();
+    }
+
+    csum = vgboot_checksum(&apphead, sizeof(apphead) - 4);  // skip the checksum from the calculation
+    if (apphead.csum_head != csum)
+    {
+      TRACE("! APP HEADER CHECKSUM ERROR: %08X != %08X\r\n", apphead.csum_head, csum);
+      fatal_error();
+    }
+
+    // load the whole to the destination (including the application header)
+    //TRACE("APP LEN=%u\r\n", apphead.length);
+    pdest = (uint8_t *)apphead.addr_load;
+    spiflash.StartReadMem(FLADDR_APPLICATION, pdest, apphead.length + sizeof(apphead));
+    spiflash.WaitForComplete();
+
+    __DSB();
+
+    // check the application checksum
+    csum = vgboot_checksum(pdest + sizeof(apphead), apphead.length);
+    if (apphead.csum_body != csum)
+    {
+      TRACE("! APP BODY CHECKSUM ERROR: %08X != %08X\r\n", apphead.csum_body, csum);
+      fatal_error();
+    }
+
+    // everything is ok, start the app
+    TRACE("%u bytes loaded to %08X, starting %08X ...\r\n",
+        apphead.length + sizeof(apphead), apphead.addr_load, apphead.addr_entry);
+
+    while (!conuart.SendFinished())
+    {
+      __NOP();
+    }
+
+    start_app(apphead.addr_entry);
+
+    TRACE("! APP START ERROR: Jump failed\r\n");
   }
-
-  // load the whole to the destination (including the application header)
-  //TRACE("APP LEN=%u\r\n", apphead.length);
-  pdest = (uint8_t *)apphead.addr_load;
-  spiflash.StartReadMem(FLADDR_APPLICATION, pdest, apphead.length + sizeof(apphead));
-  spiflash.WaitForComplete();
-
-  __DSB();
-
-  // check the application checksum
-  csum = vgboot_checksum(pdest + sizeof(apphead), apphead.length);
-  if (apphead.csum_body != csum)
+  else
   {
-    TRACE("! APP BODY CHECKSUM ERROR: %08X != %08X\r\n", apphead.csum_body, csum);
-    fatal_error();
+    TRACE("Application start inhibited by user!\r\n");
   }
-
-  // everything is ok, start the app
-  TRACE("%u bytes loaded to %08X, starting %08X ...\r\n",
-      apphead.length + sizeof(apphead), apphead.addr_load, apphead.addr_entry);
-
-  while (!conuart.SendFinished())
-  {
-    __NOP();
-  }
-
-  start_app(apphead.addr_entry);
-
-  TRACE("! APP START ERROR: Jump failed\r\n");
 
   while (true)
   {

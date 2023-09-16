@@ -14,6 +14,10 @@
 #include "hwqspi.h"
 #include "spiflash.h"
 
+#if HAS_SDRAM
+  #include "hwsdram.h"
+#endif
+
 #define MAX_LEDS  4
 
 extern TGpioPin   pin_led[MAX_LEDS];
@@ -25,5 +29,6 @@ extern TSpiFlash  spiflash;
 
 void board_pins_init();  // required for the trace
 void board_init();
+bool board_app_start_inhibited();
 
 #endif /* SRC_BOARD_PINS_H_ */
