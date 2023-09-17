@@ -381,6 +381,7 @@ void board_pins_init()
   hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_15_ENET_TDATA01,  pinflags);
 
   eth.phy_address = 2;
+  eth.external_ref_clock = false; // the MCU gives the refererence clock here !
 
   pin_eth_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // issue reset
   pin_eth_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // pull up before reset
@@ -429,6 +430,7 @@ void board_pins_init()
   //hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B1_03_GPIO1_IO19,    0);  // Arduino D7
 
   eth.phy_address = 2;
+  eth.external_ref_clock = false; // the MCU gives the refererence clock here !
 
   pin_eth_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // issue reset
   pin_eth_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // pull up before reset
