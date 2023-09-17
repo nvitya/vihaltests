@@ -313,15 +313,57 @@ void board_pins_init()
   pin_led[0].Assign(PORTNUM_A, 29, false);
   board_pins_init_leds();
 
+  hwpinctrl.PinSetup(PORTNUM_C,  9,  PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // FPGA_CFG
+  hwpinctrl.PinSetup(PORTNUM_A, 22,  PINCFG_INPUT  | PINCFG_PULLUP);       // FPGA_IRQ
+
+#if 1
+  hwpinctrl.PinSetup(PORTNUM_A,  6,  PINCFG_OUTPUT | PINCFG_AF_1);  // PCK0 = FPGA.CLK_IN
+
+  PMC->PMC_SCER = (1 << 8); // enable PCK0
+
+  PMC->PMC_PCK[0] = 0
+    | (1 << 0)  // CSS(3): 1 = MAIN CLK (12 MHz)
+    | (0 << 4)  // PRES(8): divisor - 1
+  ;
+#endif
+
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_INPUT  | PINCFG_AF_0);  // UART0_RX
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_0);  // UART0_TX
   conuart.baudrate = 115200;
   conuart.Init(0);
 
+  // The Ethernet pins must be configured every time otherwise the Ethernet PHY might be damaged
+
+  /* Ethernet pins configuration ************************************************
+
+          RMII_REF_CLK ----------------------> PD0
+          RMII_MDIO -------------------------> PD9
+          RMII_MDC --------------------------> PD8
+          RMII_MII_CRS_DV -------------------> PD4
+          RMII_MII_RXD0 ---------------------> PD5
+          RMII_MII_RXD1 ---------------------> PD6
+          RMII_MII_RXER ---------------------> PD7
+          RMII_MII_TX_EN --------------------> PD1
+          RMII_MII_TXD0 ---------------------> PD2
+          RMII_MII_TXD1 ---------------------> PD3
+  */
+
+  hwpinctrl.PinSetup(PORTNUM_D, 0, PINCFG_INPUT); // REF CLK
+  hwpinctrl.PinSetup(PORTNUM_D, 9, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // MDIO
+  hwpinctrl.PinSetup(PORTNUM_D, 8, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // MDC
+  hwpinctrl.PinSetup(PORTNUM_D, 4, PINCFG_INPUT); // CRS_DV
+  hwpinctrl.PinSetup(PORTNUM_D, 5, PINCFG_INPUT); // RXD0
+  hwpinctrl.PinSetup(PORTNUM_D, 6, PINCFG_INPUT); // RXD1
+  hwpinctrl.PinSetup(PORTNUM_D, 7, PINCFG_INPUT); // RXER       // Tie to the GND on early hw !!!
+  hwpinctrl.PinSetup(PORTNUM_D, 1, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // TX_EN <- this is the most important !!!
+  hwpinctrl.PinSetup(PORTNUM_D, 2, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // TXD0
+  hwpinctrl.PinSetup(PORTNUM_D, 3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // TXD1
+
+
   // SDRAM
 
   // it does not work with strong drive !
-  uint32_t pincfgbase = 0; // PINCFG_DRIVE_STRONG;
+  uint32_t pincfgbase = 0; //PINCFG_DRIVE_STRONG;
 
   hwpinctrl.PinSetup(PORTNUM_A, 20, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A16/BA0
   hwpinctrl.PinSetup(PORTNUM_A,  0, pincfgbase | PINCFG_OUTPUT | PINCFG_AF_2);  // A17/BA1
