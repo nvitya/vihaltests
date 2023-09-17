@@ -56,6 +56,8 @@ Change to -->
 */
 
 #define FLEXRAM_ITC_SIZE  (256 * 1024)
+#define FLEXRAM_DTC_SIZE  (128 * 1024)
+#define FLEXRAM_OCR_SIZE  (128 * 1024)
 
 #define FLEXRAM_CONFIG          0xFFAFFA55  // 256k ITC, 128k DTC, 128k OCRAM
 #define FLEXRAM_CONFIG_REBOOT   0xFFAFFA55  // must contain at least 32k OCRAM

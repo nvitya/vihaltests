@@ -41,16 +41,14 @@ void flexram_init()
 {
   unsigned tmp;
 
-  //TRACE("FlexRAM CONFIG=%08X\r\n", IOMUXC_GPR->GPR17);
-  //return;
+  TRACE("FlexRAM: ITC=%uk, DTC=%uk, ORAM=%uk\r\n", (FLEXRAM_ITC_SIZE >> 10), (FLEXRAM_DTC_SIZE >> 10), (FLEXRAM_OCR_SIZE >> 10));
 
   if (flexram_config_ok())
   {
-    //TRACE("%u k ITC RAM detected\r\n", (FLEXRAM_ITC_SIZE >> 10));
     return;
   }
 
-  TRACE("Configuring %u k ITC RAM\r\n", (FLEXRAM_ITC_SIZE >> 10));
+  TRACE("Updating FlexRAM config: %04X -> %04X\r\n", IOMUXC_GPR->GPR17, FLEXRAM_CONFIG);
 
   // it is in default configuration, reconfigure
 
