@@ -159,6 +159,9 @@ void board_pins_init()
 
 #elif defined(BOARD_XPLAINED_SAME70)
 
+TGpioPin  pin_eth_reset(PORTNUM_C, 10, false);
+TGpioPin  pin_eth_irq(  PORTNUM_A, 14, false);
+
 void board_pins_init()
 {
   pin_led_count = 1;
@@ -203,11 +206,21 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_D, 2, pinfl); // TXD0
   hwpinctrl.PinSetup(PORTNUM_D, 3, pinfl); // TXD1
 
-  // Extra PHY Signals
-  hwpinctrl.PinSetup(PORTNUM_C, 10, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // PHY RESET
-  hwpinctrl.PinSetup(PORTNUM_A, 14, PINCFG_INPUT | PINCFG_PULLUP); // PHY INTERRUPT
-
   eth.phy_address = 0;
+  eth.external_ref_clock = true;
+
+  // Extra PHY Signals
+
+  pin_eth_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0); // issue reset
+  pin_eth_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1); // pull up before reset
+
+  delay_us(10);
+
+  pin_eth_reset.Set1(); // start the phy
+
+  delay_us(100);
+
+  //eth.phy_address = 0;
 }
 
 #elif defined(BOARD_VERTIBO_A)
