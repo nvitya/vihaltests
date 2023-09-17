@@ -14,13 +14,8 @@ unsigned  pin_led_count = 1;
 
 THwQspi   fl_qspi;
 
-TGpioPin  pin_led[MAX_LEDS] =
-{
-  TGpioPin(),
-  TGpioPin(),
-  TGpioPin(),
-  TGpioPin()
-};
+TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };
+TGpioPin  pin_user_button(PORTNUM_I, 11, false);
 
 void board_pins_init_leds()
 {
@@ -138,6 +133,18 @@ void board_init()
   spiflash.spi = nullptr;
   spiflash.qspi = &fl_qspi;
   spiflash.has4kerase = true;
+}
+
+bool board_app_start_inhibited()
+{
+  if (1 == pin_user_button.Value())  // user button pushed ?
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 
