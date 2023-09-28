@@ -156,6 +156,26 @@ void setup_board()
   conuart.Init(0);
 }
 
+// IMXRT
+
+#elif defined(BOARD_EVK_IMXRT1020) || defined(BOARD_EVK_IMXRT1024)
+
+TGpioPin  pin_led1;
+
+void setup_board()
+{
+#if defined(BOARD_EVK_IMXRT1024)
+  pin_led1.Assign(1, 24, false);  // GPIO_AD_B1_08 = GPIO_1_24
+#else
+  pin_led1.Assign(1, 5, false);   // GPIO_AD_B0_05 = GPIO_1_5
+#endif
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+}
+
 #else
 
 #error "unhandled board"
