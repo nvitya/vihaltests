@@ -55,6 +55,26 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_MIBOW_ESP32C3)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 9, true); // the BOOT control used for only on board LED
+
+  board_pins_init_leds();
+}
+
+#elif defined(BOARD_MIBOW_ESP32C6)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 9, true); // the BOOT control used for only on board LED
+
+  board_pins_init_leds();
+}
+
 #elif defined(BOARD_NODEMCU_ESP32C3)
 
 void board_pins_init()
