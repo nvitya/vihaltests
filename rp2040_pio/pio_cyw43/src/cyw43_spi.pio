@@ -1,0 +1,28 @@
+
+.program cyw43_spi
+.side_set 1
+
+; Pin assignments:
+; - SCK is side-set bit 0
+; - SDATA is OUT bit 0 + IN bit 0
+
+; 32-bit shift register mode
+; preload x with output bit count - 1
+; preload y with input bit count - 1
+
+.wrap_target
+
+out_bits:
+    out pins, 1        side 0
+    jmp x-- out_bits   side 1
+       
+    set pindirs, 0     side 0
+    nop                side 1
+    nop                side 0
+        
+in_bits:
+    in  pins, 1        side 1
+    jmp y-- out_bits   side 0
+    
+.wrap
+
