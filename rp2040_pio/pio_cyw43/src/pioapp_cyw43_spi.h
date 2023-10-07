@@ -22,7 +22,8 @@ public:
 
   uint32_t      smbit = 1;
 
-  TGpioPin      pin_cs;
+  TGpioPin      pin_cs;    // GPIO-25 on PICO-W
+  TGpioPin      pin_wlon;  // GPIO-23 on PICO-W
 
 public:
   THwRpPioSm    sm;

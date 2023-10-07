@@ -6,6 +6,8 @@
  */
 
 #include <pioapp_cyw43_spi.h>
+#include "clockcnt.h"
+#include "hwpins.h"
 
 #define BUS_FUNCTION        (0)
 #define BACKPLANE_FUNCTION  (1)
@@ -39,11 +41,21 @@ bool TPioAppCyw43Spi::Init(uint8_t adevnum, uint8_t asmnum, uint8_t apin_sck)
   if (0xFF != apin_sck)  pin_sck  = apin_sck;
   if (pin_data > 31)     pin_data = pin_sck + 1;
 
-  if (!pin_cs.Assigned())
-  {
-    pin_cs.Assign(0, 25, false);
-  }
+  //pin_data = 16;
+
+  if (!pin_cs.Assigned())    pin_cs.Assign(0, 25, false);
+  if (!pin_wlon.Assigned())  pin_wlon.Assign(0, 23, false);
+
   pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  // the reset must be done with data pin low, otherwise the communication won't work,
+  // (probably SDIO mode will be selected ?)
+  hwpinctrl.PinSetup(0,  pin_data, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);  // this will be later overridden
+
+  pin_wlon.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+  delay_ms(20);
+  pin_wlon.Set1();
+  delay_ms(50);
 
   prg.Init(adevnum, prgoffset);  // offset=0, entry=offset
 
@@ -59,7 +71,7 @@ bool TPioAppCyw43Spi::Init(uint8_t adevnum, uint8_t asmnum, uint8_t apin_sck)
   prg.Add(0xb042); //  3: nop                    side 1
   prg.Add(0xa042); //  4: nop                    side 0
   prg.Add(0x5001); //  5: in     pins, 1         side 1
-  prg.Add(0x0080); //  6: jmp    y--, 0          side 0
+  prg.Add(0x0085); //  6: jmp    y--, 5          side 0
 
   if (!sm.Init(adevnum, asmnum))
   {
@@ -73,9 +85,10 @@ bool TPioAppCyw43Spi::Init(uint8_t adevnum, uint8_t asmnum, uint8_t apin_sck)
   sm.SetPinDir(pin_sck,  1);
   sm.SetPinDir(pin_data, 1);
 
-  sm.SetupPinsOut(pin_data, 1);
-  sm.SetupPinsIn(pin_data, 1);
-  sm.SetupPinsSideSet(pin_sck,  1);
+  sm.SetupPinsOut(     pin_data, 1);
+  sm.SetupPinsIn(      pin_data, 1);
+  sm.SetupPinsSet(     pin_data, 1);
+  sm.SetupPinsSideSet( pin_sck,  1);
 
   sm.SetOutShift(false, true, 32);
   sm.SetInShift( false, true, 32);
@@ -102,11 +115,12 @@ void TPioAppCyw43Spi::StartTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t
   uint32_t txremaining = txwords;
   uint32_t rxremaining = rxwords;
 
+  sm.SetPinDir(pin_data, 1);
+
   pin_cs.Set0();
   sm.PreloadY((rxwords << 5) - 1, 32);
   sm.PreloadX((txwords << 5) - 1, 32);
 
-  sm.SetPinDir(pin_data, 1);
   sm.Start();
 
   // push the TX data first

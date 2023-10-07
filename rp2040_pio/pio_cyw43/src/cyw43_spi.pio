@@ -22,7 +22,7 @@ out_bits:
         
 in_bits:
     in  pins, 1        side 1
-    jmp y-- out_bits   side 0
+    jmp y-- in_bits   side 0
     
 .wrap
 
