@@ -16,8 +16,8 @@ out_bits:
     out pins, 1        side 0
     jmp x-- out_bits   side 1
     
-    jmp !y  finish     side 0  ; do not go to RX when y=0       
     set pindirs, 0     side 0
+    jmp !y  finish     side 0  ; do not go to RX when y=0       
     nop                side 0
         
 in_bits:

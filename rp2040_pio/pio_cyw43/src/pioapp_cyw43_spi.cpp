@@ -46,8 +46,9 @@ bool TPioAppCyw43Spi::Init(uint8_t adevnum, uint8_t asmnum)
 
   prg.Add(0x6001); //  0: out    pins, 1         side 0
   prg.Add(0x1040); //  1: jmp    x--, 0          side 1
-  prg.Add(0x0067); //  2: jmp    !y, 7           side 0   ; do not go to RX when y=0
-  prg.Add(0xe080); //  3: set    pindirs, 0      side 0
+  prg.Add(0xe080); //  2: set    pindirs, 0      side 0
+  //prg.Add(0x1067); //  3: jmp    !y, 7           side 1  ; this is required for 33 MHz operation !?!
+  prg.Add(0x0067); //  3: jmp    !y, 7           side 0
   prg.Add(0xa042); //  4: nop                    side 0
   prg.Add(0x5001); //  5: in     pins, 1         side 1
   prg.Add(0x0085); //  6: jmp    y--, 5          side 0
