@@ -14,13 +14,10 @@
 class TPioAppCyw43Spi : public THwRpPioApp
 {
 public:
-  unsigned      frequency = 4000000;  // 4 MHz by default
+  unsigned      frequency = 33000000;  // 33 MHz by default
 
   uint8_t       pin_sck  = 29;   // PICO-W default pin
   uint8_t       pin_data = 24;   // PICO-W default pin
-  //uint8_t       pin_cs   = 25;   // PICO-W default pin, software controlled
-
-  uint32_t      smbit = 1;
 
   TGpioPin      pin_cs;    // GPIO-25 on PICO-W
   TGpioPin      pin_wlon;  // GPIO-23 on PICO-W
@@ -29,14 +26,13 @@ public:
   THwRpPioSm    sm;
   THwRpPioPrg   prg;
 
-  bool          Init(uint8_t adevnum, uint8_t asmnum, uint8_t apin_sck = 0xFF);
+  bool          Init(uint8_t adevnum, uint8_t asmnum);
   void          SetFrequency(unsigned afreq);
   void          Start();
 
-  void          StartTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords);
+  void          ResetModule();
 
-  inline bool   TrySend8(uint8_t   adata) { return sm.TrySendMsb8(adata); }
-  inline bool   TryRecv8(uint8_t * adata) { return sm.TryRecvMsb8(adata); }
+  void          SpiTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords);
 };
 
 #endif /* SRC_PIOAPP_SPI_H_ */

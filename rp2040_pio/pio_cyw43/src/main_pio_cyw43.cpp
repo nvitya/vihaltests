@@ -15,7 +15,7 @@
 #include "traces.h"
 #include "spi_self_flashing.h"
 
-#include "pio_test.h"
+#include "test_cyw43_wifi.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -61,7 +61,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
     TRACE("Error initializing SPI Flash !\r\n");
   }
 
-  pio_test_init();
+  test_cyw43_wifi_init();
 
 	TRACE("Starting main cycle...\r\n");
 
@@ -81,7 +81,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
-		pio_test_run();
+		test_cyw43_wifi_run();
 
 		if (t1-t0 > hbclocks)
 		{

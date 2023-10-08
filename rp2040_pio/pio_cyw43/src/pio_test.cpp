@@ -83,7 +83,7 @@ void pio_test_run()
   txbuf[0] = 0xA0044000;
   rxbuf[0] = 0x55555555;
 
-  pioapp.StartTransfer(&txbuf[0], txcnt, &rxbuf[0], rxcnt);
+  pioapp.SpiTransfer(&txbuf[0], txcnt, &rxbuf[0], rxcnt);
 
   for (n = 0; n < txcnt; ++n)
   {

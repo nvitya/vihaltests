@@ -15,14 +15,17 @@
 out_bits:
     out pins, 1        side 0
     jmp x-- out_bits   side 1
-       
+    
+    jmp !y  finish     side 0  ; do not go to RX when y=0       
     set pindirs, 0     side 0
-    nop                side 1
     nop                side 0
         
 in_bits:
     in  pins, 1        side 1
-    jmp y-- in_bits   side 0
+    jmp y-- in_bits    side 0
+    
+finish:
+    irq wait 0         side 0
     
 .wrap
 
