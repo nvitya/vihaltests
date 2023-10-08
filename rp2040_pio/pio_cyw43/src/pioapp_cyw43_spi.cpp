@@ -93,40 +93,38 @@ void TPioAppCyw43Spi::Start()
 
 void TPioAppCyw43Spi::SpiTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords)
 {
-  uint32_t txremaining = txwords;
-  uint32_t rxremaining = rxwords;
-
   sm.IrqClear(1); // clear IRQ-0
 
-  sm.SetPinDir(pin_data, 1);
+  sm.regs->instr = pio_encode_set(pio_pindirs, 1); // set pindir=1
 
   pin_cs.Set0();
 
   sm.PreloadY((rxwords ? (rxwords << 5) - 1 : 0), 32);
   sm.PreloadX((txwords << 5) - 1, 32);
 
+  *sm.tx_lsb = *txbuf;  // fast load the first word
+
   sm.Start();
 
-  // push the TX data first
-  while (txremaining)
+  ++txbuf;
+  --txwords;
+
+  while (txwords)  // push the remaining TX data
   {
     if (sm.TrySend32(*txbuf))
     {
       ++txbuf;
-      --txremaining;
+      --txwords;
     }
   }
 
-  if (rxremaining)
+  // get the RX data then
+  while (rxwords)
   {
-    // get the RX data then
-    while (rxremaining)
+    if (sm.TryRecv32(rxbuf))
     {
-      if (sm.TryRecv32(rxbuf))
-      {
-        ++rxbuf;
-        --rxremaining;
-      }
+      ++rxbuf;
+      --rxwords;
     }
   }
 
