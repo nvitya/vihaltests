@@ -10,7 +10,6 @@
 
 #include "hwpins.h"
 #include "hwrppio.h"
-#include "pioapp_cyw43_spi.h"
 
 // these can be or-ed to the addresses to select the address range:
 #define CYWFN_BUS   (0 << 17)   // SPI BUS
