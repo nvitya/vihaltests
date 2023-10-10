@@ -218,23 +218,23 @@ uint32_t TWifiCyw43SpiComm::ReadSpiReg(uint32_t addr, uint32_t len)
 {
   txbuf[0] = (0
     | (len    <<  0)  // read size: 1..4
-    | (addr   << 11)  // 15 bit address + 2 bit function
-    | (0      << 28)  // 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
-    | (1      << 30)  // 1 = address increment
-    | (0      << 31)  // 0 = read
+    | ((addr & 0x1FFFF) << 11)  // ADDR(17): 17 bit address
+    | (0      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1      << 30)  // INC: 1 = address increment
+    | (0      << 31)  // R/W: 0 = read
   );
   SpiTransfer(&txbuf[0],  1, &rxbuf[0], 1);
-  return rxbuf[0];
+  return rxbuf[0] & ((1u << (len * 8))-1);
 }
 
 void TWifiCyw43SpiComm::WriteBplReg(uint32_t addr, uint32_t value, uint32_t len)
 {
   txbuf[0] = (0
     | (len    <<  0)  // write size: 1..4
-    | (addr   << 11)  // 15 bit address + 2 bit function
-    | (1      << 28)  // 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
-    | (1      << 30)  // 1 = address increment
-    | (1      << 31)  // 1 = write
+    | ((addr & 0x1FFFF) << 11)  // 17 bit address
+    | (1      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1      << 30)  // INC: 1 = address increment
+    | (1      << 31)  // R/W: 1 = write
   );
   txbuf[1] = value;
   SpiTransfer(&txbuf[0],  2, &rxbuf[0], 0);
@@ -244,18 +244,21 @@ uint32_t TWifiCyw43SpiComm::ReadBplReg(uint32_t addr, uint32_t len)
 {
   txbuf[0] = (0
     | (len    <<  0)  // read size: 1..4
-    | (addr   << 11)  // 15 bit address + 2 bit function
-    | (1      << 28)  // 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
-    | (1      << 30)  // 1 = address increment
-    | (0      << 31)  // 0 = read
+    | ((addr & 0x1FFFF) << 11)  // ADDR(17): 17 bit address
+    | (1      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1      << 30)  // INC: 1 = address increment
+    | (0      << 31)  // R/W: 0 = read
   );
   SpiTransfer(&txbuf[0],  1, &rxbuf[0], CYWBPL_READ_PAD_WORDS + 1);
-  return rxbuf[CYWBPL_READ_PAD_WORDS];
+  return rxbuf[CYWBPL_READ_PAD_WORDS] & ((1u << (len * 8))-1);
 }
 
 void TWifiCyw43SpiComm::SetBackplaneWindow(uint32_t addr)
 {
   addr = (addr & 0xFFFF8000);
+
+#if 0 // two step version
+
   if ((addr & 0xFF000000) != (cur_backplane_window & 0xFF000000)) // this usually never changes
   {
     WriteBplReg(0x1000C, addr >> 24, 1);  // SDIO_BACKPLANE_ADDRESS_HIGH
@@ -265,6 +268,15 @@ void TWifiCyw43SpiComm::SetBackplaneWindow(uint32_t addr)
     WriteBplReg(0x1000A, addr >> 8, 2);   // SDIO_BACKPLANE_ADDRESS_LOW + MID
   }
 
+#else // one step version with 3-byte write
+
+  if ((addr & 0xFFFFFF00) != (cur_backplane_window & 0xFFFFFF00))
+  {
+    WriteBplReg(0x1000A, addr >> 8, 3);   // SDIO_BACKPLANE_ADDRESS_LOW + MID + HIGH
+  }
+
+#endif
+
   cur_backplane_window = addr;
 }
 
@@ -272,4 +284,40 @@ uint32_t TWifiCyw43SpiComm::ReadBplAddr(uint32_t addr, uint32_t len)
 {
   SetBackplaneWindow(addr);
   return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+}
+
+void TWifiCyw43SpiComm::WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len)
+{
+  SetBackplaneWindow(addr);
+  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
+}
+
+
+uint32_t TWifiCyw43SpiComm::ReadArmCoreReg(uint32_t addr, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_WLAN_ARMCM3 + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+}
+
+void TWifiCyw43SpiComm::WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_WLAN_ARMCM3 + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
+}
+
+
+uint32_t TWifiCyw43SpiComm::ReadSocRamReg(uint32_t addr, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_SOCSRAM + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+}
+
+void TWifiCyw43SpiComm::WriteSocRamReg(uint32_t addr, uint32_t value, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_SOCSRAM + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
 }

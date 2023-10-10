@@ -24,6 +24,7 @@ public:
 
   bool      InitBackPlane();
 
+  bool      ResetDeviceCore(uint32_t abaseaddr);
 
 };
 

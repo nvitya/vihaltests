@@ -49,7 +49,7 @@
 class TWifiCyw43SpiComm : public THwRpPioApp
 {
 public:  // the important variables first for Cortex-M0 optimization
-  uint32_t      cur_backplane_window = 0x18000000;
+  uint32_t      cur_backplane_window = 0x00000000;
 
 public:
   TGpioPin      pin_cs;    // GPIO-25 on PICO-W
@@ -67,16 +67,12 @@ public:
 
 public:
   bool          Init(uint8_t adevnum, uint8_t asmnum);
-
-  void          SetFrequency(unsigned afreq);
-  void          Start();
-
+  bool          InitBaseComm(); // this is called from Init()
   void          ResetModule();
 
+public:
+  void          SetFrequency(unsigned afreq);
   void          SpiTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords);
-
-  //bool          Init(TPioAppCyw43Spi * apioapp);
-  bool          InitBaseComm();
 
 public:
   uint32_t      ReadCmdU32(uint32_t acmd);
@@ -87,9 +83,15 @@ public:
 
   void          WriteBplReg(uint32_t addr, uint32_t value, uint32_t len);
   uint32_t      ReadBplReg(uint32_t addr, uint32_t len);
-  uint32_t      ReadBplAddr(uint32_t addr, uint32_t len);
-  void          SetBackplaneWindow(uint32_t addr);
 
+  void          SetBackplaneWindow(uint32_t addr);
+  uint32_t      ReadBplAddr(uint32_t addr, uint32_t len);
+  void          WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len);
+
+  uint32_t      ReadArmCoreReg(uint32_t addr, uint32_t len);
+  void          WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len);
+  uint32_t      ReadSocRamReg(uint32_t addr, uint32_t len);
+  void          WriteSocRamReg(uint32_t addr, uint32_t value, uint32_t len);
 };
 
 #endif /* SRC_WIFI_CYW43_SPI_COMM_H_ */
