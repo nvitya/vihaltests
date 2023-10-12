@@ -78,7 +78,7 @@ TFileData::TFileData(const char * afname)
 	size = st.st_size;
 	padded_size = ((size + 8) & 0xFFFFFFF8);
 	fdata = (uint8_t *)malloc(padded_size);
-	memset(fdata, 0, padded_size);
+	memset(fdata, 0xFF, padded_size);
 
 	infd = open(afname, O_RDONLY);
 	r = read(infd, fdata, size);
@@ -96,6 +96,7 @@ int main(int argc, char * const * argv)
 	int i;
 	uint32_t     datasize  = 0;
 	uint32_t     dataoffset = 0;
+	uint32_t     min_fname_len = 8;
 
   printf("MKVROFS - V1.0\n");
 
@@ -107,13 +108,31 @@ int main(int argc, char * const * argv)
 
   const char * outfname = argv[1];
 
+  TVrofsMainHead  mainhead;
+  memset(&mainhead, 0x00, sizeof(mainhead));  // fill the unused (reserved) fields with zeroes
+  memcpy(mainhead.vrofsid, VROFS_ID_10, 8);
+  mainhead.main_head_bytes = sizeof(TVrofsMainHead);
+  mainhead.flags = 0; // not ordered
+
+
   for (i = 2; i < argc; ++i)
   {
   	TFileData * fd = new TFileData(argv[i]);
   	flist.push_back(fd);
   	printf("File added: \"%s\" - %u Bytes\n", fd->name.c_str(), fd->size);
   	datasize += fd->size;
+  	if (min_fname_len < fd->name.size())
+  	{
+  		min_fname_len = ((fd->name.size() + 8) & 0xF8);
+  		if (min_fname_len > VROFS_MAX_PATH_LEN)  min_fname_len = VROFS_MAX_PATH_LEN;
+  	}
   }
+
+  mainhead.index_rec_bytes = (sizeof(TVrofsIndexRec) - VROFS_MAX_PATH_LEN) + min_fname_len;
+  mainhead.index_block_bytes = flist.size() * sizeof(TVrofsIndexRec);
+  mainhead.data_block_bytes  = datasize;
+
+  printf("Index record length: %u Bytes\n", mainhead.index_rec_bytes);
 
   // writing out the structure
 
@@ -128,12 +147,6 @@ int main(int argc, char * const * argv)
 
   // 1. write the main header
 
-  TVrofsMainHead  mainhead;
-  memset(&mainhead, 0xFF, sizeof(mainhead));  // fill the unused (reserved) fields with 0xFF
-  memcpy(mainhead.vrofsid, VROFS_ID_10, 8);
-  mainhead.headsize = sizeof(TVrofsMainHead);
-  mainhead.indexsize = flist.size() * sizeof(TVrofsIndexRec);
-  mainhead.datasize  = datasize;
   write(outfd, &mainhead, sizeof(mainhead));
 
   // 2. write the index
@@ -141,12 +154,14 @@ int main(int argc, char * const * argv)
   TVrofsIndexRec irec;
   for (TFileData * fd : flist)
   {
-  	memset(&irec, 0xFF, sizeof(irec)); // fill the unused (reserved) fields with 0xFF
-  	memset(&irec.path[0], 0x00, sizeof(irec.path)); // except for name where pad with zeroes
+  	memset(&irec, 0x00, sizeof(irec)); // fill the unused (reserved) fields with zeroes
+  	                                   // also pads the file name
   	strncpy(irec.path, fd->name.c_str(), sizeof(irec.path));
-  	irec.size   = fd->size;
-  	irec.offset = dataoffset;
-    write(outfd, &irec, sizeof(irec));
+  	irec.path_len   = fd->name.size();
+  	irec.data_bytes = fd->size;
+  	irec.offset     = dataoffset;
+
+    write(outfd, &irec, mainhead.index_rec_bytes);
 
     dataoffset += fd->padded_size;
   }

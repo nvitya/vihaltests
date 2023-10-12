@@ -30,35 +30,48 @@
 
 #include "stdint.h"
 
-/* VROFS Specification
+/* VROFS Specification - v1.0
 
-The VROFS consists of the following parts:
-  - Main header: 32 Bytes
-  - Index: file count * 80 Bytes
-  - Data Block: variable length, file data padded to 8 Bytes
+The VROFS consists of the following three consecutive parts:
+  1. Main header:   TVrofsMainHead (32 Bytes)
+  2. Index:         file count * Index Record size (24 - 256 Bytes)
+  3. Data Block:    variable length, concatenated data of all the files
+                    the individual file data start is always 8-Bytes aligned
 
+The index records have always a fix size, so that searching a specific entry in the index is simpler.
+The Maximum file path length is 112 bytes.
 */
 
 #define VROFS_ID_10  "VROFSV10"
 
+#define VROFS_FLAG_ORDERED    1  // signals sorted directory index, allowing faster searches for big directories
+
+#define VROFS_MAX_PATH_LEN  112
+
 typedef struct
 {
-	char       vrofsid[8];    // "VROFSV10"
-	uint32_t   headsize;      // in Bytes, including the 8-byte vrofsid
-	uint32_t   indexsize;     // in Bytes
-	uint32_t   datasize;      // in Bytes
-	uint32_t   _reserved[3];  // all 0xFF-s
+	char       vrofsid[8];         // "VROFSV10"
+	char       label[8];           // user label for the file system, the unused space must be padded with zeroes
+	uint32_t   main_head_bytes;    // the total length of this Main Head structure,
+	                               // including the 8-byte vrofsid
+	uint32_t   index_block_bytes;  // the total length of the index block
+	uint32_t   data_block_bytes;   // size of the total data block in Bytes
+	uint8_t    index_rec_bytes;    // size of the index records = sizeof(TVrofsIndexRec), allows longer / shorter file names
+	uint8_t    flags;              // file system flags
+	uint8_t    _reserved[2];       // all zeroes
 //
 } TVrofsMainHead;  // 32 Bytes
 
 typedef struct
 {
-	char       path[64];      // zero terminated string
-	uint32_t   size;          // in Bytes
-	uint32_t   offset;        // in Bytes, offset within the data block. The data start is 8-byte aligned
-	uint32_t   _reserved[2];  // all 0xFF-s
+	uint32_t   data_bytes;    // size of the file data in Bytes
+	uint32_t   offset;        // beginning of the file data, offset within the data block (in bytes)
+	                          // The file data start is 8-byte aligned
+	uint8_t    _reserved[7];  // all 0x00-s
+	uint8_t    path_len;      // length of the actual path data, might be less than the total available space
+	char       path[VROFS_MAX_PATH_LEN]; // 8 - 112 bytes (must be dividible by 8)
 //
-} TVrofsIndexRec; // 80 Bytes
+} TVrofsIndexRec; // 24 - 128 Bytes
 
 
 #endif /* SRC_VROFS_H_ */
