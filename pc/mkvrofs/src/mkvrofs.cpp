@@ -129,7 +129,7 @@ int main(int argc, char * const * argv)
   }
 
   mainhead.index_rec_bytes = (sizeof(TVrofsIndexRec) - VROFS_MAX_PATH_LEN) + min_fname_len;
-  mainhead.index_block_bytes = flist.size() * sizeof(TVrofsIndexRec);
+  mainhead.index_block_bytes = flist.size() * mainhead.index_rec_bytes;
   mainhead.data_block_bytes  = datasize;
 
   printf("Index record length: %u Bytes\n", mainhead.index_rec_bytes);
