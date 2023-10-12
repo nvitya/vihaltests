@@ -6,17 +6,33 @@
  */
 
 #include <wifi_cyw43_spi.h>
+#include "stdlib.h"
+#include "string.h"
 #include "traces.h"
 #include "clockcnt.h"
+#include "vrofs.h"
 
-bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm)
+#define CYW43_FW_BUF_SIZE  4096  // allocated on heap
+
+bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
 {
   initialized = false;
 
   pcomm = acomm;
+  pspiflash = aspiflash;
 
   if (!InitBackPlane())
   {
+    return false;
+  }
+
+  if (!LoadFirmware())
+  {
+    if (fwbuf)
+    {
+      free(fwbuf);
+      fwbuf = nullptr;
+    }
     return false;
   }
 
@@ -117,9 +133,6 @@ bool TWifiCyw43Spi::InitBackPlane()
   pcomm->WriteSocRamReg(0x10, 3, 4);  // SOCSRAM_BANKX_INDEX = 3
   pcomm->WriteSocRamReg(0x44, 0, 4);  // SOCSRAM_BANKX_PDA = 0
 
-  // download the firmware...
-  TRACE("Here comes the firmware download...\r\n");
-
   return true;
 }
 
@@ -136,5 +149,80 @@ bool TWifiCyw43Spi::ResetDeviceCore(uint32_t abaseaddr)
   tmp = pcomm->ReadBplAddr(base + 0x408, 1);
   delay_ms(1);
 
+  return true;
+}
+
+bool TWifiCyw43Spi::LoadFirmware()
+{
+  TRACE("CYW43: Loading Firmware...\r\n");
+
+  fwbuf = (uint8_t *)malloc(CYW43_FW_BUF_SIZE);  // will be freed outside on error
+
+  pspiflash->StartReadMem(fw_storage_addr, fwbuf, CYW43_FW_BUF_SIZE);
+  pspiflash->WaitForComplete();
+
+  TVrofsMainHead * pmh = (TVrofsMainHead *)fwbuf;
+  // head consistency check
+  if (memcmp(pmh->vrofsid, VROFS_ID_10, 8) != 0)
+  {
+    TRACE("VROFS Firmware Storage was not in SPI Flash at 0x%06X\r\n", fw_storage_addr);
+    TRACE("HINT: Use the picotool to upload the cyw43439_fw.vrofs.bin file into the SPI Flash.\r\n");
+    return false;
+  }
+
+  if (pmh->main_head_bytes != sizeof(TVrofsMainHead))
+  {
+    TRACE("Invalid VROFS main head.\r\n");
+    return false;
+  }
+
+  TRACE("VROFS found.\r\n");
+
+  // search for the firmware name
+
+  uint8_t * iptr8 = (uint8_t *)(pmh + 1);
+  uint8_t * iend8 = iptr8 + pmh->index_block_bytes;
+
+  TVrofsIndexRec * pirec; // warning the TVrofsIndexRec is usually bigger than the actual size of the index record
+  while (true)
+  {
+    if (iptr8 >= iend8)
+    {
+      TRACE("  FW file \"%s\" was not found in the VROFS.\r\n", fw_file_name);
+      return false;
+    }
+    pirec = (TVrofsIndexRec *)iptr8;
+    if ((strlen(fw_file_name) == pirec->path_len) && (strncmp(pirec->path, fw_file_name, pirec->path_len) == 0))
+    {
+      // found it!
+      break;
+    }
+    iptr8 += pmh->index_rec_bytes;
+  }
+
+  TVrofsMainHead mh   = *pmh;   // copy the main header, because the buffer will be reloaded
+  TVrofsIndexRec irec = *pirec; // copy the index rec, because the buffer will be reloaded
+
+  TRACE("FW File \"%s\" was found, size = %u\r\n", irec.path, irec.data_bytes);
+
+  uint32_t nvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset; // beginning of the data
+  uint32_t nvsend = nvsaddr + irec.data_bytes;
+
+  uint32_t bpladdr = 0;
+  uint32_t remaining = irec.data_bytes;
+
+  // load the first chunk of the data
+  pspiflash->StartReadMem(nvsaddr, fwbuf, CYW43_FW_BUF_SIZE);
+  pspiflash->WaitForComplete();
+
+  TRACE("First chunk of the FW data was loaded.\r\n");
+
+  // transfer to the CHIP...
+  //cyw43_download_resource(self, 0x00000000, CYW43_WIFI_FW_LEN, 0, fw_data);
+  pcomm->WriteBplAddrBlock(bpladdr, fwbuf, 64);
+
+
+  free(fwbuf);
+  fwbuf = nullptr;
   return true;
 }

@@ -62,7 +62,7 @@ public:
   uint8_t       pin_data = 24;   // PICO-W default pin
 
 public:
-  uint32_t      txbuf[16];
+  uint32_t      txbuf[20];
   uint32_t      rxbuf[16];
 
 public:
@@ -87,6 +87,7 @@ public:
   void          SetBackplaneWindow(uint32_t addr);
   uint32_t      ReadBplAddr(uint32_t addr, uint32_t len);
   void          WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len);
+  void          WriteBplAddrBlock(uint32_t addr, uint8_t * buf, uint32_t bytelen);
 
   uint32_t      ReadArmCoreReg(uint32_t addr, uint32_t len);
   void          WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len);

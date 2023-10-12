@@ -7,6 +7,7 @@
 
 /* The CYW43 SPI protocol is described in the CYS43439 Datasheet */
 
+#include "string.h"
 #include <wifi_cyw43_spi_comm.h>
 #include "clockcnt.h"
 #include "traces.h"
@@ -292,6 +293,22 @@ void TWifiCyw43SpiComm::WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len
   WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
 }
 
+void TWifiCyw43SpiComm::WriteBplAddrBlock(uint32_t addr, uint8_t * buf, uint32_t bytelen)
+{
+  SetBackplaneWindow(addr);
+
+  addr = ((addr & 0x7FFF) | 0x8000);
+
+  txbuf[0] = (0
+    | (bytelen    <<  0)  // write size: 1..64
+    | ((addr & 0x1FFFF) << 11)  // 17 bit address
+    | (1      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1      << 30)  // INC: 1 = address increment
+    | (1      << 31)  // R/W: 1 = write
+  );
+  memcpy(&txbuf[1], buf, bytelen);
+  SpiTransfer(&txbuf[0],  bytelen >> 2, nullptr, 0);
+}
 
 uint32_t TWifiCyw43SpiComm::ReadArmCoreReg(uint32_t addr, uint32_t len)
 {
