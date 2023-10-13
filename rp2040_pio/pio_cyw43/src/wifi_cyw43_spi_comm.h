@@ -62,8 +62,7 @@ public:
   uint8_t       pin_data = 24;   // PICO-W default pin
 
 public:
-  uint32_t      txbuf[20];
-  uint32_t      rxbuf[16];
+  uint32_t      rwbuf[20];
 
 public:
   bool          Init(uint8_t adevnum, uint8_t asmnum);
@@ -72,7 +71,7 @@ public:
 
 public:
   void          SetFrequency(unsigned afreq);
-  void          SpiTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords);
+  void          SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt);
 
 public:
   uint32_t      ReadCmdU32(uint32_t acmd);

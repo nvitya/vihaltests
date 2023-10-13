@@ -5,12 +5,13 @@
  *      Author: vitya
  */
 
-#include <wifi_cyw43_spi.h>
-#include "stdlib.h"
 #include "string.h"
+#include "stdlib.h"
 #include "traces.h"
 #include "clockcnt.h"
 #include "vrofs.h"
+
+#include "wifi_cyw43_spi.h"
 
 #define CYW43_FW_BUF_SIZE  4096  // allocated on heap
 
