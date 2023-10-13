@@ -10,6 +10,7 @@
 
 #include "hwpins.h"
 #include "hwrppio.h"
+#include "hwdma.h"
 
 // these can be or-ed to the addresses to select the address range:
 #define CYWFN_BUS   (0 << 17)   // SPI BUS
@@ -49,20 +50,31 @@
 class TWifiCyw43SpiComm : public THwRpPioApp
 {
 public:  // the important variables first for Cortex-M0 optimization
-  uint32_t      cur_backplane_window = 0x00000000;
+  uint32_t        cur_backplane_window = 0x00000000;
 
 public:
-  TGpioPin      pin_cs;    // GPIO-25 on PICO-W
-  TGpioPin      pin_wlon;  // GPIO-23 on PICO-W
-  THwRpPioSm    sm;
-  THwRpPioPrg   prg;
+  bool            spi_xfer_running = false;
+  TGpioPin        pin_cs;    // GPIO-25 on PICO-W
+  TGpioPin        pin_wlon;  // GPIO-23 on PICO-W
+  THwRpPioSm      sm;
 
-  unsigned      frequency = 16000000;  // later 33 MHz by default
-  uint8_t       pin_sck  = 29;   // PICO-W default pin
-  uint8_t       pin_data = 24;   // PICO-W default pin
+  THwRpPioPrg     prg;
+
+  unsigned        frequency = 16000000;  // later 33 MHz by default
+  uint8_t         pin_sck  = 29;   // PICO-W default pin
+  uint8_t         pin_data = 24;   // PICO-W default pin
+
+  uint8_t         dmach_tx = 4;
+  uint8_t         dmach_rx = 5;
 
 public:
-  uint32_t      rwbuf[20];
+  THwDmaTransfer  txfer;
+  THwDmaTransfer  rxfer;
+
+  THwDmaChannel   txdma;
+  THwDmaChannel   rxdma;
+
+  uint32_t        rwbuf[20];
 
 public:
   bool          Init(uint8_t adevnum, uint8_t asmnum);
@@ -72,6 +84,9 @@ public:
 public:
   void          SetFrequency(unsigned afreq);
   void          SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt);
+  void          SpiStartTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt);
+  bool          SpiTransferFinished(); // this must be called to check if the dma transfer finished.
+  void          SpiTransferWaitFinish();
 
 public:
   uint32_t      ReadCmdU32(uint32_t acmd);
@@ -86,7 +101,8 @@ public:
   void          SetBackplaneWindow(uint32_t addr);
   uint32_t      ReadBplAddr(uint32_t addr, uint32_t len);
   void          WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len);
-  void          WriteBplAddrBlock(uint32_t addr, uint8_t * buf, uint32_t bytelen);
+  void          WriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen);
+  void          StartWriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen);
 
   uint32_t      ReadArmCoreReg(uint32_t addr, uint32_t len);
   void          WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len);

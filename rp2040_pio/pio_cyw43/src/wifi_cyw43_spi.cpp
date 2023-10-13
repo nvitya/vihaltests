@@ -220,7 +220,8 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   // transfer to the CHIP...
   //cyw43_download_resource(self, 0x00000000, CYW43_WIFI_FW_LEN, 0, fw_data);
-  pcomm->WriteBplAddrBlock(bpladdr, fwbuf, 64);
+  pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)fwbuf, 64);  // use the DMA now
+  pcomm->SpiTransferWaitFinish();
 
 
   free(fwbuf);

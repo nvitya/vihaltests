@@ -73,6 +73,20 @@ bool TWifiCyw43SpiComm::Init(uint8_t adevnum, uint8_t asmnum)
 
   SetFrequency(frequency);
 
+  txdma.Init(dmach_tx, sm.GetDmaRequest(true));
+  txdma.Prepare(true, sm.tx_lsb, 0);
+  txfer.bytewidth = 4;
+  txfer.flags = 0;
+  txfer.srcaddr = &rwbuf[0];
+  txfer.count = 1;
+
+  rxdma.Init(dmach_rx, sm.GetDmaRequest(false));
+  rxdma.Prepare(false, sm.rx_lsb, 0);
+  rxfer.bytewidth = 4;
+  rxfer.flags = 0;
+  rxfer.dstaddr = &rwbuf[0];
+  rxfer.count = 1;
+
   // ResetModule();
 
   if (!InitBaseComm())
@@ -89,54 +103,6 @@ void TWifiCyw43SpiComm::SetFrequency(unsigned afreq)
   frequency = afreq;
   sm.SetClkDiv(SystemCoreClock / 2, frequency);  // a full SPI clock cycle requires 2 instructions
 }
-
-#if 0
-void TWifiCyw43SpiComm::SpiTransfer(uint32_t * txbuf, uint32_t txwords, uint32_t * rxbuf, uint32_t rxwords)
-{
-  sm.IrqClear(1); // clear IRQ-0
-
-  sm.regs->instr = pio_encode_set(pio_pindirs, 1); // set pindir=1
-
-  pin_cs.Set0();
-
-  sm.PreloadY((rxwords ? (rxwords << 5) - 1 : 0), 32);
-  sm.PreloadX((txwords << 5) - 1, 32);
-
-  *sm.tx_lsb = *txbuf;  // fast load the first word
-
-  sm.Start();
-
-  ++txbuf;
-  --txwords;
-
-  while (txwords)  // push the remaining TX data
-  {
-    if (sm.TrySend32(*txbuf))
-    {
-      ++txbuf;
-      --txwords;
-    }
-  }
-
-  // get the RX data then
-  while (rxwords)
-  {
-    if (sm.TryRecv32(rxbuf))
-    {
-      ++rxbuf;
-      --rxwords;
-    }
-  }
-
-  while (0 == (sm.dregs->irq & 1))
-  {
-    // wait
-  }
-
-  sm.Stop();
-  pin_cs.Set1();
-}
-#endif
 
 void TWifiCyw43SpiComm::SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt)
 {
@@ -176,15 +142,72 @@ void TWifiCyw43SpiComm::SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uin
     }
   }
 
-  while (0 == (sm.dregs->irq & 1))
+  spi_xfer_running = true;
+  SpiTransferWaitFinish();
+}
+
+void TWifiCyw43SpiComm::SpiTransferWaitFinish()
+{
+  while (!SpiTransferFinished())
   {
     // wait
   }
-
-  sm.Stop();
-  pin_cs.Set1();
 }
 
+void TWifiCyw43SpiComm::SpiStartTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt)
+{
+  // this method uses DMA
+
+  sm.IrqClear(1); // clear IRQ-0
+
+  sm.regs->instr = pio_encode_set(pio_pindirs, 1); // set pindir=1
+
+  pin_cs.Set0();
+
+  sm.PreloadX((istx ? ((wordcnt + 1) << 5) - 1 : 31                ), 32); // tx bit count - 1 + 32 bit command
+  sm.PreloadY((istx ? 0                        : (wordcnt << 5) - 1), 32); // rx bit count - 1 or 0
+
+  *sm.tx_lsb = cmd;  // load the command
+
+  sm.Start();
+
+  if (istx)
+  {
+    txfer.count = wordcnt;
+    txfer.srcaddr = buf;
+    txdma.StartTransfer(&txfer);
+  }
+  else  // RX
+  {
+    rxfer.count = wordcnt;
+    rxfer.srcaddr = buf;
+    rxdma.StartTransfer(&txfer);
+  }
+
+  spi_xfer_running = true;
+}
+
+bool TWifiCyw43SpiComm::SpiTransferFinished()
+{
+  if (spi_xfer_running)
+  {
+    if (sm.dregs->irq & 1)
+    {
+      spi_xfer_running = true;
+      sm.Stop();
+      pin_cs.Set1();
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return true;
+  }
+}
 
 bool TWifiCyw43SpiComm::InitBaseComm()
 {
@@ -340,7 +363,7 @@ void TWifiCyw43SpiComm::WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len
   WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
 }
 
-void TWifiCyw43SpiComm::WriteBplAddrBlock(uint32_t addr, uint8_t * buf, uint32_t bytelen)
+void TWifiCyw43SpiComm::WriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen)
 {
   SetBackplaneWindow(addr);
 
@@ -353,8 +376,23 @@ void TWifiCyw43SpiComm::WriteBplAddrBlock(uint32_t addr, uint8_t * buf, uint32_t
     | (1      << 30)  // INC: 1 = address increment
     | (1      << 31)  // R/W: 1 = write
   );
-  memcpy(&rwbuf[1], buf, bytelen);
-  SpiTransfer(cmd, true, &rwbuf[0],  bytelen >> 2);
+  SpiTransfer(cmd, true, buf,  bytelen >> 2);
+}
+
+void TWifiCyw43SpiComm::StartWriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen)
+{
+  SetBackplaneWindow(addr);
+
+  addr = ((addr & 0x7FFF) | 0x8000);
+
+  uint32_t cmd = (0
+    | (bytelen    <<  0)  // write size: 1..64
+    | ((addr & 0x1FFFF) << 11)  // 17 bit address
+    | (1      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1      << 30)  // INC: 1 = address increment
+    | (1      << 31)  // R/W: 1 = write
+  );
+  SpiStartTransfer(cmd, true, buf,  bytelen >> 2);
 }
 
 uint32_t TWifiCyw43SpiComm::ReadArmCoreReg(uint32_t addr, uint32_t len)
