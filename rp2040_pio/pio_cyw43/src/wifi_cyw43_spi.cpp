@@ -206,25 +206,130 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   TRACE("FW File \"%s\" was found, size = %u\r\n", irec.path, irec.data_bytes);
 
-  uint32_t nvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset; // beginning of the data
-  uint32_t nvsend = nvsaddr + irec.data_bytes;
+  // calculate the spi flash address of the beginning of the actual data:
+  uint32_t nvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset;
 
-  uint32_t bpladdr = 0;
-  uint32_t remaining = irec.data_bytes;
-
-  // load the first chunk of the data
-  pspiflash->StartReadMem(nvsaddr, fwbuf, CYW43_FW_BUF_SIZE);
-  pspiflash->WaitForComplete();
-
-  TRACE("First chunk of the FW data was loaded.\r\n");
-
-  // transfer to the CHIP...
-  //cyw43_download_resource(self, 0x00000000, CYW43_WIFI_FW_LEN, 0, fw_data);
-  pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)fwbuf, 64);  // use the DMA now
-  pcomm->SpiTransferWaitFinish();
-
+  LoadFirmwareData(0x00000000, nvsaddr, irec.data_bytes);
 
   free(fwbuf);
   fwbuf = nullptr;
   return true;
 }
+
+#if 0
+
+// simple interleaved load
+
+void TWifiCyw43Spi::LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
+{
+  // slice the fwbuf into two
+  uint32_t   bufsize = CYW43_FW_BUF_SIZE;
+  int        bufremaining = 0;
+  uint8_t *  bufptr = fwbuf;
+
+  uint32_t   nvsaddr = anvsaddr;
+  uint32_t   bpladdr = abpladdr;
+  uint32_t   remaining = len;
+  uint32_t   chunksize = 0;
+
+  while (remaining)
+  {
+    if (bufremaining <= 0)
+    {
+      bufptr = fwbuf;
+      if (bufsize > remaining)  bufsize = remaining;
+
+      // load the next chunk of the data
+      pspiflash->StartReadMem(nvsaddr, fwbuf, bufsize);
+      pspiflash->WaitForComplete();
+
+      bufremaining = bufsize;
+      nvsaddr += bufsize;
+    }
+
+    while (bufremaining)
+    {
+      // transfer to the CHIP...
+      chunksize = bufremaining;
+      if (chunksize > 64)  chunksize = 64;
+
+      //cyw43_download_resource(self, 0x00000000, CYW43_WIFI_FW_LEN, 0, fw_data);
+      pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)bufptr, chunksize);  // use the DMA now
+      pcomm->SpiTransferWaitFinish();
+
+      bufremaining -= chunksize;
+      remaining    -= chunksize;
+
+      bufptr       += chunksize;
+      bpladdr      += chunksize;
+    }
+  }
+
+  TRACE("  %u Bytes loaded.\r\n", len);
+}
+
+#else
+
+// overlapped Flash Load and Spi Write
+
+void TWifiCyw43Spi::LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
+{
+  // slice the fwbuf into two
+  uint32_t   loadchunk = 64;  // must be fix 64
+  uint8_t *  bufptr = fwbuf;
+
+  uint32_t   nvsaddr = anvsaddr;
+  uint32_t   bpladdr = abpladdr;
+  uint32_t   remaining = len;
+  uint32_t   nvsremaining = len;
+
+  // preload the first 2 * 64
+  pspiflash->StartReadMem(nvsaddr, bufptr, loadchunk * 2);
+  pspiflash->WaitForComplete();
+  nvsaddr      += loadchunk * 2;
+  nvsremaining -= loadchunk * 2;
+
+  uint32_t   nvschunk = 0;
+  uint32_t   chunksize = 0; // start with zero !
+  uint8_t    spiidx = 0; // points to the buffer that can be loded into the CYW
+
+  while (true)
+  {
+    if (pcomm->SpiTransferFinished() && pspiflash->completed)  // the SPI flash is usually faster
+    {
+      remaining    -= chunksize;
+      bufptr       += chunksize;
+      bpladdr      += chunksize;
+      if (remaining == 0)
+      {
+        break; // finished ?
+      }
+
+      // start a new transfer
+      chunksize = remaining;
+      if (chunksize > loadchunk)  chunksize = loadchunk;
+      pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)bufptr, chunksize);  // use the DMA now
+      //pcomm->SpiTransferWaitFinish();
+
+      spiidx ^= 1; // flip the buffer for the next transfer, this is where the next chunk will be loaded
+      bufptr = fwbuf + spiidx * loadchunk;
+
+      if (nvsremaining) // start the next chunk load from SPI Flash
+      {
+        nvschunk = nvsremaining;
+        if (nvschunk > loadchunk)  nvschunk = loadchunk;
+
+        pspiflash->StartReadMem(nvsaddr, bufptr, nvschunk);
+
+        nvsremaining -= nvschunk;
+        nvsaddr      += nvschunk;
+      }
+    }
+
+    pspiflash->Run();  // operate the SPI flash read in the background
+  }
+
+  TRACE("  %u Bytes loaded.\r\n", len);
+}
+
+#endif

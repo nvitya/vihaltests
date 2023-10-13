@@ -36,6 +36,8 @@ public:
 protected:
   uint8_t *   fwbuf = nullptr;
 
+  void        LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len);
+
 };
 
 #endif /* SRC_WIFI_CYW43_SPI_H_ */
