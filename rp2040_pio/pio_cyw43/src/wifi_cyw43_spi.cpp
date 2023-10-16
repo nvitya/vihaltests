@@ -5,6 +5,7 @@
  *      Author: vitya
  */
 
+#include "stdint.h"
 #include "string.h"
 #include "stdlib.h"
 #include "traces.h"
@@ -14,6 +15,8 @@
 #include "wifi_cyw43_spi.h"
 
 #define CYW43_FW_BUF_SIZE  4096  // allocated on heap
+
+#include "wifi_cyw43439_nvram.h"  // wifi_nvram_4343[]
 
 bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
 {
@@ -155,6 +158,8 @@ bool TWifiCyw43Spi::ResetDeviceCore(uint32_t abaseaddr)
 
 bool TWifiCyw43Spi::LoadFirmware()
 {
+  uint32_t tmp;
+
   TRACE("CYW43: Loading Firmware...\r\n");
 
   fwbuf = (uint8_t *)malloc(CYW43_FW_BUF_SIZE);  // will be freed outside on error
@@ -209,18 +214,73 @@ bool TWifiCyw43Spi::LoadFirmware()
   // calculate the spi flash address of the beginning of the actual data:
   uint32_t nvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset;
 
-  LoadFirmwareData(0x00000000, nvsaddr, irec.data_bytes);
+  LoadFirmwareDataFromNvs(0x00000000, nvsaddr, irec.data_bytes);
+
+  // the NVDATA is not so big and in text format, so it is embedded in the code
+  uint32_t padded_size = ((sizeof(wifi_nvram_4343) + 63) & 0xFC0); // pad round up to 64 bytes
+  TRACE("Loading NVRAM data: %u Bytes\r\n", padded_size);
+  LoadFirmwareDataFromRam(CYW_BPL_ARM_RAM_SIZE - 4 - padded_size, &wifi_nvram_4343[0], padded_size);
+
+  uint32_t size_code = (padded_size >> 2);  // divide by 4 to represent words
+  size_code = ((size_code << 16) | size_code) ^ 0xFFFF0000;  // upper 16 bit = inverted size code
+  pcomm->WriteBplAddr(CYW_BPL_ARM_RAM_SIZE - 4, size_code, 4);
+
+  TRACE("Starting the ARM core\r\n");
+
+  ResetDeviceCore(CYW_BPL_ADDR_WLAN_ARMCM3);  // start the ARM core
+
+  tmp = pcomm->ReadArmCoreReg(0x408, 1);  // IOCTL
+  if (1 != (tmp & 3))
+  {
+    TRACE("  ARM Core is not up!\r\n");
+    // return false;
+  }
+
+  tmp = pcomm->ReadArmCoreReg(0x800, 1);  // reset control
+  if (tmp & 1)
+  {
+    TRACE("  ARM Core is in reset!\r\n");
+    // return false;
+  }
+
+  TRACE("ARM Core Preparation is finished.\r\n");
+
 
   free(fwbuf);
   fwbuf = nullptr;
   return true;
 }
 
+void TWifiCyw43Spi::LoadFirmwareDataFromRam(uint32_t abpladdr, const void * srcbuf, uint32_t len)
+{
+  // slice the fwbuf into two
+  uint8_t *  bufptr = (uint8_t *)srcbuf;
+  uint32_t   bpladdr = abpladdr;
+  uint32_t   remaining = len;
+  uint32_t   chunksize = 0;
+
+  while (remaining)
+  {
+    // transfer to the CHIP...
+    chunksize = remaining;
+    if (chunksize > 64)  chunksize = 64;
+
+    pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)bufptr, chunksize);  // use the DMA now
+    pcomm->SpiTransferWaitFinish();
+
+    remaining    -= chunksize;
+    bufptr       += chunksize;
+    bpladdr      += chunksize;
+  }
+
+  //TRACE("  %u Bytes loaded.\r\n", len);
+}
+
 #if 0
 
 // simple interleaved load
 
-void TWifiCyw43Spi::LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
+void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
 {
   // slice the fwbuf into two
   uint32_t   bufsize = CYW43_FW_BUF_SIZE;
@@ -272,7 +332,7 @@ void TWifiCyw43Spi::LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint3
 
 // overlapped Flash Load and Spi Write
 
-void TWifiCyw43Spi::LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
+void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len)
 {
   // slice the fwbuf into two
   uint32_t   loadchunk = 64;  // must be fix 64

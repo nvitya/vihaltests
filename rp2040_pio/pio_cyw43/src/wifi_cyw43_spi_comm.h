@@ -46,6 +46,7 @@
 
 #define CYW_SBSDIO_SB_ACCESS_2_4B_FLAG  0x08000
 
+#define CYW_BPL_ARM_RAM_SIZE        (512 * 1024)
 
 class TWifiCyw43SpiComm : public THwRpPioApp
 {

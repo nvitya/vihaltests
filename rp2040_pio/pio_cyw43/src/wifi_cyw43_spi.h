@@ -36,7 +36,8 @@ public:
 protected:
   uint8_t *   fwbuf = nullptr;
 
-  void        LoadFirmwareData(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len);
+  void        LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len);
+  void        LoadFirmwareDataFromRam(uint32_t abpladdr, const void * srcbuf, uint32_t len);
 
 };
 
