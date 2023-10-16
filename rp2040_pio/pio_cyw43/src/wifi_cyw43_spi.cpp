@@ -218,14 +218,14 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   // the NVDATA is not so big and in text format, so it is embedded in the code
   uint32_t padded_size = ((sizeof(wifi_nvram_4343) + 63) & 0xFC0); // pad round up to 64 bytes
-  TRACE("Loading NVRAM data: %u Bytes\r\n", padded_size);
+  TRACE("CYW43: Loading NVRAM data: %u Bytes\r\n", padded_size);
   LoadFirmwareDataFromRam(CYW_BPL_ARM_RAM_SIZE - 4 - padded_size, &wifi_nvram_4343[0], padded_size);
 
   uint32_t size_code = (padded_size >> 2);  // divide by 4 to represent words
   size_code = ((size_code << 16) | size_code) ^ 0xFFFF0000;  // upper 16 bit = inverted size code
   pcomm->WriteBplAddr(CYW_BPL_ARM_RAM_SIZE - 4, size_code, 4);
 
-  TRACE("Starting the ARM core\r\n");
+  TRACE("CYW43: Starting the ARM core\r\n");
 
   ResetDeviceCore(CYW_BPL_ADDR_WLAN_ARMCM3);  // start the ARM core
 
@@ -243,8 +243,33 @@ bool TWifiCyw43Spi::LoadFirmware()
     // return false;
   }
 
-  TRACE("ARM Core Preparation is finished.\r\n");
+  // switch back to the common addresses
+  pcomm->SetBackplaneWindow(CYW_BPL_ADDR_COMMON);
 
+  //pcomm->WriteBplReg(0x1000E,    0, 1);
+  //pcomm->WriteBplReg(0x1000E, 0x10, 1);
+
+  // wait until HT clock is available; takes about 29ms
+  uint32_t trycnt = 0;
+  while (true)
+  {
+    tmp = pcomm->ReadBplReg(0x1000E, 1); // SDIO_CHIP_CLOCK_CSR)
+    if (tmp & 0x80) // SBSDIO_HT_AVAIL
+    {
+      break;
+    }
+
+    ++trycnt;
+    if (trycnt > 500)
+    {
+      TRACE("CYW43: error waiting for HT!\r\n");
+      return false;
+    }
+
+    delay_ms(1);
+  }
+
+  TRACE("ARM Core Preparation is finished.\r\n");
 
   free(fwbuf);
   fwbuf = nullptr;
@@ -343,11 +368,11 @@ void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr
   uint32_t   remaining = len;
   uint32_t   nvsremaining = len;
 
-  // preload the first 2 * 64
-  pspiflash->StartReadMem(nvsaddr, bufptr, loadchunk * 2);
+  // preload the first 64
+  pspiflash->StartReadMem(nvsaddr, bufptr, loadchunk);
   pspiflash->WaitForComplete();
-  nvsaddr      += loadchunk * 2;
-  nvsremaining -= loadchunk * 2;
+  nvsaddr      += loadchunk;
+  nvsremaining -= loadchunk;
 
   uint32_t   nvschunk = 0;
   uint32_t   chunksize = 0; // start with zero !
@@ -357,9 +382,6 @@ void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr
   {
     if (pcomm->SpiTransferFinished() && pspiflash->completed)  // the SPI flash is usually faster
     {
-      remaining    -= chunksize;
-      bufptr       += chunksize;
-      bpladdr      += chunksize;
       if (remaining == 0)
       {
         break; // finished ?
@@ -369,6 +391,11 @@ void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr
       chunksize = remaining;
       if (chunksize > loadchunk)  chunksize = loadchunk;
       pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)bufptr, chunksize);  // use the DMA now
+      remaining    -= chunksize;
+      bpladdr      += chunksize;
+
+      //bufptr       += chunksize;
+
       //pcomm->SpiTransferWaitFinish();
 
       spiidx ^= 1; // flip the buffer for the next transfer, this is where the next chunk will be loaded
