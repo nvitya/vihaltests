@@ -69,7 +69,7 @@ bool TWifiCyw43Spi::InitBackPlane()
     | (0 << 14) // F2_INTR
     | (0 << 15) // F3_INTR
   );
-  pcomm->WriteSpiReg(0x04, tmp, 2);  // clear the selected interrupt flags
+  pcomm->WriteSpiReg(0x04, tmp, 1);  // clear the selected interrupt flags
 
   tmp = (0
     | (0 <<  0) // DATA_UNAVAILABLE
@@ -245,9 +245,6 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   // switch back to the common addresses
   pcomm->SetBackplaneWindow(CYW_BPL_ADDR_COMMON);
-
-  //pcomm->WriteBplReg(0x1000E,    0, 1);
-  //pcomm->WriteBplReg(0x1000E, 0x10, 1);
 
   // wait until HT clock is available; takes about 29ms
   uint32_t trycnt = 0;

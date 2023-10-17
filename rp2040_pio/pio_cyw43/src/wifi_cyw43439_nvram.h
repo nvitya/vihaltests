@@ -54,5 +54,8 @@ static const uint8_t wifi_nvram_4343[] =
         "spurconfig=0x3"                                                     "\x00"
         "glitch_based_crsmin=1"                                              "\x00"
         "btc_mode=1"                                                         "\x00"
-        "\x00\x00";
+        "\x00\x00"
+        // 24 padding bytes:
+        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+  ;
 

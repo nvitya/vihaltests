@@ -82,14 +82,14 @@ bool TWifiCyw43SpiComm::Init(uint8_t adevnum, uint8_t asmnum)
   txdma.Init(dmach_tx, sm.GetDmaRequest(true));
   txdma.Prepare(true, sm.tx_lsb, 0);
   txfer.bytewidth = 4;
-  txfer.flags = 0;
+  txfer.flags = DMATR_BYTESWAP;
   txfer.srcaddr = &rwbuf[0];
   txfer.count = 1;
 
   rxdma.Init(dmach_rx, sm.GetDmaRequest(false));
   rxdma.Prepare(false, sm.rx_lsb, 0);
   rxfer.bytewidth = 4;
-  rxfer.flags = 0;
+  rxfer.flags = DMATR_BYTESWAP;
   rxfer.dstaddr = &rwbuf[0];
   rxfer.count = 1;
 
@@ -112,6 +112,8 @@ void TWifiCyw43SpiComm::SetFrequency(unsigned afreq)
 
 void TWifiCyw43SpiComm::SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uint32_t wordcnt)
 {
+  uint32_t swd32;
+
   sm.IrqClear(1); // clear IRQ-0
 
   sm.regs->instr = pio_encode_set(pio_pindirs, 1); // set pindir=1
@@ -121,7 +123,7 @@ void TWifiCyw43SpiComm::SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uin
   sm.PreloadX((istx ? ((wordcnt + 1) << 5) - 1 : 31                ), 32); // tx bit count - 1 + 32 bit command
   sm.PreloadY((istx ? 0                        : (wordcnt << 5) - 1), 32); // rx bit count - 1 or 0
 
-  *sm.tx_lsb = cmd;  // load the command
+  *sm.tx_lsb = __builtin_bswap32(cmd);  // load the command
 
   sm.Start();
 
@@ -129,20 +131,23 @@ void TWifiCyw43SpiComm::SpiTransfer(uint32_t cmd, bool istx, uint32_t * buf, uin
   {
     while (wordcnt)  // push the remaining TX data
     {
-      if (sm.TrySend32(*buf))
+      swd32 = __builtin_bswap32(*buf);
+      while (!sm.TrySend32(swd32))
       {
-        ++buf;
-        --wordcnt;
+        // repeat again
       }
+
+      ++buf;
+      --wordcnt;
     }
   }
   else  // RX
   {
     while (wordcnt)
     {
-      if (sm.TryRecv32(buf))
+      if (sm.TryRecv32(&swd32))
       {
-        ++buf;
+        *buf++ = __builtin_bswap32(swd32);
         --wordcnt;
       }
     }
@@ -173,7 +178,7 @@ void TWifiCyw43SpiComm::SpiStartTransfer(uint32_t cmd, bool istx, uint32_t * buf
   sm.PreloadX((istx ? ((wordcnt + 1) << 5) - 1 : 31                ), 32); // tx bit count - 1 + 32 bit command
   sm.PreloadY((istx ? 0                        : (wordcnt << 5) - 1), 32); // rx bit count - 1 or 0
 
-  *sm.tx_lsb = cmd;  // load the command
+  *sm.tx_lsb = __builtin_bswap32(cmd);  // load the command
 
   sm.Start();
 
@@ -181,13 +186,13 @@ void TWifiCyw43SpiComm::SpiStartTransfer(uint32_t cmd, bool istx, uint32_t * buf
   {
     txfer.count = wordcnt;
     txfer.srcaddr = buf;
-    txdma.StartTransfer(&txfer);
+    txdma.StartTransfer(&txfer);  // byteswapping configured in the DMA
   }
   else  // RX
   {
     rxfer.count = wordcnt;
     rxfer.srcaddr = buf;
-    rxdma.StartTransfer(&txfer);
+    rxdma.StartTransfer(&txfer);  // byteswapping configured in the DMA
   }
 
   spi_xfer_running = true;
@@ -202,6 +207,9 @@ bool TWifiCyw43SpiComm::SpiTransferFinished()
       spi_xfer_running = true;
       sm.Stop();
       pin_cs.Set1();
+
+      delay_us(13);
+
       return true;
     }
     else
@@ -227,8 +235,8 @@ bool TWifiCyw43SpiComm::InitBaseComm()
   // (16-bit swapped commands for now)
   while (true)
   {
-    v = ReadCmdU32(0xA0044000);
-    if (0xBEADFEED == v)
+    v = ReadCmdU32(0x004004A0);
+    if (0xEDFEADBE == v)  // shuffled byte order
     {
       break;
     }
@@ -242,8 +250,8 @@ bool TWifiCyw43SpiComm::InitBaseComm()
     delay_ms(1);
   }
 
-  // 2. Switch to 32-bit Little Endian Mode (WARNING: different from the PICO-SDK !)
-  WriteCmdU32(0x0004C000, 0x04B10002);
+  // 2. Switch to 32-bit Big Endian Mode, same as the PICO-SDK
+  WriteCmdU32(0x00C00400, 0x0200B304);
 
   // check if the requested byte order working properly
   if (ReadCmdU32(0x4000A004) != 0xFEEDBEAD)
@@ -360,13 +368,15 @@ void TWifiCyw43SpiComm::SetBackplaneWindow(uint32_t addr)
 uint32_t TWifiCyw43SpiComm::ReadBplAddr(uint32_t addr, uint32_t len)
 {
   SetBackplaneWindow(addr);
-  return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  return ReadBplReg(addr, len);
 }
 
 void TWifiCyw43SpiComm::WriteBplAddr(uint32_t addr, uint32_t value, uint32_t len)
 {
   SetBackplaneWindow(addr);
-  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  WriteBplReg(addr, value, len);
 }
 
 void TWifiCyw43SpiComm::WriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen)
@@ -405,14 +415,16 @@ uint32_t TWifiCyw43SpiComm::ReadArmCoreReg(uint32_t addr, uint32_t len)
 {
   addr += CYW_BPL_ADDR_WLAN_ARMCM3 + CYW_BPL_WRAPPER_REG_OFFS;
   SetBackplaneWindow(addr);
-  return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  return ReadBplReg(addr, len);
 }
 
 void TWifiCyw43SpiComm::WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len)
 {
   addr += CYW_BPL_ADDR_WLAN_ARMCM3 + CYW_BPL_WRAPPER_REG_OFFS;
   SetBackplaneWindow(addr);
-  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  WriteBplReg(addr, value, len);
 }
 
 
@@ -420,12 +432,14 @@ uint32_t TWifiCyw43SpiComm::ReadSocRamReg(uint32_t addr, uint32_t len)
 {
   addr += CYW_BPL_ADDR_SOCSRAM + CYW_BPL_WRAPPER_REG_OFFS;
   SetBackplaneWindow(addr);
-  return ReadBplReg(addr | 0x8000, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  return ReadBplReg(addr, len);
 }
 
 void TWifiCyw43SpiComm::WriteSocRamReg(uint32_t addr, uint32_t value, uint32_t len)
 {
   addr += CYW_BPL_ADDR_SOCSRAM + CYW_BPL_WRAPPER_REG_OFFS;
   SetBackplaneWindow(addr);
-  WriteBplReg(addr | 0x8000, value, len);  // 0x8000 = 2_4B_FLAG
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  WriteBplReg(addr, value, len);
 }
