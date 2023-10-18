@@ -5,6 +5,16 @@
  *      Author: vitya
  */
 
+/* Copyright header of the cyw43-driver
+ * ----------------------------------------------------------------------------
+ * This file is part of the cyw43-driver
+ *
+ * Copyright (C) 2019-2022 George Robotics Pty Ltd
+ *
+ * >>> 3-clause BSD License Text <<<
+ * ----------------------------------------------------------------------------
+*/
+
 #include "stdint.h"
 #include "string.h"
 #include "stdlib.h"
@@ -38,6 +48,11 @@ bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
       fwbuf = nullptr;
     }
     return false;
+  }
+
+  if (!PrepareBus())
+  {
+
   }
 
   initialized = true;
@@ -159,6 +174,7 @@ bool TWifiCyw43Spi::ResetDeviceCore(uint32_t abaseaddr)
 bool TWifiCyw43Spi::LoadFirmware()
 {
   uint32_t tmp;
+  uint32_t trycnt;
 
   TRACE("CYW43: Loading Firmware...\r\n");
 
@@ -247,7 +263,7 @@ bool TWifiCyw43Spi::LoadFirmware()
   pcomm->SetBackplaneWindow(CYW_BPL_ADDR_COMMON);
 
   // wait until HT clock is available; takes about 29ms
-  uint32_t trycnt = 0;
+  trycnt = 0;
   while (true)
   {
     tmp = pcomm->ReadBplReg(0x1000E, 1); // SDIO_CHIP_CLOCK_CSR)
@@ -268,8 +284,103 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   TRACE("ARM Core Preparation is finished.\r\n");
 
+  // Set up the interrupt mask and enable interrupts
+  pcomm->WriteSdioReg(0x24, 0x000000F0, 4);  // SDIO_INT_HOST_MASK = I_HMB_SW_MASK
+
+  // switch back to the common addresses, for normal ReadBplRegs()
+  pcomm->SetBackplaneWindow(CYW_BPL_ADDR_COMMON);
+
+  // Lower F2 Watermark to avoid DMA Hang in F2 when SD Clock is stopped.
+  pcomm->WriteBplReg(0x10008, 32, 1);
+
+  trycnt = 0;
+  while (true)
+  {
+    tmp = pcomm->ReadSpiReg(0x0008, 4); // SPI_STATUS_REGISTER
+    if (tmp & 0x20) // STATUS_F2_RX_READY
+    {
+      break;
+    }
+
+    ++trycnt;
+    if (trycnt > 500)
+    {
+      TRACE("CYW43: F2 is not ready !\r\n");
+      return false;
+    }
+
+    delay_ms(1);
+  }
+
+  TRACE("F2 is ready.\r\n");
+
   free(fwbuf);
   fwbuf = nullptr;
+  return true;
+}
+
+bool TWifiCyw43Spi::PrepareBus()
+{
+  uint32_t tmp;
+  uint32_t trycnt;
+
+  TRACE("Preparing Bus\r\n");
+
+  // Setting KSO = Keep SDIO On:
+
+  tmp = pcomm->ReadBplReg(0x1001E, 1);  // SDIO_WAKEUP_CTRL
+  tmp |= (1 << 1); // SBSDIO_WCTRL_WAKE_TILL_HT_AVAIL;
+  pcomm->WriteBplReg(0x1001E, tmp, 1); // SDIO_WAKEUP_CTRL
+  pcomm->WriteSpiReg(0xF0, 0x08, 1);  // SDIOD_CCCR_BRCM_CARDCAP = SDIOD_CCCR_BRCM_CARDCAP_CMD_NODEC
+  pcomm->WriteBplReg(0x1000E, 0x02, 1); // SDIO_CHIP_CLOCK_CSR = SBSDIO_FORCE_HT
+
+  tmp = pcomm->ReadBplReg(0x1001F, 1); // SDIO_SLEEP_CSR
+  if (0 == (tmp & 1))  // is the SBSDIO_SLPCSR_KEEP_SDIO_ON not set ?
+  {
+    tmp |= 1; // then set the SBSDIO_SLPCSR_KEEP_SDIO_ON
+    pcomm->WriteBplReg(0x1001F, tmp, 1); // SDIO_SLEEP_CSR
+  }
+
+  // Put SPI interface block to sleep
+  pcomm->WriteBplReg(0x1000F, 0x0F, 1); // SDIO_PULL_UP = 0x0F
+
+  // CLEAR PAD PULLS
+  pcomm->WriteBplReg(0x1000F, 0x00, 1); // SDIO_PULL_UP = 0x00
+  tmp = pcomm->ReadBplReg(0x1000F,  1);
+
+  // We always seem to start with a data unavailable error - so clear it now
+  tmp = pcomm->ReadSpiReg(0x0004, 2);  // SPI_INTERRUPT_REGISTER
+  if (tmp & 1)  // DATA_UNAVAILABLE is set ?
+  {
+    pcomm->WriteSpiReg(0x0004, tmp, 2); // clear the interrupt flags (all of them)
+  }
+
+  // ensure that the KSO is on:
+  trycnt = 0;
+  while (true)
+  {
+    tmp = pcomm->ReadBplReg(0x1001F, 1); // SDIO_SLEEP_CSR
+    if ((tmp != 0xFF) && (tmp & 1))
+    {
+      break;
+    }
+
+    ++trycnt;
+    if (trycnt > 64)
+    {
+      TRACE("CYW43: KSO set failed !\r\n");
+      return false;
+    }
+
+    pcomm->WriteBplReg(0x1001F, 1, 1); // try again.
+    delay_ms(1);
+  }
+
+  // Load the CLM data; it sits just after main firmware
+  TRACE("Loading the CLM data\r\n");
+
+
+  TRACE("CYW43 bus prepare finished.\r\n");
   return true;
 }
 

@@ -208,7 +208,7 @@ bool TWifiCyw43SpiComm::SpiTransferFinished()
       sm.Stop();
       pin_cs.Set1();
 
-      delay_us(13);
+      //delay_us(13);
 
       return true;
     }
@@ -439,6 +439,22 @@ uint32_t TWifiCyw43SpiComm::ReadSocRamReg(uint32_t addr, uint32_t len)
 void TWifiCyw43SpiComm::WriteSocRamReg(uint32_t addr, uint32_t value, uint32_t len)
 {
   addr += CYW_BPL_ADDR_SOCSRAM + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  WriteBplReg(addr, value, len);
+}
+
+uint32_t TWifiCyw43SpiComm::ReadSdioReg(uint32_t addr, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_SDIO + CYW_BPL_WRAPPER_REG_OFFS;
+  SetBackplaneWindow(addr);
+  addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
+  return ReadBplReg(addr, len);
+}
+
+void TWifiCyw43SpiComm::WriteSdioReg(uint32_t addr, uint32_t value, uint32_t len)
+{
+  addr += CYW_BPL_ADDR_SDIO + CYW_BPL_WRAPPER_REG_OFFS;
   SetBackplaneWindow(addr);
   addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
   WriteBplReg(addr, value, len);

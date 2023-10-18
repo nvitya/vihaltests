@@ -105,6 +105,8 @@ public:
   void          WriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen);
   void          StartWriteBplAddrBlock(uint32_t addr, uint32_t * buf, uint32_t bytelen);
 
+  uint32_t      ReadSdioReg(uint32_t addr, uint32_t len);
+  void          WriteSdioReg(uint32_t addr, uint32_t value, uint32_t len);
   uint32_t      ReadArmCoreReg(uint32_t addr, uint32_t len);
   void          WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len);
   uint32_t      ReadSocRamReg(uint32_t addr, uint32_t len);

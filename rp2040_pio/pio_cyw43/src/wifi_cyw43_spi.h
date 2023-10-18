@@ -11,6 +11,30 @@
 #include "wifi_cyw43_spi_comm.h"
 #include "spiflash.h"
 
+typedef struct
+{
+  uint16_t  size;
+  uint16_t  size_com;
+  uint8_t   sequence;
+  uint8_t   channel_and_flags;
+  uint8_t   next_length;
+  uint8_t   header_length;
+  uint8_t   wireless_flow_control;
+  uint8_t   bus_data_credit;
+  uint8_t   reserved[2];
+//
+} TSdpcmHeader;  // 12 bytes
+
+typedef struct
+{
+  uint32_t  cmd;
+  uint32_t  len;    // lower 16 is output len; upper 16 is input len
+  uint32_t  flags;
+  uint32_t  status;
+//
+} TIoctlHeader;  // 16 bytes
+
+
 class TWifiCyw43Spi
 {
 private:
@@ -28,8 +52,8 @@ public:
   bool      Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash);
 
   bool      InitBackPlane();
-
   bool      LoadFirmware();
+  bool      PrepareBus();
 
   bool      ResetDeviceCore(uint32_t abaseaddr);
 
