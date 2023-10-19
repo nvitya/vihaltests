@@ -111,6 +111,9 @@ public:
   void          WriteArmCoreReg(uint32_t addr, uint32_t value, uint32_t len);
   uint32_t      ReadSocRamReg(uint32_t addr, uint32_t len);
   void          WriteSocRamReg(uint32_t addr, uint32_t value, uint32_t len);
+
+  void          StartWriteWlanBlock(uint32_t addr, void * buf, uint32_t bytelen);
+  void          StartReadWlanBlock(uint32_t addr, void * buf, uint32_t bytelen);
 };
 
 #endif /* SRC_WIFI_CYW43_SPI_COMM_H_ */

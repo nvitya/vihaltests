@@ -24,8 +24,6 @@
 
 #include "wifi_cyw43_spi.h"
 
-#define CYW43_FW_BUF_SIZE  4096  // allocated on heap
-
 #include "wifi_cyw43439_nvram.h"  // wifi_nvram_4343[]
 
 bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
@@ -42,11 +40,6 @@ bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
 
   if (!LoadFirmware())
   {
-    if (fwbuf)
-    {
-      free(fwbuf);
-      fwbuf = nullptr;
-    }
     return false;
   }
 
@@ -178,12 +171,11 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   TRACE("CYW43: Loading Firmware...\r\n");
 
-  fwbuf = (uint8_t *)malloc(CYW43_FW_BUF_SIZE);  // will be freed outside on error
-
-  pspiflash->StartReadMem(fw_storage_addr, fwbuf, CYW43_FW_BUF_SIZE);
+  // the wbuf is big enough to hold the whole directory listing
+  pspiflash->StartReadMem(fw_storage_addr, &wbuf[0], sizeof(wbuf));
   pspiflash->WaitForComplete();
 
-  TVrofsMainHead * pmh = (TVrofsMainHead *)fwbuf;
+  TVrofsMainHead * pmh = (TVrofsMainHead *)&wbuf[0];
   // head consistency check
   if (memcmp(pmh->vrofsid, VROFS_ID_10, 8) != 0)
   {
@@ -314,8 +306,6 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   TRACE("F2 is ready.\r\n");
 
-  free(fwbuf);
-  fwbuf = nullptr;
   return true;
 }
 
@@ -381,6 +371,118 @@ bool TWifiCyw43Spi::PrepareBus()
 
 
   TRACE("CYW43 bus prepare finished.\r\n");
+  return true;
+}
+
+void TWifiCyw43Spi::ExecIoctl()
+{
+}
+
+bool TWifiCyw43Spi::GpioSetTo(uint32_t gpio_num, uint8_t avalue)
+{
+  uint32_t params[2];
+  params[0] = (1 << gpio_num);
+  params[1] = (avalue ? 1 << gpio_num : 0);
+  return WriteIoVar("gpioout", &params[0], 8);
+}
+
+bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t parlen)
+{
+  uint32_t tmp;
+
+  // create message headers
+  TSdpcmHeader *  psdh  = (TSdpcmHeader *)&wbuf[0];
+  TIoctlHeader *  pich  = (TIoctlHeader *)(psdh + 1);
+  uint8_t *       pdatabegin = (uint8_t *)(pich + 1);
+  uint8_t *       pdata = pdatabegin;
+
+  // copy the payload into the buffer
+
+  int vnamelen = strlen(iovar_name) + 1; // include the closing zero too
+  memcpy(pdata, iovar_name, vnamelen);
+  pdata += vnamelen;
+  memcpy(pdata, params, parlen);
+  pdata += parlen;
+
+  // prepare the SDPCM header
+
+  psdh->size     = (pdata - &wbuf[0]);    // the total packet size
+  psdh->size_com = (psdh->size ^ 0xffff); // inverted size
+  psdh->sequence = sdpcm_tx_seq_num;
+  psdh->channel_and_flags = 0; // channel: 0 = CONTROL, 1 = ASYNC_EVENT 2 = DATA
+  psdh->next_length = 0;
+  psdh->header_length = sizeof(TSdpcmHeader); // warning: +2 when dealing with Ethernet data !
+  psdh->wireless_flow_control = 0;
+  psdh->bus_data_credit = 0;
+  psdh->reserved[0] = 0;
+  psdh->reserved[1] = 0;
+
+  ++sdpcm_tx_seq_num;
+
+  // prepare the IOCTL header
+
+  ++sdpcm_ioctl_rq_id;
+
+  uint32_t flags = (0
+    | (sdpcm_ioctl_rq_id << 16)
+    | (0                 << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
+    | (2                 <<  0)  // KIND: 0 = GET, 2 = SET
+  );
+  pich->cmd = 263;  // 263 = WLC_SET_VAR
+  pich->len = (pdata - pdatabegin); // payload length
+  pich->flags = flags;
+  pich->status = 0;
+
+  // send the request
+  pcomm->StartWriteWlanBlock(0, &wbuf[0], psdh->size);  // the buffer must be word aligned !
+  pcomm->SpiTransferWaitFinish();
+
+  // receive the response
+
+  uint32_t trycnt = 0;
+  uint32_t gspi_status;
+  uint32_t bytes_pending = 0;
+
+  while (true)
+  {
+    ++trycnt;
+    if (trycnt > 1000)
+    {
+      TRACE("CYW43: error waiting IOCTL response!\r\n");
+      return false;
+    }
+
+    gspi_status = pcomm->ReadSpiReg(0x0008, 4);
+    if (gspi_status == 0xFFFFFFFF)
+    {
+      if (trycnt > 1000)
+      {
+        TRACE("CYW43: error reading SPI status register!\r\n");
+        return false;
+      }
+
+      continue;
+    }
+
+    if (gspi_status & (1 << 8)) // packet available?
+    {
+      bytes_pending = (gspi_status >> 9) & 0x7FF;
+      if ((bytes_pending == 0) || (bytes_pending > 1544) || (gspi_status & 2))
+      {
+        TRACE("CYW43: Dropping invalid frame (u)\r\n", bytes_pending);
+        pcomm->WriteBplReg(0x1000D, 1, 1);  // drop the frame ?
+        continue;
+      }
+
+      // read the packet into the wbuf[]
+      pcomm->StartReadWlanBlock(0, &wbuf[0], bytes_pending);
+      pcomm->SpiTransferWaitFinish();
+
+      //TRACE("CYW43: Response length = %u\r\n", bytes_pending);
+      break;
+    }
+  }
+
   return true;
 }
 
@@ -469,7 +571,7 @@ void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr
 {
   // slice the fwbuf into two
   uint32_t   loadchunk = 64;  // must be fix 64
-  uint8_t *  bufptr = fwbuf;
+  uint8_t *  bufptr = &wbuf[0];
 
   uint32_t   nvsaddr = anvsaddr;
   uint32_t   bpladdr = abpladdr;
@@ -507,7 +609,7 @@ void TWifiCyw43Spi::LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr
       //pcomm->SpiTransferWaitFinish();
 
       spiidx ^= 1; // flip the buffer for the next transfer, this is where the next chunk will be loaded
-      bufptr = fwbuf + spiidx * loadchunk;
+      bufptr = &wbuf[spiidx * loadchunk];
 
       if (nvsremaining) // start the next chunk load from SPI Flash
       {

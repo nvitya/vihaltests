@@ -191,8 +191,8 @@ void TWifiCyw43SpiComm::SpiStartTransfer(uint32_t cmd, bool istx, uint32_t * buf
   else  // RX
   {
     rxfer.count = wordcnt;
-    rxfer.srcaddr = buf;
-    rxdma.StartTransfer(&txfer);  // byteswapping configured in the DMA
+    rxfer.dstaddr = buf;
+    rxdma.StartTransfer(&rxfer);  // byteswapping configured in the DMA
   }
 
   spi_xfer_running = true;
@@ -458,4 +458,28 @@ void TWifiCyw43SpiComm::WriteSdioReg(uint32_t addr, uint32_t value, uint32_t len
   SetBackplaneWindow(addr);
   addr = ((addr & 0x7FFF) | 0x8000);  // 0x8000 = 2_4B_FLAG
   WriteBplReg(addr, value, len);
+}
+
+void TWifiCyw43SpiComm::StartWriteWlanBlock(uint32_t addr, void * buf, uint32_t bytelen)
+{
+  uint32_t cmd = (0
+    | (bytelen <<  0)  // write size: 1..64
+    | ((addr & 0x1FFFF) << 11)  // 17 bit address
+    | (2       << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1       << 30)  // INC: 1 = address increment
+    | (1       << 31)  // R/W: 1 = write
+  );
+  SpiStartTransfer(cmd, true, (uint32_t *)buf, (bytelen + 3) >> 2);
+}
+
+void TWifiCyw43SpiComm::StartReadWlanBlock(uint32_t addr, void * buf, uint32_t bytelen)
+{
+  uint32_t cmd = (0
+    | (bytelen <<  0)  // write size: 1..64
+    | ((addr & 0x1FFFF) << 11)  // 17 bit address
+    | (2       << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+    | (1       << 30)  // INC: 1 = address increment
+    | (0       << 31)  // R/W: 0 = read
+  );
+  SpiStartTransfer(cmd, false, (uint32_t *)buf, (bytelen + 3) >> 2);
 }
