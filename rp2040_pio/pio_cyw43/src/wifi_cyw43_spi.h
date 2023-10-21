@@ -41,9 +41,9 @@ typedef struct
   uint8_t flags;
   uint8_t priority;
   uint8_t flags2;
-  uint8_t data_offset;
+  uint8_t data_offset;  // in words (?)
 //
-} TSdpcmBdcHeader; // 4 Bytes, but +2 padding before and after might be added
+} TBdcHeader; // 4 Bytes, but +2 padding before and after might be added
 
 
 typedef struct
@@ -102,11 +102,16 @@ public:
   uint8_t              wlan_flow_control = 0;
   uint16_t             ioctl_rq_id = 0;
 
+  uint8_t              macaddr[6];
+
   TSpiFlash *          pspiflash = nullptr;
+
   uint32_t             fw_storage_addr = 0x1C0000;
-  const char *         fw_file_name = "43439A0.bin";
+  const char *         fw_file_name    = "43439A0.bin";
+  const char *         clm_file_name   = "43439A0_clm.bin";
 
   uint32_t             errcnt_invalid_rxpkt = 0;
+  uint32_t             errcnt_irq_status = 0;
 
   bool        Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash);
   void        Run(); // process requests, events, and data packets
@@ -117,10 +122,11 @@ public:
 
   bool        ResetDeviceCore(uint32_t abaseaddr);
 
-  void        ExecIoctl();
-
   bool        GpioSetTo(uint32_t gpio_num, uint8_t avalue);
   bool        WriteIoVar(const char * iovar_name, void * params, uint32_t parlen);
+  bool        ReadIoVar(const char * iovar_name, void * dstbuf, uint32_t len);
+
+  bool        WriteIoVarU32(const char * iovar_name, uint32_t avalue);
 
   bool        AddRequest(TCyw43Request * arq);
   bool        SendRequest(TCyw43Request * arq);
@@ -130,12 +136,15 @@ public:
 protected:
   void        LoadFirmwareDataFromNvs(uint32_t abpladdr, uint32_t anvsaddr, uint32_t len);
   void        LoadFirmwareDataFromRam(uint32_t abpladdr, const void * srcbuf, uint32_t len);
+  bool        LoadClmData();
+  bool        FindVrofsFile(const char * afname, uint32_t * rnvsaddr, uint32_t * rlen);
 
 public:
   TCyw43Request  mrq;                    // internal requests
   uint8_t        mrqdata[256];           // smaller parameter storage for the internal requests
   uint32_t       spiregs[2];
-  uint8_t        wbuf[CYW43_WBUF_SIZE];  // local buffer for message assembly and data exchange
+  // local buffer for message assembly and data exchange:
+  uint8_t        wbuf[CYW43_WBUF_SIZE] __attribute__((aligned(4)));
 };
 
 #endif /* SRC_WIFI_CYW43_SPI_H_ */

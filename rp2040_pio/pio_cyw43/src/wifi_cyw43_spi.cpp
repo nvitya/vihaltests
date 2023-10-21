@@ -35,6 +35,7 @@ bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
 
   mrq.completed = true;
   rqstate = 0;
+  use_irq_pin = false;
 
   if (!InitBackPlane())
   {
@@ -174,58 +175,15 @@ bool TWifiCyw43Spi::LoadFirmware()
 
   TRACE("CYW43: Loading Firmware...\r\n");
 
-  // the wbuf is big enough to hold the whole directory listing
-  pspiflash->StartReadMem(fw_storage_addr, &wbuf[0], sizeof(wbuf));
-  pspiflash->WaitForComplete();
+  uint32_t nvsaddr;
+  uint32_t fwlen;
 
-  TVrofsMainHead * pmh = (TVrofsMainHead *)&wbuf[0];
-  // head consistency check
-  if (memcmp(pmh->vrofsid, VROFS_ID_10, 8) != 0)
+  if (!FindVrofsFile(fw_file_name, &nvsaddr, &fwlen))
   {
-    TRACE("VROFS Firmware Storage was not in SPI Flash at 0x%06X\r\n", fw_storage_addr);
-    TRACE("HINT: Use the picotool to upload the cyw43439_fw.vrofs.bin file into the SPI Flash.\r\n");
     return false;
   }
 
-  if (pmh->main_head_bytes != sizeof(TVrofsMainHead))
-  {
-    TRACE("Invalid VROFS main head.\r\n");
-    return false;
-  }
-
-  TRACE("VROFS found.\r\n");
-
-  // search for the firmware name
-
-  uint8_t * iptr8 = (uint8_t *)(pmh + 1);
-  uint8_t * iend8 = iptr8 + pmh->index_block_bytes;
-
-  TVrofsIndexRec * pirec; // warning the TVrofsIndexRec is usually bigger than the actual size of the index record
-  while (true)
-  {
-    if (iptr8 >= iend8)
-    {
-      TRACE("  FW file \"%s\" was not found in the VROFS.\r\n", fw_file_name);
-      return false;
-    }
-    pirec = (TVrofsIndexRec *)iptr8;
-    if ((strlen(fw_file_name) == pirec->path_len) && (strncmp(pirec->path, fw_file_name, pirec->path_len) == 0))
-    {
-      // found it!
-      break;
-    }
-    iptr8 += pmh->index_rec_bytes;
-  }
-
-  TVrofsMainHead mh   = *pmh;   // copy the main header, because the buffer will be reloaded
-  TVrofsIndexRec irec = *pirec; // copy the index rec, because the buffer will be reloaded
-
-  TRACE("FW File \"%s\" was found, size = %u\r\n", irec.path, irec.data_bytes);
-
-  // calculate the spi flash address of the beginning of the actual data:
-  uint32_t nvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset;
-
-  LoadFirmwareDataFromNvs(0x00000000, nvsaddr, irec.data_bytes);
+  LoadFirmwareDataFromNvs(0x00000000, nvsaddr, fwlen);
 
   // the NVDATA is not so big and in text format, so it is embedded in the code
   uint32_t padded_size = ((sizeof(wifi_nvram_4343) + 63) & 0xFC0); // pad round up to 64 bytes
@@ -312,6 +270,66 @@ bool TWifiCyw43Spi::LoadFirmware()
   return true;
 }
 
+bool TWifiCyw43Spi::FindVrofsFile(const char * afname, uint32_t * rnvsaddr, uint32_t * rlen)
+{
+  uint32_t tmp;
+  uint32_t trycnt;
+
+  // the wbuf is big enough to hold the whole directory listing
+  pspiflash->StartReadMem(fw_storage_addr, &wbuf[0], sizeof(wbuf));
+  pspiflash->WaitForComplete();
+
+  TVrofsMainHead * pmh = (TVrofsMainHead *)&wbuf[0];
+  // head consistency check
+  if (memcmp(pmh->vrofsid, VROFS_ID_10, 8) != 0)
+  {
+    TRACE("VROFS Firmware Storage was not in SPI Flash at 0x%06X\r\n", fw_storage_addr);
+    TRACE("HINT: Use the picotool to upload the cyw43439_fw.vrofs.bin file into the SPI Flash.\r\n");
+    return false;
+  }
+
+  if (pmh->main_head_bytes != sizeof(TVrofsMainHead))
+  {
+    TRACE("Invalid VROFS main head.\r\n");
+    return false;
+  }
+
+  //TRACE("VROFS found.\r\n");
+
+  // search for the firmware name
+
+  uint8_t * iptr8 = (uint8_t *)(pmh + 1);
+  uint8_t * iend8 = iptr8 + pmh->index_block_bytes;
+
+  TVrofsIndexRec * pirec; // warning the TVrofsIndexRec is usually bigger than the actual size of the index record
+  while (true)
+  {
+    if (iptr8 >= iend8)
+    {
+      TRACE("  FW file \"%s\" was not found in the VROFS.\r\n", afname);
+      return false;
+    }
+    pirec = (TVrofsIndexRec *)iptr8;
+    if ((strlen(afname) == pirec->path_len) && (strncmp(pirec->path, afname, pirec->path_len) == 0))
+    {
+      // found it!
+      break;
+    }
+    iptr8 += pmh->index_rec_bytes;
+  }
+
+  TVrofsMainHead mh   = *pmh;   // copy the main header, because the buffer will be reloaded
+  TVrofsIndexRec irec = *pirec; // copy the index rec, because the buffer will be reloaded
+
+  TRACE("  File \"%s\" was found, size = %u\r\n", irec.path, irec.data_bytes);
+
+  // calculate the spi flash address of the beginning of the actual data:
+  *rnvsaddr = fw_storage_addr + mh.main_head_bytes + mh.index_block_bytes + irec.offset;
+  *rlen = irec.data_bytes;
+
+  return true;
+}
+
 bool TWifiCyw43Spi::PrepareBus()
 {
   uint32_t tmp;
@@ -369,16 +387,145 @@ bool TWifiCyw43Spi::PrepareBus()
     delay_ms(1);
   }
 
-  // Load the CLM data; it sits just after main firmware
-  TRACE("Loading the CLM data\r\n");
+  // Now, communicate mainly with packets on the F2 / WIFI buffer
 
+  // Operate the state machine for 20 ms, to read the two (?) initial async events
+  unsigned t0 = CLOCKCNT;
+  unsigned wait_clocks = 10 * (SystemCoreClock / 1000);
+  while (CLOCKCNT - t0 < wait_clocks)
+  {
+    Run();
+  }
+
+  if (!LoadClmData())
+  {
+    return false;
+  }
+
+  WriteIoVarU32("bus:txglom", 0); // tx glomming off
+  WriteIoVarU32("apsta", 1);      // apsta on
+
+  // get the MAC address
+  if (!ReadIoVar("cur_etheraddr", &macaddr[0], 6))
+  {
+    TRACE("Error getting the MAC address!\r\n");
+    return false;
+  }
+
+  TRACE("MAC address = %02X:%02X:%02X:%02X:%02X:%02X\r\n",
+      macaddr[0], macaddr[1], macaddr[2], macaddr[3], macaddr[4], macaddr[5]);
 
   TRACE("CYW43 bus prepare finished.\r\n");
   return true;
 }
 
-void TWifiCyw43Spi::ExecIoctl()
+struct TClmLoadParams
 {
+  uint16_t  flag;
+  uint16_t  param2;  // unknown meaning
+  uint32_t  len;
+  uint32_t  param4;  // unknown meaning
+};
+
+bool TWifiCyw43Spi::LoadClmData()
+{
+  TRACE("Loading the CLM data\r\n");
+
+  uint32_t nvsaddr;
+  uint32_t fwlen;
+  if (!FindVrofsFile(clm_file_name, &nvsaddr, &fwlen))
+  {
+    return false;
+  }
+
+  // use the end of the wbuf[] as NVS load buffer
+
+  const uint32_t  dload_max_chunk = 512;
+  uint8_t *  nvsbuf = &wbuf[sizeof(wbuf) - dload_max_chunk];
+  uint32_t   bufsize = dload_max_chunk;
+
+  // assembly the IOCTL request, put the IOCTL parameters before
+
+  uint32_t   vnamelen = 8;  // "clmload\x00" = 8 byte
+  uint32_t   paramsize = sizeof(TClmLoadParams) + vnamelen;
+  uint8_t *  paramstart = nvsbuf - paramsize;
+  memcpy(paramstart, "clmload\x00", vnamelen);
+  TClmLoadParams * phead = (TClmLoadParams *)(nvsbuf - sizeof(TClmLoadParams));
+
+  uint32_t   remaining = fwlen;
+  uint32_t   chunksize = 0;
+  uint32_t   offset = 0;
+
+  while (remaining)
+  {
+    // load the next chunk of the data
+    chunksize = remaining;
+    if (chunksize > dload_max_chunk)  chunksize = dload_max_chunk;
+
+    pspiflash->StartReadMem(nvsaddr, nvsbuf, chunksize);
+    pspiflash->WaitForComplete();
+
+    phead->flag = (1 << 12);  // DLOAD_HANDLER_VER
+    if (0 == offset)             phead->flag |= 2; // DL_BEGIN
+    if (remaining == chunksize)  phead->flag |= 4; // DL_END
+    phead->param2 = 2;
+    phead->len  = chunksize;
+    phead->param4 = 0;
+
+    // the data follows this header
+
+    // assembly the IOCTL request
+
+    mrq.channel = CYW43_CH_IOCTL;
+    mrq.dataptr = paramstart;
+    mrq.datalen = paramsize + chunksize;
+
+    // don't expect data response here ?
+    mrq.anslen = 0;
+    mrq.ansptr = nullptr;
+
+    ++ioctl_rq_id;
+    mrq.rq_id = ioctl_rq_id;
+    mrq.flags = (0
+      | (0  << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
+      | (2  <<  0)  // KIND: 0 = GET, 2 = SET
+    );
+    mrq.cmd = 263;  // 263 = WLC_SET_VAR
+
+    if (!AddRequest(&mrq))
+    {
+      return false;
+    }
+
+    while (!mrq.completed)
+    {
+      Run();
+    }
+
+    remaining    -= chunksize;
+    offset       += chunksize;
+    nvsaddr      += chunksize;
+  }
+
+  TRACE("  %u Bytes loaded.\r\n", fwlen);
+
+  // check the load status
+
+  uint32_t load_status;
+
+  if (!ReadIoVar("clmload_status", &load_status, sizeof(load_status)))
+  {
+    TRACE("  error getting load status!\r\n");
+    return false;
+  }
+
+  if (0 != load_status)
+  {
+    TRACE("  CLM load error = %u\r\n", load_status);
+    return false;
+  }
+
+  return true;
 }
 
 bool TWifiCyw43Spi::GpioSetTo(uint32_t gpio_num, uint8_t avalue)
@@ -389,9 +536,15 @@ bool TWifiCyw43Spi::GpioSetTo(uint32_t gpio_num, uint8_t avalue)
   return WriteIoVar("gpioout", &params[0], 8);
 }
 
+bool TWifiCyw43Spi::WriteIoVarU32(const char * iovar_name, uint32_t avalue)
+{
+  uint32_t params[1];
+  params[0] = avalue;
+  return WriteIoVar(iovar_name, &params[0], 4);
+}
+
 bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t parlen)
 {
-#if 1
   // finish already running transaction
   while (!mrq.completed)
   {
@@ -443,109 +596,62 @@ bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t 
   }
 
   return (mrq.error == 0);
+}
 
-#else
-
-  uint32_t tmp;
-
-  // create message headers
-  TSdpcmHeader *  psdh  = (TSdpcmHeader *)&wbuf[0];
-  TIoctlHeader *  pich  = (TIoctlHeader *)(psdh + 1);
-  uint8_t *       pdatabegin = (uint8_t *)(pich + 1);
-  uint8_t *       pdata = pdatabegin;
-
-  // copy the payload into the buffer
-
-  int vnamelen = strlen(iovar_name) + 1; // include the closing zero too
-  memcpy(pdata, iovar_name, vnamelen);
-  pdata += vnamelen;
-  memcpy(pdata, params, parlen);
-  pdata += parlen;
-
-  // prepare the SDPCM header
-
-  psdh->size     = (pdata - &wbuf[0]);    // the total packet size
-  psdh->size_com = (psdh->size ^ 0xffff); // inverted size
-  psdh->sequence = sdpcm_tx_seq_num;
-  psdh->channel_and_flags = CYW43_CH_IOCTL; // channel: 0 = CONTROL, 1 = EVENT 2 = DATA
-  psdh->next_length = 0;
-  psdh->header_length = sizeof(TSdpcmHeader); // warning: +2 when dealing with Ethernet data !
-  psdh->wireless_flow_control = 0;
-  psdh->bus_data_credit = 0;
-  psdh->reserved[0] = 0;
-  psdh->reserved[1] = 0;
-
-  ++sdpcm_tx_seq_num;
-
-  // prepare the IOCTL header
-
-  ++ioctl_rq_id;
-
-  uint32_t flags = (0
-    | (ioctl_rq_id << 16)
-    | (0                 << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
-    | (2                 <<  0)  // KIND: 0 = GET, 2 = SET
-  );
-  pich->cmd = 263;  // 263 = WLC_SET_VAR
-  pich->len = (pdata - pdatabegin); // payload length
-  pich->flags = flags;
-  pich->status = 0;
-
-  // send the request
-  pcomm->StartWriteWlanBlock(0, &wbuf[0], psdh->size);  // the buffer must be word aligned !
-  pcomm->SpiTransferWaitFinish();
-
-  // receive the response
-
-  uint32_t trycnt = 0;
-  uint32_t gspi_status;
-  uint32_t bytes_pending = 0;
-
-  while (true)
+bool TWifiCyw43Spi::ReadIoVar(const char * iovar_name, void * dstbuf, uint32_t len)
+{
+  // finish already running transaction
+  while (!mrq.completed)
   {
-    ++trycnt;
-    if (trycnt > 1000)
-    {
-      TRACE("CYW43: error waiting IOCTL response!\r\n");
-      return false;
-    }
-
-    gspi_status = pcomm->ReadSpiReg(0x0008, 4);
-    if (gspi_status == 0xFFFFFFFF)
-    {
-      if (trycnt > 1000)
-      {
-        TRACE("CYW43: error reading SPI status register!\r\n");
-        return false;
-      }
-
-      continue;
-    }
-
-    if (gspi_status & (1 << 8)) // packet available?
-    {
-      bytes_pending = (gspi_status >> 9) & 0x7FF;
-      if ((bytes_pending == 0) || (bytes_pending > 1544) || (gspi_status & 2))
-      {
-        TRACE("CYW43: Dropping invalid frame (u)\r\n", bytes_pending);
-        pcomm->WriteBplReg(0x1000D, 1, 1);  // drop the frame ?
-        continue;
-      }
-
-      // read the packet into the wbuf[]
-      pcomm->StartReadWlanBlock(0, &wbuf[0], bytes_pending);
-      pcomm->SpiTransferWaitFinish();
-
-      //TRACE("CYW43: Response length = %u\r\n", bytes_pending);
-      break;
-    }
+    Run();
   }
 
-  return true;
+  // prepare the payload into the mrqdata buffer
 
-#endif
+  uint8_t *       pdatabegin = &mrqdata[0];
+  uint8_t *       pdata = pdatabegin;
 
+  int vnamelen = strlen(iovar_name) + 1; // include the closing zero too
+
+  if (vnamelen > sizeof(mrqdata))
+  {
+    TRACE("CYW43 ReadIoVar: rq data too big\r\n");
+    return false;
+  }
+
+  memcpy(pdata, iovar_name, vnamelen);
+  pdata += vnamelen;
+  memset(pdata, 0, len);
+  pdata += len;
+
+  mrq.channel = CYW43_CH_IOCTL;
+  mrq.dataptr = pdatabegin;
+  mrq.datalen = pdata - pdatabegin;
+
+  mrq.anslen = len;
+  mrq.ansptr = (uint8_t *)dstbuf;
+
+  ++ioctl_rq_id;
+  mrq.rq_id = ioctl_rq_id;
+  mrq.flags = (0
+    | (0  << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
+    | (0  <<  0)  // KIND: 0 = GET, 2 = SET
+  );
+  mrq.cmd = 262;  // 262 = WLC_GET_VAR
+
+  if (!AddRequest(&mrq))
+  {
+    return false;
+  }
+
+  while (!mrq.completed)
+  {
+    Run();
+  }
+
+  return (mrq.error == 0);
 }
+
 
 bool TWifiCyw43Spi::AddRequest(TCyw43Request * arq)
 {
@@ -583,8 +689,8 @@ void TWifiCyw43Spi::Run()
 
   if (1 == wreadstate)  // packet read finished, process the packet
   {
-    wreadstate = 0;
     ProcessRxPacket();
+    wreadstate = 0;
   }
 
   if (currq && (0 == rqstate))
@@ -603,35 +709,17 @@ void TWifiCyw43Spi::Run()
 
   if ((0 == wreadstate) && (!use_irq_pin || (1 == pcomm->pin_irq.Value())))  // check for new incoming packets
   {
-#if 0
-    tmp = (0
-      | (0 <<  0) // DATA_UNAVAILABLE
-      | (1 <<  1) // F2_F3_FIFO_RD_UNDERFLOW
-      | (1 <<  2) // F2_F3_FIFO_WR_OVERFLOW
-      | (1 <<  3) // COMMAND_ERROR
-      | (1 <<  4) // DATA_ERROR
-      | (1 <<  5) // F2_PACKET_AVAILABLE
-      | (0 <<  6) // F3_PACKET_AVAILABLE
-      | (1 <<  7) // F1_OVERFLOW
-      | (0 <<  8) // GSPI_PACKET_AVAILABLE
-      | (0 <<  9) // MISC_INTR1
-      | (0 << 10) // MISC_INTR2
-      | (0 << 11) // MISC_INTR3
-      | (0 << 12) // MISC_INTR4
-      | (0 << 13) // F1_INTR
-      | (0 << 14) // F2_INTR
-      | (0 << 15) // F3_INTR
-    );
-#endif
-
-    // read the SPI interrupt (0x04/16) and the SPI status (0x08/32) registers
+    // read the following three registers with one transaction:
+    //   0x04 u16: SPI interrupts
+    //   0x06 u16: SPI IRQ Mask (not used here)
+    //   0x08 u32: SPI status (packet available, packet length)
 
     uint32_t cmd = (0
-      | (8      <<  0)  // read size: 8 bytes
-      | (0x04   << 11)  // ADDR(17): 17 bit address
-      | (0      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
-      | (1      << 30)  // INC: 1 = address increment
-      | (0      << 31)  // R/W: 0 = read
+      | (8    <<  0)  // read size: 8 bytes
+      | (0x04 << 11)  // ADDR(17): 17 bit address
+      | (0    << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+      | (1    << 30)  // INC: 1 = address increment
+      | (0    << 31)  // R/W: 0 = read
     );
     pcomm->SpiTransfer(cmd, false, &spiregs[0], 2);  // blocking read, but this is short
 
@@ -648,12 +736,11 @@ void TWifiCyw43Spi::Run()
 
     if (irq_status & err_mask)
     {
+      ++errcnt_irq_status;
       TRACE("CYW43: IRQ ERROR FLAGS = 0x04X\r\n", irq_status);
       pcomm->WriteSpiReg(0x04, irq_status & err_mask, 2);  // clear the IRQ flags
       irq_status &= ~err_mask;
     }
-
-    // IRQ Flag (1 <<  5) =  F2_PACKET_AVAILABLE
 
     if ((gspi_status != 0xFFFFFFFF) && (gspi_status & (1 << 8))) // packet available ?
     {
@@ -672,13 +759,11 @@ void TWifiCyw43Spi::Run()
     }
     else // no data packet available
     {
-      if (irq_status & CYW43_IRQ_F2_PACKET) // this might never happen
+      if (irq_status & CYW43_IRQ_F2_PACKET) // this probably never happen
       {
-        //pcomm->WriteSpiReg(0x04, CYW43_IRQ_F2_PACKET, 2);  // clear data available IRQ flag
-        // packet reads automatically clear the F2 PACKET flag
-        use_irq_pin = false;
+        use_irq_pin = false;  // something wrong, go back to register polling
       }
-      else
+      else // packet reads automatically clear the F2 PACKET flag
       {
         use_irq_pin = true; // use the IRQ pin only when all the interrupts are successfully cleared
       }
@@ -745,8 +830,8 @@ bool TWifiCyw43Spi::SendRequest(TCyw43Request * arq)
   }
   else if (CYW43_CH_DATA == arq->channel)
   {
-    TSdpcmBdcHeader *  pdh = (TSdpcmBdcHeader *)pdata;
-    pdata += sizeof(TSdpcmBdcHeader) + 2;  // extra padding
+    TBdcHeader *  pdh = (TBdcHeader *)pdata;
+    pdata += sizeof(TBdcHeader) + 2;  // extra padding
     pdatabegin = pdata;
   }
   else // unsupported request
@@ -838,7 +923,13 @@ void TWifiCyw43Spi::ProcessRxPacket()
 
     uint32_t len = psdh->size - (pdatabegin - &wbuf[0]);
 
-    TRACE("CYW43: IOCTL response len=%u, status=%i\r\n", len, pich->status);
+    //TRACE("CYW43: IOCTL response len=%u, status=%i\r\n", len, pich->status);
+
+    if (currq->anslen)
+    {
+      // the payload is at the end
+      memcpy(currq->ansptr, &wbuf[psdh->size - currq->anslen], currq->anslen);
+    }
 
     currq->completed = true;
     currq->error = pich->status;  // maybe an error code ?
@@ -849,7 +940,20 @@ void TWifiCyw43Spi::ProcessRxPacket()
   }
   else if (CYW43_CH_EVENT == ch)
   {
-    TRACE("CYW43: unprocessed EVENT, len=%u\r\n", psdh->size);
+    if (psdh->size < sizeof(TSdpcmHeader) + sizeof(TBdcHeader))
+    {
+      ++errcnt_invalid_rxpkt;
+      TRACE("CYW43: Invalid EVENT header\r\n");
+      return;
+    }
+
+    TBdcHeader *  pbdch = (TBdcHeader *)pdata;
+    pdata += sizeof(TBdcHeader) + (pbdch->data_offset << 2);
+    pdatabegin = pdata;
+
+    uint32_t len = psdh->size - (pdatabegin - &wbuf[0]);
+
+    TRACE("CYW43: unprocessed EVENT, len=%u, type=%04X\r\n", len, pdata[12] + pdata[13] << 8);
   }
   else
   {
