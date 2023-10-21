@@ -33,6 +33,9 @@ bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
   pcomm = acomm;
   pspiflash = aspiflash;
 
+  mrq.completed = true;
+  rqstate = 0;
+
   if (!InitBackPlane())
   {
     return false;
@@ -388,6 +391,61 @@ bool TWifiCyw43Spi::GpioSetTo(uint32_t gpio_num, uint8_t avalue)
 
 bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t parlen)
 {
+#if 1
+  // finish already running transaction
+  while (!mrq.completed)
+  {
+    Run();
+  }
+
+  // prepare the payload into the mrqdata buffer
+
+  uint8_t *       pdatabegin = &mrqdata[0];
+  uint8_t *       pdata = pdatabegin;
+
+  int vnamelen = strlen(iovar_name) + 1; // include the closing zero too
+
+  if (vnamelen + parlen > sizeof(mrqdata))
+  {
+    TRACE("CYW43 WriteIoVar: rq data too big\r\n");
+    return false;
+  }
+
+  memcpy(pdata, iovar_name, vnamelen);
+  pdata += vnamelen;
+  memcpy(pdata, params, parlen);
+  pdata += parlen;
+
+  mrq.channel = CYW43_CH_IOCTL;
+  mrq.dataptr = pdatabegin;
+  mrq.datalen = pdata - pdatabegin;
+
+  // don't expect data response here
+  mrq.anslen = 0;
+  mrq.ansptr = nullptr;
+
+  ++ioctl_rq_id;
+  mrq.rq_id = ioctl_rq_id;
+  mrq.flags = (0
+    | (0  << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
+    | (2  <<  0)  // KIND: 0 = GET, 2 = SET
+  );
+  mrq.cmd = 263;  // 263 = WLC_SET_VAR
+
+  if (!AddRequest(&mrq))
+  {
+    return false;
+  }
+
+  while (!mrq.completed)
+  {
+    Run();
+  }
+
+  return (mrq.error == 0);
+
+#else
+
   uint32_t tmp;
 
   // create message headers
@@ -409,7 +467,7 @@ bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t 
   psdh->size     = (pdata - &wbuf[0]);    // the total packet size
   psdh->size_com = (psdh->size ^ 0xffff); // inverted size
   psdh->sequence = sdpcm_tx_seq_num;
-  psdh->channel_and_flags = 0; // channel: 0 = CONTROL, 1 = ASYNC_EVENT 2 = DATA
+  psdh->channel_and_flags = CYW43_CH_IOCTL; // channel: 0 = CONTROL, 1 = EVENT 2 = DATA
   psdh->next_length = 0;
   psdh->header_length = sizeof(TSdpcmHeader); // warning: +2 when dealing with Ethernet data !
   psdh->wireless_flow_control = 0;
@@ -421,10 +479,10 @@ bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t 
 
   // prepare the IOCTL header
 
-  ++sdpcm_ioctl_rq_id;
+  ++ioctl_rq_id;
 
   uint32_t flags = (0
-    | (sdpcm_ioctl_rq_id << 16)
+    | (ioctl_rq_id << 16)
     | (0                 << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
     | (2                 <<  0)  // KIND: 0 = GET, 2 = SET
   );
@@ -484,6 +542,252 @@ bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t 
   }
 
   return true;
+
+#endif
+
+}
+
+bool TWifiCyw43Spi::AddRequest(TCyw43Request * arq)
+{
+  if (currq)
+  {
+    // search the last rq + check if already added
+    TCyw43Request * rq = currq;
+    while (rq->next)
+    {
+      if (rq == arq)
+      {
+        return false; // already added
+      }
+      rq = rq->next;
+    }
+    rq->next = arq;
+  }
+  else
+  {
+    currq = arq; // set as first
+  }
+
+  arq->completed = false;
+  arq->error = 0;
+  arq->next = nullptr;
+  return true;
+}
+
+void TWifiCyw43Spi::Run()
+{
+  if (!pcomm->SpiTransferFinished())
+  {
+    return; // the SPI line is busy
+  }
+
+  if (1 == wreadstate)  // packet read finished, process the packet
+  {
+    wreadstate = 0;
+    ProcessRxPacket();
+  }
+
+  if (currq && (0 == rqstate))
+  {
+    if (SendRequest(currq))
+    {
+      rqstate = 1; // go to wait response state
+      return; // the SPI line is busy
+    }
+    else // error
+    {
+      currq->completed = true;
+      currq->error = CYW43_ERR_RQ;
+    }
+  }
+
+  if (0 == wreadstate)  // was packet
+  {
+    // check for new incoming packets
+    gspi_status = pcomm->ReadSpiReg(0x0008, 4);
+    if ((gspi_status != 0xFFFFFFFF) && (gspi_status & (1 << 8))) // packet available ?
+    {
+      wreadlen = (gspi_status >> 9) & 0x7FF;
+      if ((wreadlen == 0) || (wreadlen > 1544) || (gspi_status & 2))
+      {
+        TRACE("CYW43: Dropping invalid frame (u)\r\n", wreadlen);
+        pcomm->WriteBplReg(0x1000D, 1, 1);  // drops the frame ?
+      }
+      else
+      {
+        pcomm->StartReadWlanBlock(0, &wbuf[0], wreadlen);
+        wreadstate = 1;
+        return; // SPI line busy
+      }
+    }
+  }
+
+  // handle finished transactions and timeouts
+
+  if (currq)
+  {
+    if (currq->completed)
+    {
+      currq = currq->next;
+      rqstate = 0;
+    }
+    else if (rqstate > 0)
+    {
+      // handle response timeouts
+    }
+  }
+}
+
+bool TWifiCyw43Spi::SendRequest(TCyw43Request * arq)
+{
+  uint32_t   tmp;
+  uint8_t *  pdata;
+  uint8_t *  pdatabegin;
+
+  // prepare the SDPCM Header
+
+  TSdpcmHeader *  psdh  = (TSdpcmHeader *)&wbuf[0];
+
+  //psdh->size     = (pdata - &wbuf[0]);    // the total packet size
+  //psdh->size_com = (psdh->size ^ 0xffff); // inverted size
+  // (size will be set later)
+  psdh->sequence = sdpcm_tx_seq_num;
+  psdh->channel_and_flags = arq->channel;
+  psdh->next_length = 0;
+  psdh->header_length = sizeof(TSdpcmHeader);
+  if (CYW43_CH_DATA == arq->channel)
+  {
+    psdh->header_length += 2;  // speciality, for the right alignment +2 bytes added to the data header too
+  }
+  psdh->wireless_flow_control = 0;
+  psdh->bus_data_credit = 0;
+  psdh->reserved[0] = 0;
+  psdh->reserved[1] = 0;
+
+  pdata = &wbuf[psdh->header_length]; // beginning of the header
+
+  if (CYW43_CH_IOCTL == arq->channel)
+  {
+    TIoctlHeader *  pich  = (TIoctlHeader *)pdata;
+
+    pich->cmd = arq->cmd;
+    pich->txlen = arq->datalen;
+    pich->rxlen = 0;
+    pich->flags = arq->flags;
+    pich->rq_id = arq->rq_id;
+    pich->status = 0;
+
+    pdata += sizeof(TIoctlHeader);
+    pdatabegin = pdata;
+  }
+  else if (CYW43_CH_DATA == arq->channel)
+  {
+    TSdpcmBdcHeader *  pdh = (TSdpcmBdcHeader *)pdata;
+    pdata += sizeof(TSdpcmBdcHeader) + 2;  // extra padding
+    pdatabegin = pdata;
+  }
+  else // unsupported request
+  {
+    arq->error = CYW43_ERR_RQ;
+    arq->completed = true;
+    return false;
+  }
+
+  // copy the payload into the buffer
+
+  if (arq->datalen)
+  {
+    memcpy(pdata, arq->dataptr, arq->datalen);
+    pdata += arq->datalen;
+  }
+
+  // update the SDPCM size field
+  psdh->size     = (pdata - &wbuf[0]);    // the total packet size
+  psdh->size_com = (psdh->size ^ 0xffff); // inverted size
+
+  ++sdpcm_tx_seq_num;
+
+  // Start sending the request
+
+  pcomm->StartWriteWlanBlock(0, &wbuf[0], psdh->size);  // the buffer must be word aligned !
+  return true;
+}
+
+void TWifiCyw43Spi::ProcessRxPacket()
+{
+  //uint32_t   tmp;
+  uint8_t *  pdata;
+  uint8_t *  pdatabegin;
+
+  TSdpcmHeader *  psdh  = (TSdpcmHeader *)&wbuf[0];
+  pdata = &wbuf[sizeof(TSdpcmHeader)];
+
+  if ( (psdh->size_com != (psdh->size ^ 0xFFFF))
+       || (psdh->size < sizeof(TSdpcmHeader))
+       || (psdh->header_length < sizeof(TSdpcmHeader))
+     )
+  {
+    ++errcnt_invalid_rxpkt;
+    TRACE("CYW43: Invalid RX packet\r\n");
+    return;
+  }
+
+  if (wlan_flow_control != psdh->wireless_flow_control)
+  {
+    wlan_flow_control = psdh->wireless_flow_control;
+    TRACE("CYW43: update WLAN flow control: %02X\r\n", wlan_flow_control);
+  }
+
+  if (psdh->size == sizeof(TSdpcmHeader))
+  {
+    return; // flow control packet with no data
+  }
+
+  uint8_t ch = (psdh->channel_and_flags & 0xF);
+
+  if (CYW43_CH_IOCTL == ch)
+  {
+    if (psdh->size < sizeof(TSdpcmHeader) + sizeof(TIoctlHeader))
+    {
+      ++errcnt_invalid_rxpkt;
+      TRACE("CYW43: Invalid IOCTL response\r\n");
+      return;
+    }
+
+    if (!currq || (currq->channel != CYW43_CH_IOCTL))
+    {
+      ++errcnt_invalid_rxpkt;
+      TRACE("CYW43: Unexpected IOCTL response\r\n");
+      return;
+    }
+
+    TIoctlHeader *  pich  = (TIoctlHeader *)pdata;
+    if (pich->rq_id != currq->rq_id)
+    {
+      ++errcnt_invalid_rxpkt;
+      TRACE("CYW43: IOCTL response ID mismatch\r\n");
+      return;
+    }
+
+    // TODO: continue....
+
+    pdata += sizeof(TIoctlHeader);
+    pdatabegin = pdata;
+  }
+  else if (CYW43_CH_DATA == ch)
+  {
+
+  }
+  else if (CYW43_CH_EVENT == ch)
+  {
+
+  }
+  else
+  {
+    ++errcnt_invalid_rxpkt;
+    TRACE("CYW43: Invalid channel in rx packet\r\n");
+    return;
+  }
 }
 
 void TWifiCyw43Spi::LoadFirmwareDataFromRam(uint32_t abpladdr, const void * srcbuf, uint32_t len)
