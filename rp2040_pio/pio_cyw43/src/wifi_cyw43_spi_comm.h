@@ -56,6 +56,7 @@ public:  // the important variables first for Cortex-M0 optimization
 public:
   bool            spi_xfer_running = false;
   TGpioPin        pin_cs;    // GPIO-25 on PICO-W
+  TGpioPin        pin_irq;   // high active, same as the data pin on PICO-W
   TGpioPin        pin_wlon;  // GPIO-23 on PICO-W
   THwRpPioSm      sm;
 
@@ -64,6 +65,7 @@ public:
   unsigned        frequency = 16000000;  // later 33 MHz by default
   uint8_t         pin_sck  = 29;   // PICO-W default pin
   uint8_t         pin_data = 24;   // PICO-W default pin
+  uint8_t         pinnum_irq = 24; // data pin is used to this purpose as well
 
   uint8_t         dmach_tx = 4;
   uint8_t         dmach_rx = 5;

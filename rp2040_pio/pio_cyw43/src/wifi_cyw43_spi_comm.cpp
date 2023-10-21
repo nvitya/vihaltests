@@ -33,6 +33,8 @@ bool TWifiCyw43SpiComm::Init(uint8_t adevnum, uint8_t asmnum)
   if (!pin_cs.Assigned())    pin_cs.Assign(0, 25, false);
   if (!pin_wlon.Assigned())  pin_wlon.Assign(0, 23, false);
 
+  pin_irq.Assign(0,  pinnum_irq, false);  // shared with the data pin
+  pin_irq.Setup(PINCFG_INPUT);
   pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
 
   prg.Init(adevnum, prgoffset);  // offset=0, entry=offset

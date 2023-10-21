@@ -55,5 +55,5 @@ void test_cyw43_wifi_init()
 
 void test_cyw43_wifi_run()
 {
-
+  cyw43.Run();
 }

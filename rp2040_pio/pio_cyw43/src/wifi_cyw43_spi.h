@@ -17,6 +17,8 @@
 
 #define CYW43_ERR_RQ    0xEE01  // invalid request
 
+#define CYW43_IRQ_F2_PACKET (1 << 5)
+
 typedef struct
 {
   uint16_t  size;
@@ -49,9 +51,9 @@ typedef struct
   uint32_t  cmd;
   uint16_t  txlen;
   uint16_t  rxlen;
-  uint16_t  flags;
+  uint16_t  flags;  // bit15..12: IFACE, bit1-2: KIND
   uint16_t  rq_id;
-  uint32_t  status;
+  int32_t   status;
 //
 } TIoctlHeader;  // 16 Bytes
 
@@ -86,8 +88,11 @@ public:
   bool                 initialized = false;
   uint8_t              rqstate = 0;
   uint8_t              wreadstate = 0;
+  bool                 use_irq_pin = false;
   uint16_t             wreadlen = 0;
 
+  uint16_t             irq_status = 0;
+  uint16_t             irq_mask = 0;
   uint32_t             gspi_status = 0;
 
   TWifiCyw43SpiComm *  pcomm = nullptr;
@@ -129,6 +134,7 @@ protected:
 public:
   TCyw43Request  mrq;                    // internal requests
   uint8_t        mrqdata[256];           // smaller parameter storage for the internal requests
+  uint32_t       spiregs[2];
   uint8_t        wbuf[CYW43_WBUF_SIZE];  // local buffer for message assembly and data exchange
 };
 

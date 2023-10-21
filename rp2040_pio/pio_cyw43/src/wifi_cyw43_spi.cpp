@@ -82,7 +82,7 @@ bool TWifiCyw43Spi::InitBackPlane()
   );
   pcomm->WriteSpiReg(0x04, tmp, 1);  // clear the selected interrupt flags
 
-  tmp = (0
+  irq_mask = (0
     | (0 <<  0) // DATA_UNAVAILABLE
     | (1 <<  1) // F2_F3_FIFO_RD_UNDERFLOW
     | (1 <<  2) // F2_F3_FIFO_WR_OVERFLOW
@@ -100,7 +100,7 @@ bool TWifiCyw43Spi::InitBackPlane()
     | (0 << 14) // F2_INTR
     | (0 << 15) // F3_INTR
   );
-  pcomm->WriteSpiReg(0x06, tmp, 2);  // enable the selected interrupts
+  pcomm->WriteSpiReg(0x06, irq_mask, 2);  // enable the selected interrupts
 
   // cyw43_write_reg_u8(self, BACKPLANE_FUNCTION, SDIO_CHIP_CLOCK_CSR, SBSDIO_ALP_AVAIL_REQ);
   pcomm->WriteBplReg(0x1000E, 0x08, 1);  // set the request for ALP
@@ -601,10 +601,60 @@ void TWifiCyw43Spi::Run()
     }
   }
 
-  if (0 == wreadstate)  // was packet
+  if ((0 == wreadstate) && (!use_irq_pin || (1 == pcomm->pin_irq.Value())))  // check for new incoming packets
   {
-    // check for new incoming packets
-    gspi_status = pcomm->ReadSpiReg(0x0008, 4);
+#if 0
+    tmp = (0
+      | (0 <<  0) // DATA_UNAVAILABLE
+      | (1 <<  1) // F2_F3_FIFO_RD_UNDERFLOW
+      | (1 <<  2) // F2_F3_FIFO_WR_OVERFLOW
+      | (1 <<  3) // COMMAND_ERROR
+      | (1 <<  4) // DATA_ERROR
+      | (1 <<  5) // F2_PACKET_AVAILABLE
+      | (0 <<  6) // F3_PACKET_AVAILABLE
+      | (1 <<  7) // F1_OVERFLOW
+      | (0 <<  8) // GSPI_PACKET_AVAILABLE
+      | (0 <<  9) // MISC_INTR1
+      | (0 << 10) // MISC_INTR2
+      | (0 << 11) // MISC_INTR3
+      | (0 << 12) // MISC_INTR4
+      | (0 << 13) // F1_INTR
+      | (0 << 14) // F2_INTR
+      | (0 << 15) // F3_INTR
+    );
+#endif
+
+    // read the SPI interrupt (0x04/16) and the SPI status (0x08/32) registers
+
+    uint32_t cmd = (0
+      | (8      <<  0)  // read size: 8 bytes
+      | (0x04   << 11)  // ADDR(17): 17 bit address
+      | (0      << 28)  // FUNC(2): 0 = SPI Bus, 1 = BackPlane, 2 = WiFi
+      | (1      << 30)  // INC: 1 = address increment
+      | (0      << 31)  // R/W: 0 = read
+    );
+    pcomm->SpiTransfer(cmd, false, &spiregs[0], 2);  // blocking read, but this is short
+
+    gspi_status = spiregs[1];
+    irq_status = (spiregs[0] & irq_mask);
+
+    uint16_t err_mask = (0
+      | (1 <<  1) // F2_F3_FIFO_RD_UNDERFLOW
+      | (1 <<  2) // F2_F3_FIFO_WR_OVERFLOW
+      | (1 <<  3) // COMMAND_ERROR
+      | (1 <<  4) // DATA_ERROR
+      | (1 <<  7) // F1_OVERFLOW
+    );
+
+    if (irq_status & err_mask)
+    {
+      TRACE("CYW43: IRQ ERROR FLAGS = 0x04X\r\n", irq_status);
+      pcomm->WriteSpiReg(0x04, irq_status & err_mask, 2);  // clear the IRQ flags
+      irq_status &= ~err_mask;
+    }
+
+    // IRQ Flag (1 <<  5) =  F2_PACKET_AVAILABLE
+
     if ((gspi_status != 0xFFFFFFFF) && (gspi_status & (1 << 8))) // packet available ?
     {
       wreadlen = (gspi_status >> 9) & 0x7FF;
@@ -618,6 +668,19 @@ void TWifiCyw43Spi::Run()
         pcomm->StartReadWlanBlock(0, &wbuf[0], wreadlen);
         wreadstate = 1;
         return; // SPI line busy
+      }
+    }
+    else // no data packet available
+    {
+      if (irq_status & CYW43_IRQ_F2_PACKET) // this might never happen
+      {
+        //pcomm->WriteSpiReg(0x04, CYW43_IRQ_F2_PACKET, 2);  // clear data available IRQ flag
+        // packet reads automatically clear the F2 PACKET flag
+        use_irq_pin = false;
+      }
+      else
+      {
+        use_irq_pin = true; // use the IRQ pin only when all the interrupts are successfully cleared
       }
     }
   }
@@ -720,7 +783,6 @@ void TWifiCyw43Spi::ProcessRxPacket()
   uint8_t *  pdatabegin;
 
   TSdpcmHeader *  psdh  = (TSdpcmHeader *)&wbuf[0];
-  pdata = &wbuf[sizeof(TSdpcmHeader)];
 
   if ( (psdh->size_com != (psdh->size ^ 0xFFFF))
        || (psdh->size < sizeof(TSdpcmHeader))
@@ -742,6 +804,8 @@ void TWifiCyw43Spi::ProcessRxPacket()
   {
     return; // flow control packet with no data
   }
+
+  pdata = &wbuf[psdh->header_length];
 
   uint8_t ch = (psdh->channel_and_flags & 0xF);
 
@@ -769,18 +833,23 @@ void TWifiCyw43Spi::ProcessRxPacket()
       return;
     }
 
-    // TODO: continue....
-
     pdata += sizeof(TIoctlHeader);
     pdatabegin = pdata;
+
+    uint32_t len = psdh->size - (pdatabegin - &wbuf[0]);
+
+    TRACE("CYW43: IOCTL response len=%u, status=%i\r\n", len, pich->status);
+
+    currq->completed = true;
+    currq->error = pich->status;  // maybe an error code ?
   }
   else if (CYW43_CH_DATA == ch)
   {
-
+    TRACE("CYW43: unprocessed DATA, len=%u\r\n", psdh->size);
   }
   else if (CYW43_CH_EVENT == ch)
   {
-
+    TRACE("CYW43: unprocessed EVENT, len=%u\r\n", psdh->size);
   }
   else
   {
