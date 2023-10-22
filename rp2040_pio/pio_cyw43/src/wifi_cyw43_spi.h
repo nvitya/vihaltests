@@ -73,6 +73,10 @@
 #define CYW43_COUNTRY_UK                "GB"
 #define CYW43_COUNTRY_USA               "US"
 
+#define CYW43_WPA_AUTH_OPEN  0x00
+#define CYW43_WPA_AUTH_PSK   0x04
+#define CYW43_WPA2_AUTH_PSK  0x80
+
 
 typedef struct
 {
@@ -166,6 +170,10 @@ public:
   const char *         fw_file_name    = "43439A0.bin";
   const char *         clm_file_name   = "43439A0_clm.bin";
 
+  const char *         wifi_ssid = "";
+  const char *         wifi_password = "";
+  uint32_t             wifi_auth = CYW43_WPA2_AUTH_PSK;
+
   uint32_t             errcnt_invalid_rxpkt = 0;
   uint32_t             errcnt_irq_status = 0;
 
@@ -182,10 +190,15 @@ public:
   bool        WriteIoVar(const char * iovar_name, void * params, uint32_t parlen);
   bool        ReadIoVar(const char * iovar_name, void * dstbuf, uint32_t len);
   bool        IoctlSet(uint32_t acmd, void * params, uint32_t parlen);
+  bool        IoctlSetU32(uint32_t acmd, uint32_t avalue);
 
   bool        WifiOn();
+  bool        WifiSetPm();
+
+  bool        WifiJoin();
 
   bool        WriteIoVarU32(const char * iovar_name, uint32_t avalue);
+  bool        WriteIoVarU32x2(const char * iovar_name, uint32_t avalue, uint32_t avalue2);
 
   bool        AddRequest(TCyw43Request * arq);
   bool        SendRequest(TCyw43Request * arq);

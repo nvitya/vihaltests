@@ -12,19 +12,13 @@
 
 #include "traces.h"
 
+#include "wifi_secure.h"  // copy and adjust the wifi_secure.h.template when not existing
+
 TWifiCyw43SpiComm    cyw43_comm;
 TWifiCyw43Spi        cyw43;
 
-//uint8_t fwdatabuf[4096];
-
 void test_cyw43_wifi_init()
 {
-#if 0
-  TRACE("Checking the uploaded firmware data...\r\n");
-  spiflash.StartReadMem(0x1C0000, &fwdatabuf[0], sizeof(fwdatabuf));
-  spiflash.WaitForComplete();
-#endif
-
   TRACE("Initializing CYW43 WiFi...\r\n");
 
   cyw43_comm.prgoffset = 0;
@@ -39,18 +33,23 @@ void test_cyw43_wifi_init()
     return;
   }
 
-  cyw43.WifiOn();
-
   TRACE("CYW43 WiFi Initialized.\r\n");
 
-  cyw43.GpioSetTo(0, 1);
+  cyw43.GpioSetTo(0, 1); // turn the GPIO LED on
 
-#if 0
-  cyw43.GpioSetTo(0, 0);
-  cyw43.GpioSetTo(0, 1);
-  cyw43.GpioSetTo(0, 0);
-  cyw43.GpioSetTo(0, 1);
-#endif
+  cyw43.WifiOn();
+
+  cyw43.wifi_ssid     = WIFI_SECURE_SSID;
+  cyw43.wifi_password = WIFI_SECURE_PASSWORD;
+
+  if (!cyw43.WifiJoin())
+  {
+    TRACE("WiFi Join Failed!\r\n");
+  }
+  else
+  {
+    TRACE("WiFi Join OK!\r\n");
+  }
 
 }
 

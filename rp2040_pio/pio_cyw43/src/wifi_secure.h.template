@@ -1,0 +1,12 @@
+ 
+// NEVER COMMIT SUCH A FILE WITH REAL ACCESS DATA !!!
+
+#ifndef SRC_WIFI_SECURE_H_
+#define SRC_WIFI_SECURE_H_
+
+
+#define WIFI_SECURE_SSID      "your-ssid"
+#define WIFI_SECURE_PASSWORD  "your-password"
+
+
+#endif /* SRC_WIFI_SECURE_H_ */

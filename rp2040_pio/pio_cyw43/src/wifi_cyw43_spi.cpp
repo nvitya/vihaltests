@@ -26,6 +26,28 @@
 
 #include "wifi_cyw43439_nvram.h"  // wifi_nvram_4343[]
 
+#define WLC_UP (2)
+#define WLC_SET_INFRA (20)
+#define WLC_SET_AUTH (22)
+#define WLC_GET_BSSID (23)
+#define WLC_GET_SSID (25)
+#define WLC_SET_SSID (26)
+#define WLC_SET_CHANNEL (30)
+#define WLC_DISASSOC (52)
+#define WLC_GET_ANTDIV (63)
+#define WLC_SET_ANTDIV (64)
+#define WLC_SET_DTIMPRD (78)
+#define WLC_GET_PM (85)
+#define WLC_SET_PM (86)
+#define WLC_SET_GMODE (110)
+#define WLC_SET_WSEC (134)
+#define WLC_SET_BAND (142)
+#define WLC_GET_ASSOCLIST (159)
+#define WLC_SET_WPA_AUTH (165)
+#define WLC_SET_VAR (263)
+#define WLC_GET_VAR (262)
+#define WLC_SET_WSEC_PMK (268)
+
 bool TWifiCyw43Spi::Init(TWifiCyw43SpiComm * acomm, TSpiFlash * aspiflash)
 {
   initialized = false;
@@ -318,7 +340,127 @@ bool TWifiCyw43Spi::WifiOn()
 
   delay_ms(50);
 
+  WifiSetPm();
+
   return true;
+}
+
+#define CYW43_NO_POWERSAVE_MODE           (0) ///< No Powersave mode
+#define CYW43_PM1_POWERSAVE_MODE          (1) ///< Powersave mode on specified interface without regard for throughput reduction
+#define CYW43_PM2_POWERSAVE_MODE          (2) ///< Powersave mode on specified interface with High throughput
+
+#if 0
+
+
+static inline uint32_t cyw43_pm_value(uint8_t pm_mode, uint16_t pm2_sleep_ret_ms, uint8_t li_beacon_period, uint8_t li_dtim_period, uint8_t li_assoc) {
+    return li_assoc << 20 // listen interval sent to ap
+           | li_dtim_period << 16
+           | li_beacon_period << 12
+           | (pm2_sleep_ret_ms / 10) << 4 // cyw43_ll_wifi_pm multiplies this by 10
+           | pm_mode; // CYW43_PM2_POWERSAVE_MODE etc
+}
+
+/*!
+ * \brief Default power management mode
+ */
+#define CYW43_DEFAULT_PM cyw43_pm_value(CYW43_PM2_POWERSAVE_MODE, 200, 1, 1, 10)
+
+#endif
+
+bool TWifiCyw43Spi::WifiSetPm()
+{
+  TRACE("WiFi PM\r\n");
+
+  // set some power saving parameters
+  // PM1 is very aggressive in power saving and reduces wifi throughput
+  // PM2 only saves power when there is no wifi activity for some time
+
+  // Default PM parameters:
+
+  uint32_t pm_mode = CYW43_PM2_POWERSAVE_MODE;
+  uint32_t pm_sleep_ret_ms = 200;
+  uint32_t li_beacon_period = 1;
+  uint32_t li_dtim_period = 1;
+  uint32_t li_assoc = 10;
+
+  WriteIoVarU32("pm2_sleep_ret", pm_sleep_ret_ms);
+
+  // these parameters set beacon intervals and are used to reduce power consumption
+  // while associated to an AP but not doing tx/rx
+  // bcn_li_xxx is what the CYW43x will do; assoc_listen is what is sent to the AP
+  // bcn_li_dtim==0 means use bcn_li_bcn
+  WriteIoVarU32("bcn_li_bcn",   li_beacon_period);
+  WriteIoVarU32("bcn_li_dtim",  li_dtim_period);
+  WriteIoVarU32("assoc_listen", li_assoc);
+
+  IoctlSetU32(WLC_SET_PM, pm_mode);
+  IoctlSetU32(WLC_SET_GMODE, 1);  // 1 = GMODE_AUTO
+  IoctlSetU32(WLC_SET_BAND,  0);  // 0 = any
+
+  return true;
+}
+
+bool TWifiCyw43Spi::WifiJoin()
+{
+  uint32_t param[20];  // for password, ssid, minimum 68 bytes
+
+  TRACE("Joining to WiFi \"%s\"...\r\n", wifi_ssid);
+
+  uint32_t channel = 0xFFFFFFFF;
+
+  WriteIoVarU32("ampdu_ba_wsize", 0);
+
+  IoctlSetU32(WLC_SET_WSEC, wifi_auth);
+
+  WriteIoVarU32("bsscfg:sup_wpa", (wifi_auth ? 1 : 0));
+
+  WriteIoVarU32x2("bsscfg:sup_wpa2_eapver", 0, -1);    // set the EAPOL version to whatever the AP is using (-1)
+  WriteIoVarU32x2("bsscfg:sup_wpa_tmo",     0, 5000);  // // wwd_wifi_set_supplicant_eapol_key_timeout
+
+  // set the Password
+  if (wifi_auth)
+  {
+    // wwd_wifi_set_passphrase
+    memset(&param[0], 0, sizeof(param));
+
+    uint32_t key_len = strlen(wifi_password);
+    param[0] = key_len | (1 << 16);
+    memcpy(&param[1], wifi_password, key_len);
+
+    delay_ms(2);  // Delay required to allow radio firmware to be ready to receive PMK and avoid intermittent failure
+
+    IoctlSet(WLC_SET_WSEC_PMK, &param[0], 68); // 68, see wsec_pmk_t
+  }
+
+  IoctlSetU32(WLC_SET_INFRA, 1);  // set infrastructure mode
+  IoctlSetU32(WLC_SET_AUTH,  0);  // set auth type (open system)
+  IoctlSetU32(WLC_SET_WPA_AUTH, wifi_auth);  // set WPA auth mode
+
+#if 0
+
+  // allow relevant events through:
+  //  EV_SET_SSID=0
+  //  EV_AUTH=3
+  //  EV_DEAUTH_IND=6
+  //  EV_DISASSOC_IND=12
+  //  EV_LINK=16
+  //  EV_PSK_SUP=46
+  //  EV_ESCAN_RESULT=69
+  //  EV_CSA_COMPLETE_IND=80
+  /*
+  memcpy(buf, "\x00\x00\x00\x00" "\x49\x10\x01\x00\x00\x40\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00", 4 + 18);
+  cyw43_write_iovar_n(self, "bsscfg:event_msgs", 4 + 18, buf, WWD_STA_INTERFACE);
+  */
+
+#endif
+
+  // Set the SSID
+
+  memset(&param[0], 0, 36);
+  uint32_t ssid_len = strlen(wifi_ssid);
+  memcpy(&param[1], wifi_ssid, ssid_len);
+
+  return IoctlSet(WLC_SET_SSID, &param[0], 36);
 }
 
 bool TWifiCyw43Spi::FindVrofsFile(const char * afname, uint32_t * rnvsaddr, uint32_t * rlen)
@@ -594,6 +736,14 @@ bool TWifiCyw43Spi::WriteIoVarU32(const char * iovar_name, uint32_t avalue)
   return WriteIoVar(iovar_name, &params[0], 4);
 }
 
+bool TWifiCyw43Spi::WriteIoVarU32x2(const char * iovar_name, uint32_t avalue, uint32_t avalue2)
+{
+  uint32_t params[2];
+  params[0] = avalue;
+  params[1] = avalue2;
+  return WriteIoVar(iovar_name, &params[0], 8);
+}
+
 bool TWifiCyw43Spi::WriteIoVar(const char * iovar_name, void * params, uint32_t parlen)
 {
   // finish already running transaction
@@ -748,6 +898,11 @@ bool TWifiCyw43Spi::IoctlSet(uint32_t acmd, void * params, uint32_t parlen)
   return (mrq.error == 0);
 }
 
+bool TWifiCyw43Spi::IoctlSetU32(uint32_t acmd, uint32_t avalue)
+{
+  uint32_t param = avalue;
+  return IoctlSet(acmd, &param, 4);
+}
 
 bool TWifiCyw43Spi::AddRequest(TCyw43Request * arq)
 {
