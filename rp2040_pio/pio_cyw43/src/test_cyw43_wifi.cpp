@@ -39,17 +39,18 @@ void test_cyw43_wifi_init()
     return;
   }
 
+  cyw43.WifiOn();
+
   TRACE("CYW43 WiFi Initialized.\r\n");
 
-  TRACE("TESTING GPIO SET.\r\n");
-
-  // cyw43_write_iovar_u32_u32(self, "gpioout", 1 << gpio_n, gpio_en ? (1 << gpio_n) : 0, WWD_STA_INTERFACE);
-
   cyw43.GpioSetTo(0, 1);
+
+#if 0
   cyw43.GpioSetTo(0, 0);
   cyw43.GpioSetTo(0, 1);
   cyw43.GpioSetTo(0, 0);
   cyw43.GpioSetTo(0, 1);
+#endif
 
 }
 

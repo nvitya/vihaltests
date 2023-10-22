@@ -19,6 +19,61 @@
 
 #define CYW43_IRQ_F2_PACKET (1 << 5)
 
+#define CYW43_COUNTRY_WORLDWIDE         "XX"
+
+#define CYW43_COUNTRY_AUSTRALIA         "AU"
+#define CYW43_COUNTRY_AUSTRIA           "AT"
+#define CYW43_COUNTRY_BELGIUM           "BE"
+#define CYW43_COUNTRY_BRAZIL            "BR"
+#define CYW43_COUNTRY_CANADA            "CA"
+#define CYW43_COUNTRY_CHILE             "CL"
+#define CYW43_COUNTRY_CHINA             "CN"
+#define CYW43_COUNTRY_COLOMBIA          "CO"
+#define CYW43_COUNTRY_CZECH_REPUBLIC    "CZ"
+#define CYW43_COUNTRY_DENMARK           "DK"
+#define CYW43_COUNTRY_ESTONIA           "EE"
+#define CYW43_COUNTRY_FINLAND           "FI"
+#define CYW43_COUNTRY_FRANCE            "FR"
+#define CYW43_COUNTRY_GERMANY           "DE"
+#define CYW43_COUNTRY_GREECE            "GR"
+#define CYW43_COUNTRY_HONG_KONG         "HK"
+#define CYW43_COUNTRY_HUNGARY           "HU"
+#define CYW43_COUNTRY_ICELAND           "IS"
+#define CYW43_COUNTRY_INDIA             "IN"
+#define CYW43_COUNTRY_ISRAEL            "IL"
+#define CYW43_COUNTRY_ITALY             "IT"
+#define CYW43_COUNTRY_JAPAN             "JP"
+#define CYW43_COUNTRY_KENYA             "KE"
+#define CYW43_COUNTRY_LATVIA            "LV"
+#define CYW43_COUNTRY_LIECHTENSTEIN     "LI"
+#define CYW43_COUNTRY_LITHUANIA         "LT"
+#define CYW43_COUNTRY_LUXEMBOURG        "LU"
+#define CYW43_COUNTRY_MALAYSIA          "MY"
+#define CYW43_COUNTRY_MALTA             "MT"
+#define CYW43_COUNTRY_MEXICO            "MX"
+#define CYW43_COUNTRY_NETHERLANDS       "NL"
+#define CYW43_COUNTRY_NEW_ZEALAND       "NZ"
+#define CYW43_COUNTRY_NIGERIA           "NG"
+#define CYW43_COUNTRY_NORWAY            "NO"
+#define CYW43_COUNTRY_PERU              "PE"
+#define CYW43_COUNTRY_PHILIPPINES       "PH"
+#define CYW43_COUNTRY_POLAND            "PL"
+#define CYW43_COUNTRY_PORTUGAL          "PT"
+#define CYW43_COUNTRY_SINGAPORE         "SG"
+#define CYW43_COUNTRY_SLOVAKIA          "SK"
+#define CYW43_COUNTRY_SLOVENIA          "SI"
+#define CYW43_COUNTRY_SOUTH_AFRICA      "ZA"
+#define CYW43_COUNTRY_SOUTH_KOREA       "KR"
+#define CYW43_COUNTRY_SPAIN             "ES"
+#define CYW43_COUNTRY_SWEDEN            "SE"
+#define CYW43_COUNTRY_SWITZERLAND       "CH"
+#define CYW43_COUNTRY_TAIWAN            "TW"
+#define CYW43_COUNTRY_THAILAND          "TH"
+#define CYW43_COUNTRY_TURKEY            "TR"
+#define CYW43_COUNTRY_UK                "GB"
+#define CYW43_COUNTRY_USA               "US"
+
+
 typedef struct
 {
   uint16_t  size;
@@ -107,6 +162,7 @@ public:
   TSpiFlash *          pspiflash = nullptr;
 
   uint32_t             fw_storage_addr = 0x1C0000;
+  const char *         country_code    = CYW43_COUNTRY_WORLDWIDE;  // might some channels not available
   const char *         fw_file_name    = "43439A0.bin";
   const char *         clm_file_name   = "43439A0_clm.bin";
 
@@ -125,6 +181,9 @@ public:
   bool        GpioSetTo(uint32_t gpio_num, uint8_t avalue);
   bool        WriteIoVar(const char * iovar_name, void * params, uint32_t parlen);
   bool        ReadIoVar(const char * iovar_name, void * dstbuf, uint32_t len);
+  bool        IoctlSet(uint32_t acmd, void * params, uint32_t parlen);
+
+  bool        WifiOn();
 
   bool        WriteIoVarU32(const char * iovar_name, uint32_t avalue);
 

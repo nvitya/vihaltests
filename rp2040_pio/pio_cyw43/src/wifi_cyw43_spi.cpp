@@ -270,6 +270,57 @@ bool TWifiCyw43Spi::LoadFirmware()
   return true;
 }
 
+bool TWifiCyw43Spi::WifiOn()
+{
+  uint32_t param[4];
+
+  TRACE("Turning WiFi On...\r\n");
+
+  param[0] = (country_code[0] | (country_code[1] << 8));
+  param[1] = 0xFFFFFFFF;
+  param[2] = param[0];
+  WriteIoVar("country", &param[0], 12);
+
+  delay_ms(50);
+
+  ReadIoVar("clmver", &mrqdata[0], 128);
+
+  // print CLM version
+  TRACE("CLM Version:\r\n  ");
+  char * pc = (char *)&mrqdata[0];
+  while (*pc)
+  {
+    if (*pc == '\n')  TRACE("\r");
+    TRACE("%c", *pc);
+    if (*pc == '\n')  TRACE("  ");
+    ++pc;
+  }
+  TRACE("\r\n");
+
+  // Set antenna to chip antenna
+  param[0] = 0;
+  IoctlSet(64, &param[0], 4); // CMD 64 = WLC_SET_ANTDIV
+
+  // Set some WiFi config
+  WriteIoVarU32("bus:txglom",       0 ); // tx glomming off
+  WriteIoVarU32("apsta",            1 ); // apsta on
+  WriteIoVarU32("ampdu_ba_wsize",   8 );
+  WriteIoVarU32("ampdu_mpdu",       4 );
+  WriteIoVarU32("ampdu_rx_factor",  0 );
+
+  // Clear all async events
+  // TODO: clear async events with the "bsscfg:event_msgs"
+
+  delay_ms(50);
+
+  // Set the interface as "up"
+  IoctlSet(2, nullptr, 0); // CMD 2 = WLC_UP
+
+  delay_ms(50);
+
+  return true;
+}
+
 bool TWifiCyw43Spi::FindVrofsFile(const char * afname, uint32_t * rnvsaddr, uint32_t * rlen)
 {
   uint32_t tmp;
@@ -638,6 +689,51 @@ bool TWifiCyw43Spi::ReadIoVar(const char * iovar_name, void * dstbuf, uint32_t l
     | (0  <<  0)  // KIND: 0 = GET, 2 = SET
   );
   mrq.cmd = 262;  // 262 = WLC_GET_VAR
+
+  if (!AddRequest(&mrq))
+  {
+    return false;
+  }
+
+  while (!mrq.completed)
+  {
+    Run();
+  }
+
+  return (mrq.error == 0);
+}
+
+bool TWifiCyw43Spi::IoctlSet(uint32_t acmd, void * params, uint32_t parlen)
+{
+  // finish already running transaction
+  while (!mrq.completed)
+  {
+    Run();
+  }
+
+  // prepare the payload into the mrqdata buffer
+
+  uint8_t *       pdatabegin = &mrqdata[0];
+  uint8_t *       pdata = pdatabegin;
+
+  memcpy(pdata, params, parlen);
+  pdata += parlen;
+
+  mrq.channel = CYW43_CH_IOCTL;
+  mrq.dataptr = pdatabegin;
+  mrq.datalen = pdata - pdatabegin;
+
+  // don't expect data response here
+  mrq.anslen = 0;
+  mrq.ansptr = nullptr;
+
+  ++ioctl_rq_id;
+  mrq.rq_id = ioctl_rq_id;
+  mrq.flags = (0
+    | (0  << 12)  // IFACE(4): 0 = STA, 1 = AP, 2 = P2P
+    | (2  <<  0)  // KIND: 0 = GET, 2 = SET
+  );
+  mrq.cmd = acmd;
 
   if (!AddRequest(&mrq))
   {
