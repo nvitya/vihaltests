@@ -8,7 +8,6 @@
  */
 
 static const uint8_t wifi_nvram_4343[] =
-        "NVRAMRev=$Rev$"                                                     "\x00"
         "manfid=0x2d0"                                                       "\x00"
         "prodid=0x0727"                                                      "\x00"
         "vendid=0x14e4"                                                      "\x00"
@@ -21,7 +20,7 @@ static const uint8_t wifi_nvram_4343[] =
         "boardflags=0x00404001"                                              "\x00"
         "boardflags3=0x04000000"                                             "\x00"
         "xtalfreq=37400"                                                     "\x00"
-         "nocrc=1"                                                            "\x00"
+        "nocrc=1"                                                            "\x00"
         "ag0=255"                                                            "\x00"
         "aa2g=1"                                                             "\x00"
         "ccode=ALL"                                                          "\x00"
@@ -55,7 +54,5 @@ static const uint8_t wifi_nvram_4343[] =
         "glitch_based_crsmin=1"                                              "\x00"
         "btc_mode=1"                                                         "\x00"
         "\x00\x00"
-        // 24 padding bytes:
-        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
   ;
 

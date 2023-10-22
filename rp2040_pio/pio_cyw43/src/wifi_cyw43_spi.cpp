@@ -188,7 +188,7 @@ bool TWifiCyw43Spi::LoadFirmware()
   // the NVDATA is not so big and in text format, so it is embedded in the code
   uint32_t padded_size = ((sizeof(wifi_nvram_4343) + 63) & 0xFC0); // pad round up to 64 bytes
   TRACE("CYW43: Loading NVRAM data: %u Bytes\r\n", padded_size);
-  LoadFirmwareDataFromRam(CYW_BPL_ARM_RAM_SIZE - 4 - padded_size, &wifi_nvram_4343[0], padded_size);
+  LoadFirmwareDataFromRam(CYW_BPL_ARM_RAM_SIZE - 4 - padded_size, &wifi_nvram_4343[0], sizeof(wifi_nvram_4343));
 
   uint32_t size_code = (padded_size >> 2);  // divide by 4 to represent words
   size_code = ((size_code << 16) | size_code) ^ 0xFFFF0000;  // upper 16 bit = inverted size code
@@ -921,14 +921,15 @@ void TWifiCyw43Spi::ProcessRxPacket()
     pdata += sizeof(TIoctlHeader);
     pdatabegin = pdata;
 
-    uint32_t len = psdh->size - (pdatabegin - &wbuf[0]);
+    //uint32_t len = psdh->size - (pdatabegin - &wbuf[0]);
 
     //TRACE("CYW43: IOCTL response len=%u, status=%i\r\n", len, pich->status);
 
     if (currq->anslen)
     {
       // the payload is at the end
-      memcpy(currq->ansptr, &wbuf[psdh->size - currq->anslen], currq->anslen);
+      //memcpy(currq->ansptr, &wbuf[psdh->size - currq->anslen], currq->anslen);
+      memcpy(currq->ansptr, pdatabegin, currq->anslen);
     }
 
     currq->completed = true;
@@ -971,21 +972,24 @@ void TWifiCyw43Spi::LoadFirmwareDataFromRam(uint32_t abpladdr, const void * srcb
   uint32_t   remaining = len;
   uint32_t   chunksize = 0;
 
+  uint32_t   lbuf[16];  // aligned 64 bytes
+
   while (remaining)
   {
-    // transfer to the CHIP...
+    memset(&lbuf[0], 0, 64);
+
     chunksize = remaining;
     if (chunksize > 64)  chunksize = 64;
 
-    pcomm->StartWriteBplAddrBlock(bpladdr, (uint32_t *)bufptr, chunksize);  // use the DMA now
+    memcpy(&lbuf[0], bufptr, chunksize);
+
+    pcomm->StartWriteBplAddrBlock(bpladdr, &lbuf[0], 64);  // use the DMA now
     pcomm->SpiTransferWaitFinish();
 
     remaining    -= chunksize;
     bufptr       += chunksize;
     bpladdr      += chunksize;
   }
-
-  //TRACE("  %u Bytes loaded.\r\n", len);
 }
 
 #if 0
