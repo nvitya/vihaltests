@@ -353,6 +353,15 @@ void board_pins_init()
   i2c.speed =  400000;  // 400 kBit/s
   i2c.Init(4); // LPI2C4
 
+#if 1
+  i2c_txdma.Init(2, kDmaRequestMuxLPI2C4);
+  i2c_rxdma.Init(3, kDmaRequestMuxLPI2C4);
+
+  i2c.DmaAssign(true,  &i2c_txdma);
+  i2c.DmaAssign(false, &i2c_rxdma);
+#endif
+
+
   init_display();
 }
 
