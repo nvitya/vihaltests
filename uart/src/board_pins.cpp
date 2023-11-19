@@ -264,6 +264,25 @@ void board_pins_init()
   conuart.Init(1); // USART1
 }
 
+#elif defined(BOARD_DISCOVERY_H747)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_I,  12, true);
+  pin_led[1].Assign(PORTNUM_I,  13, true);
+  pin_led[2].Assign(PORTNUM_I,  14, true);
+  pin_led[3].Assign(PORTNUM_I,  15, true);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_J, 12, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+}
+
 #elif defined(BOARD_DISCOVERY_F429)
 
 void board_pins_init()
