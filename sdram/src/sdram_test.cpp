@@ -93,6 +93,7 @@ void show_mpu()
 	for (int i = 0; i < rcount; ++i)
 	{
 		MPU->RNR = i;
+		__DSB();
 		TRACE("%i.: RBAR = %08X, RASR = %08X\r\n", i, MPU->RBAR, MPU->RASR);
 	}
 }
@@ -105,7 +106,7 @@ void mpu_setup()
 	MPU->CTRL = 0; // disable the MPU
 
 	MPU->RNR = 0;
-	MPU->RBAR = hwsdram.address | (1 << 4);
+	MPU->RBAR = hwsdram.address;
 
 	uint32_t attr = 0
 		| (1 << 0) // shareable
@@ -140,9 +141,10 @@ void sdram_test1()
 
 	TRACE("SDRAM address = %08X\r\n", hwsdram.address);
 
-#if defined(MCUF_STM32) && defined(MCUSF_F7)
+#if defined(MCUF_STM32) && (defined(MCUSF_F7) || defined(MCUSF_H7))
 	//show_mpu();
 	mpu_setup();
+  //show_mpu();
 #endif
 
 	uint32_t i;

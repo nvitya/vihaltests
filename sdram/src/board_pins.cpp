@@ -133,6 +133,113 @@ void board_pins_init()
   hwsdram.Init();
 }
 
+#elif defined(BOARD_DISCOVERY_H747)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_I,  12, true);
+  pin_led[1].Assign(PORTNUM_I,  13, true);
+  pin_led[2].Assign(PORTNUM_I,  14, true);
+  pin_led[3].Assign(PORTNUM_I,  15, true);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_J, 12, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // SDRAM
+  unsigned pin_flags = PINCFG_AF_12 | PINCFG_SPEED_VERYFAST;  // very fast required for 480 MHz !
+
+  hwpinctrl.PinSetup(PORTNUM_D,  0, pin_flags);  // D2
+  hwpinctrl.PinSetup(PORTNUM_D,  1, pin_flags);  // D3
+  hwpinctrl.PinSetup(PORTNUM_D,  8, pin_flags);  // D13
+  hwpinctrl.PinSetup(PORTNUM_D,  9, pin_flags);  // D14
+  hwpinctrl.PinSetup(PORTNUM_D, 10, pin_flags);  // D15
+  hwpinctrl.PinSetup(PORTNUM_D, 14, pin_flags);  // D0
+  hwpinctrl.PinSetup(PORTNUM_D, 15, pin_flags);  // D1
+
+  hwpinctrl.PinSetup(PORTNUM_E,  0, pin_flags);  // NBL0
+  hwpinctrl.PinSetup(PORTNUM_E,  1, pin_flags);  // NBL1
+  hwpinctrl.PinSetup(PORTNUM_E,  7, pin_flags);  // D4
+  hwpinctrl.PinSetup(PORTNUM_E,  8, pin_flags);  // D5
+  hwpinctrl.PinSetup(PORTNUM_E,  9, pin_flags);  // D6
+  hwpinctrl.PinSetup(PORTNUM_E, 10, pin_flags);  // D7
+  hwpinctrl.PinSetup(PORTNUM_E, 11, pin_flags);  // D8
+  hwpinctrl.PinSetup(PORTNUM_E, 12, pin_flags);  // D9
+  hwpinctrl.PinSetup(PORTNUM_E, 13, pin_flags);  // D10
+  hwpinctrl.PinSetup(PORTNUM_E, 14, pin_flags);  // D11
+  hwpinctrl.PinSetup(PORTNUM_E, 15, pin_flags);  // D12
+
+  hwpinctrl.PinSetup(PORTNUM_F,  0, pin_flags);  // A0
+  hwpinctrl.PinSetup(PORTNUM_F,  1, pin_flags);  // A1
+  hwpinctrl.PinSetup(PORTNUM_F,  2, pin_flags);  // A2
+  hwpinctrl.PinSetup(PORTNUM_F,  3, pin_flags);  // A3
+  hwpinctrl.PinSetup(PORTNUM_F,  4, pin_flags);  // A4
+  hwpinctrl.PinSetup(PORTNUM_F,  5, pin_flags);  // A5
+  hwpinctrl.PinSetup(PORTNUM_F, 11, pin_flags);  // SDNRAS
+  hwpinctrl.PinSetup(PORTNUM_F, 12, pin_flags);  // A6
+  hwpinctrl.PinSetup(PORTNUM_F, 13, pin_flags);  // A7
+  hwpinctrl.PinSetup(PORTNUM_F, 14, pin_flags);  // A8
+  hwpinctrl.PinSetup(PORTNUM_F, 15, pin_flags);  // A9
+
+  hwpinctrl.PinSetup(PORTNUM_G,  0, pin_flags);  // A10
+  hwpinctrl.PinSetup(PORTNUM_G,  1, pin_flags);  // A11
+  hwpinctrl.PinSetup(PORTNUM_G,  2, pin_flags);  // A12
+  hwpinctrl.PinSetup(PORTNUM_G,  4, pin_flags);  // A14 = BA0
+  hwpinctrl.PinSetup(PORTNUM_G,  5, pin_flags);  // A15 = BA1
+  hwpinctrl.PinSetup(PORTNUM_G,  8, pin_flags);  // SDCLK
+  hwpinctrl.PinSetup(PORTNUM_G, 15, pin_flags);  // SDNCAS
+
+  hwpinctrl.PinSetup(PORTNUM_H,  5, pin_flags);  // SDNWE
+  hwpinctrl.PinSetup(PORTNUM_H,  6, pin_flags);  // SDNE1
+  hwpinctrl.PinSetup(PORTNUM_H,  7, pin_flags);  // SDCKE1
+  hwpinctrl.PinSetup(PORTNUM_H,  8, pin_flags);  // D16
+  hwpinctrl.PinSetup(PORTNUM_H,  9, pin_flags);  // D17
+  hwpinctrl.PinSetup(PORTNUM_H, 10, pin_flags);  // D18
+  hwpinctrl.PinSetup(PORTNUM_H, 11, pin_flags);  // D19
+  hwpinctrl.PinSetup(PORTNUM_H, 12, pin_flags);  // D20
+  hwpinctrl.PinSetup(PORTNUM_H, 13, pin_flags);  // D21
+  hwpinctrl.PinSetup(PORTNUM_H, 14, pin_flags);  // D22
+  hwpinctrl.PinSetup(PORTNUM_H, 15, pin_flags);  // D23
+
+  hwpinctrl.PinSetup(PORTNUM_I,  0, pin_flags);  // D24
+  hwpinctrl.PinSetup(PORTNUM_I,  1, pin_flags);  // D25
+  hwpinctrl.PinSetup(PORTNUM_I,  2, pin_flags);  // D26
+  hwpinctrl.PinSetup(PORTNUM_I,  3, pin_flags);  // D27
+  hwpinctrl.PinSetup(PORTNUM_I,  4, pin_flags);  // NBL2
+  hwpinctrl.PinSetup(PORTNUM_I,  5, pin_flags);  // NBL3
+  hwpinctrl.PinSetup(PORTNUM_I,  6, pin_flags);  // D28
+  hwpinctrl.PinSetup(PORTNUM_I,  7, pin_flags);  // D29
+  hwpinctrl.PinSetup(PORTNUM_I,  9, pin_flags);  // D30
+  hwpinctrl.PinSetup(PORTNUM_I, 10, pin_flags);  // D31
+
+  // config the SDRAM device: 32 MByte
+
+  hwsdram.bank = 2; // uses SDNE1, SDCKE1
+  hwsdram.data_bus_width = 32;
+  hwsdram.row_bits = 12;
+  hwsdram.column_bits = 9;
+  hwsdram.bank_count = 4;
+
+  // timing parameters
+  hwsdram.hclk_div = 2;
+  hwsdram.cas_latency = 3;
+  hwsdram.row_precharge_delay = 2;
+  hwsdram.row_to_column_delay = 2;
+  hwsdram.recovery_delay = 2;
+  hwsdram.row_cycle_delay = 7;
+  hwsdram.exit_self_refresh_delay = 7;
+  hwsdram.active_to_precharge_delay = 4; // TRAS / SelfRefreshTime
+
+  hwsdram.burst_length = 1;  // it does not like when it bigger than 1
+
+  hwsdram.Init();
+}
+
 #elif defined(BOARD_DISCOVERY_F429)
 
 void board_pins_init()
