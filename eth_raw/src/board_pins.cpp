@@ -39,13 +39,17 @@ THwEth    eth;
 
 // STM32
 
-#elif defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743)
+#elif defined(BOARD_NUCLEO_F746) || defined(BOARD_NUCLEO_H743) || defined(BOARD_NUCLEO_H723)
 
 void board_pins_init()
 {
   pin_led_count = 3;
   pin_led[0].Assign(PORTNUM_B,  0, false);
-  pin_led[1].Assign(PORTNUM_B,  7, false);
+  #if defined(BOARD_NUCLEO_H723)
+    pin_led[1].Assign(PORTNUM_E,  1, false);
+  #else
+    pin_led[1].Assign(PORTNUM_B,  7, false);
+  #endif
   pin_led[2].Assign(PORTNUM_B, 14, false);
   board_pins_init_leds();
 
@@ -62,7 +66,7 @@ void board_pins_init()
           RMII_MII_CRS_DV -------------------> PA7
           RMII_MII_RXD0 ---------------------> PC4
           RMII_MII_RXD1 ---------------------> PC5
-          RMII_MII_RXER ---------------------> PG2
+          RMII_MII_RXER ---------------------> x
           RMII_MII_TX_EN --------------------> PG11
           RMII_MII_TXD0 ---------------------> PG13
           RMII_MII_TXD1 ---------------------> PB13
@@ -76,10 +80,11 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  7, pinfl); // CRS_DV
   hwpinctrl.PinSetup(PORTNUM_C,  4, pinfl); // RXD0
   hwpinctrl.PinSetup(PORTNUM_C,  5, pinfl); // RXD1
-  hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl); // RXER
+  //hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl | PINCFG_PULLDOWN); // RXER   - not connected !
   hwpinctrl.PinSetup(PORTNUM_G, 11, pinfl); // TX_EN
   hwpinctrl.PinSetup(PORTNUM_G, 13, pinfl); // TXD0
   hwpinctrl.PinSetup(PORTNUM_B, 13, pinfl); // TXD1
+
 
   /* Enable the Ethernet global Interrupt */
   //HAL_NVIC_SetPriority(ETH_IRQn, 0x7, 0);
@@ -111,7 +116,7 @@ void board_pins_init()
           RMII_MII_CRS_DV -------------------> PA7
           RMII_MII_RXD0 ---------------------> PC4
           RMII_MII_RXD1 ---------------------> PC5
-          RMII_MII_RXER ---------------------> PG2
+          RMII_MII_RXER ---------------------> x
           RMII_MII_TX_EN --------------------> PG11
           RMII_MII_TXD0 ---------------------> PG13
           RMII_MII_TXD1 ---------------------> PG14
@@ -125,7 +130,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  7, pinfl); // CRS_DV
   hwpinctrl.PinSetup(PORTNUM_C,  4, pinfl); // RXD0
   hwpinctrl.PinSetup(PORTNUM_C,  5, pinfl); // RXD1
-  hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl); // RXER
   hwpinctrl.PinSetup(PORTNUM_G, 11, pinfl); // TX_EN
   hwpinctrl.PinSetup(PORTNUM_G, 13, pinfl); // TXD0
   hwpinctrl.PinSetup(PORTNUM_G, 14, pinfl); // TXD1
@@ -135,8 +139,60 @@ void board_pins_init()
   //HAL_NVIC_EnableIRQ(ETH_IRQn);
 
   eth.phy_address = 0;
-
 }
+
+#elif defined(BOARD_DISCOVERY_H747)
+
+#ifndef CORE_CM7
+#warning "define CORE_CM7 !!!!"
+#endif
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_I,  12, true);
+  pin_led[1].Assign(PORTNUM_I,  13, true);
+  pin_led[2].Assign(PORTNUM_I,  14, true);
+  pin_led[3].Assign(PORTNUM_I,  15, true);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_J, 12, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  /* Ethernet pins configuration ************************************************
+
+          RMII_REF_CLK ----------------------> PA1
+          RMII_MDIO -------------------------> PA2
+          RMII_MDC --------------------------> PC1
+          RMII_MII_CRS_DV -------------------> PA7
+          RMII_MII_RXD0 ---------------------> PC4
+          RMII_MII_RXD1 ---------------------> PC5
+          RMII_MII_RXER ---------------------> x
+          RMII_MII_TX_EN --------------------> PG11
+          RMII_MII_TXD0 ---------------------> PG13
+          RMII_MII_TXD1 ---------------------> PG12  - this is different from the nucleo boards
+  */
+
+  uint32_t pinfl = PINCFG_SPEED_FAST | PINCFG_AF_11;  // do not use PINCFG_SPEED_VERYFAST !
+
+  hwpinctrl.PinSetup(PORTNUM_A,  1, pinfl); // REF CLK
+  hwpinctrl.PinSetup(PORTNUM_A,  2, pinfl); // MDIO
+  hwpinctrl.PinSetup(PORTNUM_C,  1, pinfl); // MDC
+  hwpinctrl.PinSetup(PORTNUM_A,  7, pinfl); // CRS_DV
+  hwpinctrl.PinSetup(PORTNUM_C,  4, pinfl); // RXD0
+  hwpinctrl.PinSetup(PORTNUM_C,  5, pinfl); // RXD1
+  //hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl | PINCFG_PULLDOWN); // RXER   - not connected !
+  hwpinctrl.PinSetup(PORTNUM_G, 11, pinfl); // TX_EN
+  hwpinctrl.PinSetup(PORTNUM_G, 13, pinfl); // TXD0
+  hwpinctrl.PinSetup(PORTNUM_G, 12, pinfl); // TXD1
+
+  eth.phy_address = 0;
+}
+
 
 #elif defined(BOARD_NUCLEO_H723)
 

@@ -34,6 +34,7 @@ void eth_test_init()
   eth.mac_address[5] = 0x70;
 
   eth.promiscuous_mode = false;
+  //eth.promiscuous_mode = true; //false;
   eth.hw_ip_checksum = false; //true;
   if (!eth.Init(&eth_rx_desc_mem, ETH_RX_PACKETS, &eth_tx_desc_mem, ETH_TX_PACKETS))
   {
