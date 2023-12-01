@@ -24,6 +24,8 @@ extern THwUart   conuart;  // console uart
 extern THwSpi    fl_spi;
 extern THwQspi   fl_qspi;
 
+extern unsigned  nvsaddr_test_start;
+
 void board_pins_init();
 
 #endif /* SRC_BOARD_PINS_H_ */

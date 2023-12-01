@@ -33,6 +33,8 @@ TGpioPin  pin_led[MAX_LEDS] =
 THwSpi    fl_spi;
 THwQspi   fl_qspi;
 
+unsigned  nvsaddr_test_start = 0x00000;  // start at the beginning by default
+
 void board_pins_init_leds()
 {
   for (unsigned n = 0; n < pin_led_count; ++n)
@@ -112,6 +114,8 @@ void board_pins_init()
   fl_qspi.speed = 20000000;
   fl_qspi.multi_line_count = 4;
   fl_qspi.Init();
+
+  nvsaddr_test_start = 0x010000;
 }
 
 
@@ -127,6 +131,8 @@ void board_pins_init()
 
   fl_spi.speed = 8000000;
   fl_spi.Init(1); // flash
+
+  nvsaddr_test_start = 0x100000; // start at 1M, bitstream is about 512k
 }
 
 //-------------------------------------------------------------------------------
@@ -156,6 +162,8 @@ void board_pins_init()
 
   fl_spi.speed = 4000000; //SystemCoreClock / 4;
   fl_spi.Init(3);
+
+  nvsaddr_test_start = 0x400000;  // start at 4M
 }
 
 //-------------------------------------------------------------------------------
@@ -264,6 +272,89 @@ void board_pins_init()
 
   #endif
 
+}
+
+#elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
+
+/* WARNING: for debugging with openocd add this to "Run/Restart commands":
+
+      monitor gdb_breakpoint_override hard
+
+  Without this the instruction stepping did not work for me.
+
+*/
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_I,  1, false);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_K,  3, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A, 9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_B, 7,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // QSPI
+
+  uint32_t qspipincfg = 0; //PINCFG_SPEED_MEDIUM | PINCFG_DRIVE_STRONG;
+  hwpinctrl.PinSetup(PORTNUM_B,  6, qspipincfg | PINCFG_AF_10);  // NCS
+  hwpinctrl.PinSetup(PORTNUM_B,  2, qspipincfg | PINCFG_AF_9);   // CLK
+  hwpinctrl.PinSetup(PORTNUM_D, 11, qspipincfg | PINCFG_AF_9);   // IO0
+  hwpinctrl.PinSetup(PORTNUM_D, 12, qspipincfg | PINCFG_AF_9);   // IO1
+  hwpinctrl.PinSetup(PORTNUM_E,  2, qspipincfg | PINCFG_AF_9);   // IO2
+  hwpinctrl.PinSetup(PORTNUM_D, 13, qspipincfg | PINCFG_AF_9);   // IO3
+
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 50000000;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+
+  #if defined(BOARD_DISCOVERY_F750)
+    nvsaddr_test_start = 0x100000;  // start at 1M, bitstream is about 512k
+  #endif
+}
+
+#elif defined(BOARD_DISCOVERY_H747)
+
+#ifndef CORE_CM7
+#warning "define CORE_CM7 !!!!"
+#endif
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_I,  12, true);
+  pin_led[1].Assign(PORTNUM_I,  13, true);
+  pin_led[2].Assign(PORTNUM_I,  14, true);
+  pin_led[3].Assign(PORTNUM_I,  15, true);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_J, 12, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // QSPI
+
+  uint32_t qspipincfg = 0; //PINCFG_SPEED_FAST | PINCFG_DRIVE_STRONG;
+  hwpinctrl.PinSetup(PORTNUM_G,  6, qspipincfg | PINCFG_AF_10);  // NCS
+  hwpinctrl.PinSetup(PORTNUM_B,  2, qspipincfg | PINCFG_AF_9);   // CLK
+  hwpinctrl.PinSetup(PORTNUM_D, 11, qspipincfg | PINCFG_AF_9);   // IO0
+  hwpinctrl.PinSetup(PORTNUM_F,  9, qspipincfg | PINCFG_AF_10);  // IO1
+  hwpinctrl.PinSetup(PORTNUM_F,  7, qspipincfg | PINCFG_AF_9);   // IO2
+  hwpinctrl.PinSetup(PORTNUM_F,  6, qspipincfg | PINCFG_AF_9);   // IO3
+
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = 40000000;
+  fl_qspi.Init();
 }
 
 #elif defined(BOARD_ARDUINO_DUE)
@@ -549,6 +640,8 @@ void board_pins_init()
   fl_qspi.multi_line_count = 4;
   fl_qspi.speed = 60000000;
   fl_qspi.Init();
+
+  nvsaddr_test_start = 0x100000;  // start at 1M, bitstream is about 512k
 }
 
 // RP
@@ -573,6 +666,8 @@ void board_pins_init()
   fl_qspi.multi_line_count = 4;
   fl_qspi.speed = 66000000;     // this is preatty high speed, but seems to work
   fl_qspi.Init();
+
+  nvsaddr_test_start = 0x100000;  // start at 1M, bitstream is about 512k
 }
 
 

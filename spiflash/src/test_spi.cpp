@@ -18,16 +18,6 @@
 
 #include "board_pins.h"
 
-#if defined(MCU_VRV100) | defined(MCUF_RP) | defined(MCUF_IMXRT)
-  #define TEST_START_ADDR  0x100000  // start at 1M, bitstream is about 512k
-#elif defined(MCUF_KENDRYTE)
-  #define TEST_START_ADDR  0x400000  // start at 4M
-#elif defined(MCUF_ESP)
-  #define TEST_START_ADDR  0x010000  // start at 64k
-#else
-  #define TEST_START_ADDR  0x000000
-#endif
-
 TSpiFlash spiflash;
 
 uint8_t spi_id[4];
@@ -64,11 +54,11 @@ void test_spiflash_reliability()
 #if 1
 
   TRACE("Erasing the first %u k...\r\n", test_length / 1024);
-  spiflash.StartEraseMem(TEST_START_ADDR, test_length);
+  spiflash.StartEraseMem(nvsaddr_test_start, test_length);
   spiflash.WaitForComplete();
   TRACE("Erase complete. Erase check...\r\n");
   memset(&databuf[0], 0x55, sizeof(databuf));
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
   spiflash.WaitForComplete();
 
   unsigned mismatch_cnt = 0;
@@ -100,14 +90,14 @@ void test_spiflash_reliability()
     *dp++ = value;
     value += value_add;
   }
-  spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.StartWriteMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
   spiflash.WaitForComplete();
 
 #endif
 
   TRACE("Reading back...\r\n");
   memset(&databuf[0], 0, sizeof(databuf));
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+  spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
   spiflash.WaitForComplete();
 
   TRACE("Comparing...\r\n");
@@ -144,7 +134,7 @@ void test_ro()
 
   TRACE("Reading memory...\r\n");
 
-  spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], 4); //sizeof(databuf));
+  spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], 4); //sizeof(databuf));
   spiflash.WaitForComplete();
 
   TRACE("Memory read finished\r\n");
@@ -160,7 +150,7 @@ void test_simple_rw()
 
 	TRACE("Reading memory...\r\n");
 
-	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
@@ -168,7 +158,7 @@ void test_simple_rw()
 	show_mem(&databuf[0], readlen);
 
 	TRACE("Erase sector...\r\n");
-	spiflash.StartEraseMem(TEST_START_ADDR, sizeof(databuf));
+	spiflash.StartEraseMem(nvsaddr_test_start, sizeof(databuf));
 	spiflash.WaitForComplete();
 	TRACE("Erase complete.\r\n");
 
@@ -180,7 +170,7 @@ void test_simple_rw()
 		databuf[i] = uint8_t(0xF0 + i);
 	}
 
-	spiflash.StartWriteMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+	spiflash.StartWriteMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 #endif
 
@@ -192,7 +182,7 @@ void test_simple_rw()
     databuf[i] = uint8_t(0x55 + i);
   }
 
-	spiflash.StartReadMem(TEST_START_ADDR, &databuf[0], sizeof(databuf));
+	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
@@ -325,8 +315,12 @@ void test_spiflash()
   }
 
   TRACE("SPI Flash initialized, ID CODE = %06X, kbyte size = %u\r\n", spiflash.idcode, (spiflash.bytesize >> 10));
-  TRACE("Test flash address: 0x%08X\r\n", TEST_START_ADDR);
+  TRACE("Test flash address: 0x%08X\r\n", nvsaddr_test_start);
   TRACE("Test buffer size: %u\r\n", sizeof(databuf));
+
+
+  //TRACE("TESTS deactivated !!!!!!!!!!!!\r\n");
+  //return;
 
 #if 0
   test_ro();
