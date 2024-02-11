@@ -11,7 +11,11 @@ char trace_buffer[4096];
 
 void traces_init()
 {
-  tracebuf.waitsend = false;  // the USB requires fast service !
+#if 0 // defined(BOARD_VRV100_443)
+  tracebuf.waitsend = true;  // has big internal fifos
+#else
+  tracebuf.waitsend = false;
+#endif
 	tracebuf.Init(&conuart, &trace_buffer[0], sizeof(trace_buffer));
 }
 

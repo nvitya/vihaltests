@@ -127,7 +127,7 @@ void answer_arp(uint8_t * pdata)
 
   TRACE("ARP request for %u.%u.%u.%u\r\n", parp->tpa[0], parp->tpa[1], parp->tpa[2], parp->tpa[3] );
 
-  if (*(uint32_t *)&(parp->tpa) == *(uint32_t *)&(my_ip_address))
+  if (0 == memcmp(&parp->tpa[0], &my_ip_address[0], 4))  // using memcmp() for cpus not supporting un-aligned access (RISC-V)
   {
     TRACE("Answering ARP...\r\n");
 
@@ -174,7 +174,7 @@ uint16_t calc_icmp_checksum(void * pdata, uint32_t datalen)
 
   for (n = 0; n < clen; ++n)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   sum = (sum & 0xffff) + (sum >> 16);
@@ -193,24 +193,24 @@ uint16_t calc_udp_checksum(TIpHeader * piph, uint16_t datalen)  // datalen is on
   uint16_t * pd16 = (uint16_t *)&piph->src;
   for (n = 0; n < 4; ++n)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   sum += piph->p; // add the protocol as well
-  sum += __REV16(pudp->len); // add the UDP length
+  sum += __builtin_bswap16(pudp->len); // add the UDP length
 
   // add the UDP header parts exlusive the checksum
   pd16 = (uint16_t *)pudp;
   for (n = 0; n < 3; ++n)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   // and then the data
   pd16 = (uint16_t *)(pudp + 1);
   for (n = 0; n < (datalen >> 1); ++n)
   {
-    sum += __REV16(*pd16++);
+    sum += __builtin_bswap16(*pd16++);
   }
 
   if (datalen & 1)
@@ -273,8 +273,8 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
       pich->cksum = 0;
 
       // the ICMP message can contain arbitrary length data, we need to calculate its size first
-      uint16_t icmp_len = __REV16(pih->len) - sizeof(TIpHeader);
-      pich->cksum = __REV16(calc_icmp_checksum(pich, icmp_len));
+      uint16_t icmp_len = __builtin_bswap16(pih->len) - sizeof(TIpHeader);
+      pich->cksum = __builtin_bswap16(calc_icmp_checksum(pich, icmp_len));
 
       // send the packed
       if (!eth.TrySend(&idx, &pbuf[0], datalen))
@@ -318,7 +318,7 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
     pudp->sport = srcport;
 
     // increment the data
-    uint16_t udatalen =__REV16(pudp->len) - sizeof(TUdpHeader);
+    uint16_t udatalen =__builtin_bswap16(pudp->len) - sizeof(TUdpHeader);
 
     if (udatalen > sizeof(pbuf) - (14+20+8))
     {
@@ -333,7 +333,7 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
       ++pd8;
     }
 
-    pudp->csum = __REV16(calc_udp_checksum(pih, udatalen));
+    pudp->csum = __builtin_bswap16(calc_udp_checksum(pih, udatalen));
 
 #if 0 // display contents
     TRACE("UDP response: (csum = %04X)\r\n", pudp->csum);
@@ -420,7 +420,7 @@ void eth_test_run()
       peh->src_mac[5]
     );
 
-    uint16_t etype = __REV16(peh->ethertype);
+    uint16_t etype = __builtin_bswap16(peh->ethertype);
 
     TRACE(", type = %04X\r\n", etype);
 
