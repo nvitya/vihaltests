@@ -34,6 +34,36 @@ THwEth    eth;
 #if 0  // to use elif everywhere
 
 //-------------------------------------------------------------------------------
+// RISC-V RV32I
+//-------------------------------------------------------------------------------
+
+// VRV100 (VexRiscV, FPGA)
+
+#elif defined(BOARD_VRV100_443)
+
+//THwSpi     fl_spi;
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 0, false);
+  board_pins_init_leds();
+
+  conuart.Init(1); // the UART1 is dedicated for the console
+
+#if 0
+  fl_spi.speed = 10000000;
+  fl_spi.Init(1); // flash
+
+  spiflash.spi = &fl_spi;
+  spiflash.has4kerase = false; // warning some ECP devices does not have 4k erase !
+  spiflash.Init();
+#endif
+
+  eth.phy_address = 1;
+}
+
+//-------------------------------------------------------------------------------
 // ARM Cortex-M
 //-------------------------------------------------------------------------------
 
