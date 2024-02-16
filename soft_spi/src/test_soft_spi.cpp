@@ -107,6 +107,34 @@ void show_mem(void * addr, unsigned len)
   TRACE("\r\n");
 }
 
+uint8_t read_adc_reg(uint8_t areg)
+{
+  uint8_t ltx[2];
+  uint8_t lrx[2];
+
+  ltx[0] = 0x80 + areg;
+  ltx[1] = 0x00;
+
+  spi.Transfer(0, 0, 0, 2, &ltx[0], &lrx[0]);
+
+  TRACE("ADC-READ(%02X) -> %02X\r\n", areg, lrx[1]);
+
+  return lrx[1];
+}
+
+void write_adc_reg(uint8_t areg, uint8_t avalue)
+{
+  uint8_t ltx[2];
+  uint8_t lrx[2];
+
+  ltx[0] = 0x00 + areg;
+  ltx[1] = avalue;
+
+  spi.Transfer(0, 0, 0, 2, &ltx[0], &lrx[0]);
+
+  TRACE("ADC-WRITE(%02X) <- %02X\r\n", areg, avalue);
+}
+
 void test_soft_spi()
 {
   TRACE("Testing Soft-SPI...\r\n");
@@ -130,6 +158,8 @@ void test_soft_spi()
   unsigned dlen = 64;
   unsigned n;
 
+#if 0
+
   for (n = 0; n < dlen; ++n)
   {
     txbuf[n] = 0xD1 + n;
@@ -142,6 +172,51 @@ void test_soft_spi()
   TRACE("Finished, results:\r\n");
   show_mem(&rxbuf[0], dlen);
 
+#endif
+
+#if 0
+  // test AD4134 comm
+  txbuf[0] = 0x80 + 0x0C;  // read of reg 0x0C
+  txbuf[1] = 0x00;
+
+  TRACE("RQ  -> %02X %02X\r\n", txbuf[0], txbuf[1]);
+  spi.Transfer(0, 0, 0, 2, &txbuf[0], &rxbuf[0]);
+  TRACE("ANS <- %02X %02X\r\n", rxbuf[0], rxbuf[1]);
+
+#endif
+
+#if 0
+  read_adc_reg(0x0C);
+  read_adc_reg(0x0D);
+  TRACE("---\r\n");
+
+  for (n = 0; n < 0x27; ++n)
+  {
+    read_adc_reg(n);
+  }
+
+  write_adc_reg(0x0A, 0x19);
+  read_adc_reg(0x0A);
+
+#endif
+
+#if 1
+  // test eeprom comm
+  txbuf[0] = 0x00;
+  txbuf[1] = 0x00;
+  txbuf[2] = 0x00;
+  txbuf[3] = 0x00;
+  txbuf[4] = 0x00;
+
+  TRACE("EEPROM ID CHECK...\r\n");
+
+  spi.Transfer(0x9F, 0, SPITR_CMD1, 5, &txbuf[0], &rxbuf[0]);
+
+  show_mem(&rxbuf[0], 5);
+
+  // should result:  29 CC 00 01 00
+
+#endif
   //pin_cs.Assign(aportnum, apinnum, ainvert)
 
   TRACE("Test Finished.\r\n");
