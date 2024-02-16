@@ -253,6 +253,34 @@ void board_pins_init()
   spiflash.Init();
 }
 
+#elif defined(BOARD_EVK_IMXRT1020) || defined(BOARD_EVK_IMXRT1024)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  #if defined(BOARD_EVK_IMXRT1024)
+  pin_led[0].Assign(1, 24, false);  // GPIO_AD_B1_08 = GPIO_1_24
+  #else
+  pin_led[0].Assign(1, 5, false);   // GPIO_AD_B0_05 = GPIO_1_5
+  #endif
+  board_pins_init_leds();
+
+  // Console UART
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+
+  // QSPI: has internal pin setup in Init()
+  fl_qspi.multi_line_count = 4;  // there are some problems with quad here
+  fl_qspi.txdmachannel = 0;  // use the same DMA channel as the VGBOOT bootloader !
+  fl_qspi.rxdmachannel = 1;
+  fl_qspi.speed = 30000000;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
+}
 
 #else
   #error "Define board_pins_init here"

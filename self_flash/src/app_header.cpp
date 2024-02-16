@@ -7,6 +7,30 @@ extern unsigned __app_image_end;
 
 extern "C" void cold_entry();
 
+// VGBOOT
+
+#if defined(BOARD_DISCOVERY_F750) || defined(MCUF_IMXRT)
+
+extern const TAppHeader application_header;  // this is required, otherwise it will be removed by the linker
+
+__attribute__((section(".application_header"),used))
+const TAppHeader application_header =
+{
+  .signature = APP_HEADER_SIGNATURE,
+  .length = unsigned(&__app_image_end) - unsigned(&application_header) - sizeof(TAppHeader),
+  .addr_load = unsigned(&application_header),
+  .addr_entry = (unsigned)cold_entry,
+
+  .customdata = 0,
+  .compid = 0,
+  .csum_body = 0,  // will be calculated later
+  .csum_head = 0   // will be calculated later
+};
+
+#endif
+
+// Other specials
+
 #if defined(MCUF_VRV100)
 
 extern "C" void _cold_entry(void);
@@ -28,7 +52,6 @@ const bootblock_header_t application_header =
 
 #endif
 
-
 #if defined(MCUF_RP)
 
 extern const TAppHeader application_header;  // this is required, otherwise it will be removed by the linker
@@ -45,26 +68,6 @@ const TAppHeader application_header =
 	.compid = 0,
 	.csum_body = 0,
 	.csum_head = 0
-};
-
-#endif
-
-#if defined(BOARD_DISCOVERY_F750)
-
-extern const TAppHeader application_header;  // this is required, otherwise it will be removed by the linker
-
-__attribute__((section(".application_header"),used))
-const TAppHeader application_header =
-{
-  .signature = APP_HEADER_SIGNATURE,
-  .length = unsigned(&__app_image_end) - unsigned(&application_header) - sizeof(TAppHeader),
-  .addr_load = unsigned(&application_header),
-  .addr_entry = (unsigned)cold_entry,
-
-  .customdata = 0,
-  .compid = 0,
-  .csum_body = 0,  // will be calculated later
-  .csum_head = 0   // will be calculated later
 };
 
 #endif
