@@ -10,6 +10,8 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
+#define PRINTF_SUPPORT_FLOAT
+
 #include "boards_builtin.h"
 
 #if defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750) || defined(BOARD_DEV_STM32F407ZE)
