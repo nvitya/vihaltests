@@ -14,7 +14,7 @@
 
 #include "boards_builtin.h"
 
-#if defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750) || defined(BOARD_DEV_STM32F407ZE)
+#if defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_H747) || defined(BOARD_DISCOVERY_F750) || defined(BOARD_DEV_STM32F407ZE)
   #define SDCARD_SDMMC 1
 #else
   #define SDCARD_SPI 1

@@ -12,6 +12,7 @@ unsigned  pin_led_count = 0;
 
 TGpioPin  pin_led[MAX_LEDS] = { TGpioPin(), TGpioPin(), TGpioPin(), TGpioPin() };
 
+
 #if SDCARD_SDMMC
 
   THwSdmmc      sd_mmc;
@@ -208,6 +209,41 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_C, 11, PINCFG_AF_12); // SDMMC_D3
   hwpinctrl.PinSetup(PORTNUM_C, 12, PINCFG_AF_12); // SDMMC_CK
   hwpinctrl.PinSetup(PORTNUM_D,  2, PINCFG_AF_12); // SDMMC_CMD
+
+  sd_mmc.Init();
+}
+
+#elif defined(BOARD_DISCOVERY_H747)
+
+#ifndef CORE_CM7
+  #warning "define CORE_CM7 !!!!"
+#endif
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_I,  12, true);
+  pin_led[1].Assign(PORTNUM_I,  13, true);
+  pin_led[2].Assign(PORTNUM_I,  14, true);
+  pin_led[3].Assign(PORTNUM_I,  15, true);
+  board_pins_init_leds();
+
+  // turn off LCD backlight:
+  hwpinctrl.PinSetup(PORTNUM_J, 12, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
+  conuart.Init(1); // USART1
+
+  // SDCARD Pins
+  hwpinctrl.PinSetup(PORTNUM_C,  8, PINCFG_AF_12); // SDMMC_D0
+  hwpinctrl.PinSetup(PORTNUM_C,  9, PINCFG_AF_12); // SDMMC_D1
+  hwpinctrl.PinSetup(PORTNUM_C, 10, PINCFG_AF_12); // SDMMC_D2
+  hwpinctrl.PinSetup(PORTNUM_C, 11, PINCFG_AF_12); // SDMMC_D3
+  hwpinctrl.PinSetup(PORTNUM_C, 12, PINCFG_AF_12); // SDMMC_CK
+  hwpinctrl.PinSetup(PORTNUM_D,  2, PINCFG_AF_12); // SDMMC_CMD
+
+  // card detect: I8
 
   sd_mmc.Init();
 }

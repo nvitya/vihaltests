@@ -17,10 +17,12 @@ void show_mem(void * addr, unsigned len)
 	TRACE("\r\n");
 }
 
+#define DATABUF_SIZE   (24 * 1024)
+
 #define RW_BLOCK_CNT  2
 
-uint8_t databuf[4096]   __attribute__((aligned(4)));
-uint8_t databuf2[4096]  __attribute__((aligned(4)));
+uint8_t databuf[DATABUF_SIZE]   __attribute__((aligned(4)));
+uint8_t databuf2[DATABUF_SIZE]  __attribute__((aligned(4)));
 
 void sdcard_tests_old()
 {
@@ -150,8 +152,8 @@ void sdcard_read_single_blocks()
 
 void sdcard_read_multiple_blocks()
 {
-  unsigned multi_blocks = 8; // 4k puffer
-  unsigned repeat_count = 4 * 1024;
+  unsigned multi_blocks = sizeof(databuf) / 512;
+  unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = 0;
   unsigned error_count = 0;
@@ -210,8 +212,8 @@ void sdcard_write_single_blocks()
 
 void sdcard_write_multiple_blocks()
 {
-  unsigned multi_blocks = 8; // 4k puffer
-  unsigned repeat_count = 2 * 1024;
+  unsigned multi_blocks = sizeof(databuf) / 512;
+  unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = multi_blocks;
   unsigned error_count = 0;
@@ -307,6 +309,7 @@ void sdcard_init()
 
   sdcard.clockspeed = 25000000;
   //sdcard.clockspeed = 50000000;
+  //sdcard.clockspeed = 800000000;
   //sdcard.forced_clockspeed = 50000000;
   //sdcard.bus_width = 4;
 
@@ -342,12 +345,13 @@ void test_sdcard()
     //sdcard_write_single_blocks();
     sdcard_write_multiple_blocks();
 
+    #if 0
+      TRACE("Verify written data...\r\n");
+      sdcard_verify_multiple_blocks();
+    #endif
+
   #endif
 
-  #if 1
-    TRACE("Verify written data...\r\n");
-    sdcard_verify_multiple_blocks();
-  #endif
 
 	TRACE("SDCard test finished.\r\n");
 }
