@@ -509,6 +509,37 @@ void board_pins_init()
   #endif
 }
 
+#elif defined(BOARD_XPLAINED_SAME70)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 8, false);
+  board_pins_init_leds();
+
+  // USART1 - EDBG
+  hwpinctrl.PinSetup(0, 21, PINCFG_INPUT | PINCFG_AF_0);  // USART1_RXD
+  MATRIX->CCFG_SYSIO |= (1 << 4); // select PB4 instead of TDI !!!!!!!!!
+  hwpinctrl.PinSetup(1,  4, PINCFG_OUTPUT | PINCFG_AF_3); // USART1_TXD
+  conuart.Init(0x101); // USART1
+
+  // UART3 - Arduino shield
+  //hwpinctrl.PinSetup(3, 28, PINCFG_INPUT | PINCFG_AF_0);  // UART3_RXD
+  //hwpinctrl.PinSetup(3, 30, PINCFG_OUTPUT | PINCFG_AF_0); // UART3_TXD
+  //uartx2.Init(3); // UART3
+
+  hwpinctrl.PinSetup(PORTNUM_A, 28, PINCFG_AF_2); // MCCDA (CMD)
+  hwpinctrl.PinSetup(PORTNUM_A, 25, PINCFG_AF_3); // MCCK
+  hwpinctrl.PinSetup(PORTNUM_A, 30, PINCFG_AF_2); // MCDA0
+  hwpinctrl.PinSetup(PORTNUM_A, 31, PINCFG_AF_2); // MCDA1
+  hwpinctrl.PinSetup(PORTNUM_A, 26, PINCFG_AF_2); // MCDA2
+  hwpinctrl.PinSetup(PORTNUM_A, 27, PINCFG_AF_2); // MCDA3
+
+  hwpinctrl.PinSetup(PORTNUM_C, 16, PINCFG_INPUT | PINCFG_PULLUP); // Card detect input
+
+  sd_mmc.Init();
+}
+
 #elif defined(BOARD_VERTIBO_A)
 
 void board_pins_init()
