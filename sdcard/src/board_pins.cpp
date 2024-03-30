@@ -553,13 +553,29 @@ void board_pins_init()
   conuart.baudrate = 115200;
   conuart.Init(0);
 
-  // at the ATSAM the pins and DMA initialization is done internally.
-  // You can select the used DMA chennels with the txdmachannel, rxdmachannel
-  fl_qspi.txdmachannel = 5;
-  fl_qspi.rxdmachannel = 6;
-  fl_qspi.multi_line_count = 4;
-  fl_qspi.speed = 60000000;  // that's 240 MBit/s ...
-  fl_qspi.Init();
+  // FPGA output clock
+  hwpinctrl.PinSetup(PORTNUM_A,  6,  PINCFG_OUTPUT | PINCFG_AF_1);  // PCK0 = FPGA.CLK_IN
+  PMC->PMC_SCER = (1 << 8); // enable PCK0
+  PMC->PMC_PCK[0] = 0
+    | (1 << 0)  // CSS(3): 1 = MAIN CLK (12 MHz)
+    | (0 << 4)  // PRES(8): divisor - 1
+  ;
+
+  // do not clear the FPGA config
+  hwpinctrl.PinSetup(PORTNUM_C,  9,  PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);  // FPGA_CFG
+
+  // Keep the ETH in reset
+  hwpinctrl.PinSetup(PORTNUM_C, 10,  PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  // SDCARD
+  hwpinctrl.PinSetup(PORTNUM_A, 28, PINCFG_AF_2); // MCCDA
+  hwpinctrl.PinSetup(PORTNUM_A, 25, PINCFG_AF_3); // MCCK
+  hwpinctrl.PinSetup(PORTNUM_A, 30, PINCFG_AF_2); // MCDA0
+  hwpinctrl.PinSetup(PORTNUM_A, 31, PINCFG_AF_2); // MCDA1
+  hwpinctrl.PinSetup(PORTNUM_A, 26, PINCFG_AF_2); // MCDA2
+  hwpinctrl.PinSetup(PORTNUM_A, 27, PINCFG_AF_2); // MCDA3
+
+  sd_mmc.Init();
 }
 
 #elif defined(BOARD_ENEBO_A)

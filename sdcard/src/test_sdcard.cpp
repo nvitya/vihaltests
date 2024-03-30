@@ -242,7 +242,7 @@ void test_sdcard()
 
   sdcard_init();
 
-  #if 0
+  #if 1
     TRACE("Read tests...\r\n");
     //sdcard_read_single_blocks();
     sdcard_read_multiple_blocks();

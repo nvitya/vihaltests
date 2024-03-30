@@ -14,10 +14,12 @@
 
 #include "boards_builtin.h"
 
-#if defined(BOARD_DISCOVERY_F746) \
+#if    defined(BOARD_DISCOVERY_F746) \
     || defined(BOARD_DISCOVERY_H747) \
     || defined(BOARD_DISCOVERY_F750) \
     || defined(BOARD_XPLAINED_SAME70) \
+    || defined(BOARD_VERTIBO_A) \
+    || defined(BOARD_ENEBO_A) \
     || defined(BOARD_DEV_STM32F407ZE)
 
   #define SDCARD_SDMMC 1
