@@ -5,7 +5,8 @@
 #include "clockcnt.h"
 #include "traces.h"
 
-void show_mem(void * addr, unsigned len)
+#if 0
+static void show_mem(void * addr, unsigned len)
 {
 	unsigned char * cp = (unsigned char *)addr;
 	TRACE("Dumping memory at %08X, len = %u\r\n", addr, len);
@@ -16,103 +17,12 @@ void show_mem(void * addr, unsigned len)
 	}
 	TRACE("\r\n");
 }
+#endif
 
-#define DATABUF_SIZE   (24 * 1024)
-
-#define RW_BLOCK_CNT  2
+#define DATABUF_SIZE   (2 * 16 * 1024)
 
 uint8_t databuf[DATABUF_SIZE]   __attribute__((aligned(4)));
 uint8_t databuf2[DATABUF_SIZE]  __attribute__((aligned(4)));
-
-void sdcard_tests_old()
-{
-  int i;
-
-#if 1
-  TRACE("Writing SDCARD...\r\n");
-
-  for (i = 0; i < sizeof(databuf); ++i)
-  {
-    databuf[i] = 0xA0 + (i >> 6);
-  }
-
-  // it is relative safe to write to the second sector
-  sdcard.StartWriteBlocks(1,  &databuf[0],  RW_BLOCK_CNT);
-  sdcard.WaitForComplete();
-  if (sdcard.errorcode)
-  {
-    TRACE("  Write error: %i\r\n", sdcard.errorcode);
-  }
-  else
-  {
-    TRACE("  OK\r\n");
-  }
-
-#if 1
-  TRACE("Writing SDCARD/2...\r\n");
-  // it is relative safe to write to the second sector
-  sdcard.StartWriteBlocks(2,  &databuf[512],  1);
-  sdcard.WaitForComplete();
-  if (sdcard.errorcode)
-  {
-    TRACE("  Write error: %i\r\n", sdcard.errorcode);
-  }
-  else
-  {
-    TRACE("  OK\r\n");
-  }
-#endif
-#if 0
-  TRACE("Writing SDCARD/3...\r\n");
-  // it is relative safe to write to the second sector
-  sdcard.StartWriteBlocks(3,  &databuf[512*2],  1);
-  sdcard.WaitForComplete();
-  if (sdcard.errorcode)
-  {
-    TRACE("  Write error: %i\r\n", sdcard.errorcode);
-  }
-  else
-  {
-    TRACE("  OK\r\n");
-  }
-#endif
-#endif
-
-  // the card is not ready, still working on the write !!!!
-  //delay_ms(50);
-
-
-#if 1
-  TRACE("Reading SDCARD...\r\n");
-
-  sdcard.StartReadBlocks(1024*1024,  &databuf[0],  RW_BLOCK_CNT);
-  sdcard.WaitForComplete();
-  if (sdcard.errorcode)
-  {
-    TRACE("  Read error: %i\r\n", sdcard.errorcode);
-  }
-  else
-  {
-    TRACE("  OK\r\n");
-    //show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
-  }
-
-
-  TRACE("Reading SDCARD...\r\n");
-
-  sdcard.StartReadBlocks(1024*1024,  &databuf[0],  RW_BLOCK_CNT);
-  sdcard.WaitForComplete();
-  if (sdcard.errorcode)
-  {
-    TRACE("  Read error: %i\r\n", sdcard.errorcode);
-  }
-  else
-  {
-    TRACE("  OK\r\n");
-    //show_mem(&databuf[0], 512 * RW_BLOCK_CNT);
-  }
-#endif
-}
 
 void display_bm_res(uint32_t aclocks, uint32_t abytesize)
 {
@@ -152,11 +62,13 @@ void sdcard_read_single_blocks()
 
 void sdcard_read_multiple_blocks()
 {
+  unsigned error_count = 0;
   unsigned multi_blocks = sizeof(databuf) / 512;
   unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = 0;
-  unsigned error_count = 0;
+
+  //block_addr += 1;  // +1 makes it unaligned, but for reads it does not matter
 
   TRACE("Reading %u * %u blocks...\r\n", repeat_count, multi_blocks);
 
@@ -212,11 +124,13 @@ void sdcard_write_single_blocks()
 
 void sdcard_write_multiple_blocks()
 {
+  unsigned error_count = 0;
   unsigned multi_blocks = sizeof(databuf) / 512;
   unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = multi_blocks;
-  unsigned error_count = 0;
+
+  block_addr += 16; // +1 makes it unaligned, it does matter
 
   TRACE("Writing %u * %u blocks...\r\n", repeat_count, multi_blocks);
 
@@ -307,7 +221,7 @@ void sdcard_init()
     }
   #endif
 
-  sdcard.clockspeed = 25000000;
+  //sdcard.clockspeed = 25000000;
   //sdcard.clockspeed = 50000000;
   //sdcard.clockspeed = 800000000;
   //sdcard.forced_clockspeed = 50000000;
@@ -330,7 +244,7 @@ void test_sdcard()
 
   #if 0
     TRACE("Read tests...\r\n");
-    sdcard_read_single_blocks();
+    //sdcard_read_single_blocks();
     sdcard_read_multiple_blocks();
   #endif
 
