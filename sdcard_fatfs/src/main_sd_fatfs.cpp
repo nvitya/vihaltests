@@ -1,7 +1,7 @@
 /*
- * file:     main.cpp (spiflash)
- * brief:    VIHAL SPI Flash Test Main
- * created:  2021-10-03
+ * file:     main_sd_fatfs.cpp
+ * brief:    VIHAL SDCARD test with FatFS (from ChaN)
+ * created:  2024-03-31
  * authors:  nvitya
 */
 
@@ -13,7 +13,7 @@
 #include "board_pins.h"
 #include "traces.h"
 
-#include "test_sdcard.h"
+#include "test_fatfs.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -54,7 +54,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-	test_sdcard();
+	test_fatfs();
 
 	TRACE("Starting main cycle...\r\n");
 
@@ -66,8 +66,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	unsigned t0, t1;
 
 	t0 = CLOCKCNT;
-
-	//volatile uint32_t *  hexnum = (volatile uint32_t *)0xF1000000;
 
 	// Infinite loop
 	while (1)
@@ -82,8 +80,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 			{
 			  pin_led[n].SetTo((hbcounter >> n) & 1);
 			}
-
-			//TRACE("hbcounter=%u\r\n", hbcounter);
 
 			t0 = t1;
 
