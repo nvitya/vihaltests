@@ -21,6 +21,38 @@
 
 volatile unsigned hbcounter = 0;
 
+void check_us_counter()
+{
+  const int uscap_len = 64;
+  uint32_t  usarr[uscap_len];
+
+
+  TRACE("Testing us counter...\r\n");
+
+  uint32_t  ccnt = 0;
+  unsigned t0, t1;
+  unsigned usclocks = SystemCoreClock / 1000000;
+
+  t0 = CLOCKCNT;
+  while (ccnt < uscap_len)
+  {
+    t1 = CLOCKCNT;
+    if (t1 - t0 > usclocks)
+    {
+      usarr[ccnt]  = uscounter.Get32();
+      ++ccnt;
+      t0 += usclocks;
+    }
+  }
+
+  // displaying
+  for (ccnt = 0; ccnt < uscap_len; ++ccnt)
+  {
+    TRACE("%3i. = %09u\r\n", ccnt, usarr[ccnt]);
+  }
+}
+
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -39,10 +71,10 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   #if 0
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   #else
-    if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+    //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     //if (!hwclk_init(EXTERNAL_XTAL_HZ, 32000000))  // special for STM32F3, STM32F1
     //if (!hwclk_init(EXTERNAL_XTAL_HZ, 480000000))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
-    //if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+    if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     {
       while (1)
       {
@@ -82,6 +114,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
     spi_self_flashing(&spiflash);
   }
 #endif
+
+  //check_us_counter();
 
 	mcu_interrupts_enable();
 
