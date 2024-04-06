@@ -21,42 +21,6 @@ uint8_t   eth_rx_packet_mem[sizeof(TPacketMem) * ETH_RX_PACKETS]   __attribute__
 
 unsigned last_recv_time = 0;
 
-void eth_test_init()
-{
-  //eth.promiscuous_mode = true;
-
-  // random generated mac address:
-  eth.mac_address[0] = 0xE4;
-  eth.mac_address[1] = 0x88;
-  eth.mac_address[2] = 0xF9;
-  eth.mac_address[3] = 0xB4;
-  eth.mac_address[4] = 0xFE;
-  eth.mac_address[5] = 0x70;
-
-  eth.promiscuous_mode = false;
-  //eth.promiscuous_mode = true; //false;
-  eth.hw_ip_checksum = false; //true;
-  if (!eth.Init(&eth_rx_desc_mem, ETH_RX_PACKETS, &eth_tx_desc_mem, ETH_TX_PACKETS))
-  {
-    TRACE("ETH INIT FAILED !!!\r\n");
-  }
-  else
-  {
-    TRACE("ETH init ok.\r\n");
-  }
-
-  // there is no valid rx buffer yet!
-
-  for (unsigned n = 0; n < ETH_RX_PACKETS; ++n)
-  {
-    eth.AssignRxBuf(n, (TPacketMem * )&eth_rx_packet_mem[sizeof(TPacketMem) * n], HWETH_MAX_PACKET_SIZE);
-  }
-
-  eth.Start();
-
-  last_recv_time = CLOCKCNT;
-}
-
 typedef struct TEthernetHeader
 {
   uint8_t   dest_mac[6];  /**< Destination node */
@@ -357,6 +321,86 @@ void answer_ip(uint8_t * pdata, uint16_t datalen)
 }
 
 bool prev_link_up = false;
+
+void eth_send_test_packet()
+{
+  uint8_t * pu8 = &pbuf[0];
+
+  // dst mac: broadcast
+  *pu8++ = 0xFF;
+  *pu8++ = 0xFF;
+  *pu8++ = 0xFF;
+  *pu8++ = 0xFF;
+  *pu8++ = 0xFF;
+  *pu8++ = 0xFF;
+
+  // src mac
+  *pu8++ = 0xE4;
+  *pu8++ = 0x88;
+  *pu8++ = 0xF9;
+  *pu8++ = 0xB4;
+  *pu8++ = 0xFE;
+  *pu8++ = 0x70;
+
+  // ethertype
+  *pu8++ = 0x11;
+  *pu8++ = 0x11;
+
+  uint32_t  idx;
+  uint32_t  datalen = 16;
+
+  // payload
+  for (unsigned n = 0; n < 64; ++n)
+  {
+    *pu8++ = 0x01 + n;
+  }
+
+  if (!eth.TrySend(&idx, &pbuf[0], datalen + 14))
+  {
+    TRACE("test packet send failed.\r\n");
+    return;
+  }
+
+  TRACE("test packet send ok.\r\n");
+}
+
+void eth_test_init()
+{
+  //eth.promiscuous_mode = true;
+
+  // random generated mac address:
+  eth.mac_address[0] = 0xE4;
+  eth.mac_address[1] = 0x88;
+  eth.mac_address[2] = 0xF9;
+  eth.mac_address[3] = 0xB4;
+  eth.mac_address[4] = 0xFE;
+  eth.mac_address[5] = 0x70;
+
+  eth.promiscuous_mode = false;
+  //eth.promiscuous_mode = true; //false;
+  eth.hw_ip_checksum = false; //true;
+  if (!eth.Init(&eth_rx_desc_mem, ETH_RX_PACKETS, &eth_tx_desc_mem, ETH_TX_PACKETS))
+  {
+    TRACE("ETH INIT FAILED !!!\r\n");
+  }
+  else
+  {
+    TRACE("ETH init ok.\r\n");
+  }
+
+  // there is no valid rx buffer yet!
+
+  for (unsigned n = 0; n < ETH_RX_PACKETS; ++n)
+  {
+    eth.AssignRxBuf(n, (TPacketMem * )&eth_rx_packet_mem[sizeof(TPacketMem) * n], HWETH_MAX_PACKET_SIZE);
+  }
+
+  eth.Start();
+
+  //eth_send_test_packet();
+
+  last_recv_time = CLOCKCNT;
+}
 
 void eth_test_run()
 {

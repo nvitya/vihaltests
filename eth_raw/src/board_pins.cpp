@@ -368,8 +368,6 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_D, 3, pinfl); // TXD1
 
   eth.phy_address = 1;
-
-
 }
 
 #elif defined(BOARD_ENEBO_A)
