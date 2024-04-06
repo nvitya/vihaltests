@@ -13,7 +13,7 @@
 #include "board_pins.h"
 #include "traces.h"
 
-#include "uscounter.h"
+#include "hwuscounter.h"
 
 #include "test_fatfs.h"
 

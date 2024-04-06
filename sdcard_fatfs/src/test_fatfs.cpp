@@ -9,7 +9,7 @@
 
 #include "mp_printf.h"
 
-#include "uscounter.h"
+#include "hwuscounter.h"
 
 #include "test_fatfs.h"
 
@@ -321,8 +321,8 @@ void test_fatfs()
 
   //test_file_write();
 
-  //test_bigfile_write();
-  //test_bigfile_read(true);
+  test_bigfile_write();
+  test_bigfile_read(true);
   test_bigfile_read(false);
 
   TRACE("Unmounting FatFs...\r\n");
