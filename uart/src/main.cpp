@@ -7,7 +7,7 @@
 //#include "hwclkctrl.h"
 #include "cppinit.h"
 #include "clockcnt.h"
-
+#include "hwuscounter.h"
 #include "hwclk.h"
 #include "hwpins.h"
 #include "hwuart.h"
@@ -39,9 +39,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   #if 0
     SystemCoreClock = MCU_INTERNAL_RC_SPEED;
   #else
-    //if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+    if (!hwclk_init(0, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     //if (!hwclk_init(EXTERNAL_XTAL_HZ, 32000000))  // special for STM32F3, STM32F1
-    if (!hwclk_init(EXTERNAL_XTAL_HZ, 480000000))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
+    //if (!hwclk_init(EXTERNAL_XTAL_HZ, 480000000))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     //if (!hwclk_init(EXTERNAL_XTAL_HZ, MCU_CLOCK_SPEED))  // if the EXTERNAL_XTAL_HZ == 0, then the internal RC oscillator will be used
     {
       while (1)
@@ -56,6 +56,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	mcu_enable_icache(); // enable instruction cache if present
 
 	clockcnt_init();
+	uscounter.Init();
 
 	// go on with the hardware initializations
 	board_pins_init();
@@ -112,7 +113,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
       board_show_hexnum(hbcounter);
 
-			TRACE("hbcounter=%u\r\n", hbcounter); // = conuart.printf()
+			TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
 
 			t0 = t1;
 
