@@ -10,7 +10,7 @@
 #ifndef BOARD_H_
 #define BOARD_H_
 
-#define PRINTF_SUPPORT_FLOAT
+#define PRINTF_SUPPORT_FULL  // float + long support
 
 #include "boards_builtin.h"
 

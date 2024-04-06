@@ -13,6 +13,8 @@
 #include "board_pins.h"
 #include "traces.h"
 
+#include "uscounter.h"
+
 #include "test_fatfs.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
@@ -45,6 +47,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	mcu_enable_icache(); // enable instruction cache if present
 
 	clockcnt_init();
+	uscounter.Init();
 
 	// go on with the hardware initializations
 	board_pins_init();
@@ -80,6 +83,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 			{
 			  pin_led[n].SetTo((hbcounter >> n) & 1);
 			}
+
+			//TRACE("uscounter = %llu\r\n", uscounter.Get64());
 
 			t0 = t1;
 
