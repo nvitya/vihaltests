@@ -52,6 +52,17 @@ void check_us_counter()
   }
 }
 
+void check_us_counter_readout_speed()
+{
+  uint32_t t0, t1, t2;
+
+  t0 = CLOCKCNT;
+  if (uscounter.Get32()) {}
+  t1 = CLOCKCNT;
+  if (uscounter.Get32()) {}
+  t2 = CLOCKCNT;
+  TRACE("uscounter read clocks: %u, %u\r\n", t1-t0, t2-t1);
+}
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -116,6 +127,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 #endif
 
   //check_us_counter();
+  check_us_counter_readout_speed();
 
 	mcu_interrupts_enable();
 
