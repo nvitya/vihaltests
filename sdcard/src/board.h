@@ -20,7 +20,10 @@
     || defined(BOARD_XPLAINED_SAME70) \
     || defined(BOARD_VERTIBO_A) \
     || defined(BOARD_ENEBO_A) \
-    || defined(BOARD_DEV_STM32F407ZE)
+    || defined(BOARD_DEV_STM32F407ZE) \
+    || defined(BOARD_EVK_IMXRT1020) \
+    || defined(BOARD_EVK_IMXRT1050) \
+    || defined(BOARD_EVK_IMXRT1050A)
 
   #define SDCARD_SDMMC 1
 

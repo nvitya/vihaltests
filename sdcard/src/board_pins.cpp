@@ -626,6 +626,35 @@ void board_pins_init()
   fl_qspi.Init();
 }
 
+// IMXRT
+
+#elif defined(BOARD_EVK_IMXRT1020)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, 5, false);  // GPIO_AD_B0_05 = GPIO_1_5
+  board_pins_init_leds();
+
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_06_LPUART1_TX, 0);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B0_07_LPUART1_RX, 0);
+  conuart.Init(1); // UART1
+
+  // SD Card voltage switch (SD0_VSELECT): 1 = 3.3V, 0 = 1.8V
+  hwpinctrl.PadSetup(IOMUXC_GPIO_AD_B1_07_GPIO1_IO23, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  // SD Card power switch (SD_PWREN):
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B1_04_GPIO3_IO24, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  unsigned pinflags = PINCFG_SPEED_FAST;
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_00_USDHC1_DATA2, pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_01_USDHC1_DATA3, pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_02_USDHC1_CMD,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_03_USDHC1_CLK,   pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_04_USDHC1_DATA0, pinflags);
+  hwpinctrl.PadSetup(IOMUXC_GPIO_SD_B0_05_USDHC1_DATA1, pinflags);
+
+  sd_mmc.Init(1);
+}
 
 #else
   #error "Define board_pins_init here"
