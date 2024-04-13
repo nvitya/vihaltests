@@ -1,9 +1,46 @@
 
 #include "string.h"
 
+#include "stdlib.h"
 #include "board_pins.h"
+#include "test_sdcard.h"
 #include "clockcnt.h"
+#include "hwuscounter.h"
 #include "traces.h"
+
+uint32_t g_sdram_allocated = 0;
+uint32_t databuf_size = 0;
+
+uint8_t * sdram_alloc(unsigned asize)
+{
+  if (!hwsdram.initialized)
+  {
+    return nullptr;
+  }
+
+  unsigned available = hwsdram.byte_size - g_sdram_allocated;
+  if (asize > available)
+  {
+    TRACE("FATAL ERROR: SDRAM allocation failed\r\n");
+    TRACE("  requested: %u\r\n", asize);
+    TRACE("  available: %u\r\n", available);
+    while (1)
+    {
+      __NOP();
+    }
+    return nullptr;
+  }
+
+  uint8_t * result = (uint8_t *)(hwsdram.address + g_sdram_allocated);
+  g_sdram_allocated += asize;
+  return result;
+}
+
+uint32_t sdram_free_bytes()
+{
+  return hwsdram.byte_size - g_sdram_allocated;
+}
+
 
 #if 0
 static void show_mem(void * addr, unsigned len)
@@ -19,16 +56,13 @@ static void show_mem(void * addr, unsigned len)
 }
 #endif
 
-#define DATABUF_SIZE   (2 * 16 * 1024)
+uint8_t * databuf;
+uint8_t * databuf2;
 
-uint8_t databuf[DATABUF_SIZE]   __attribute__((aligned(4)));
-uint8_t databuf2[DATABUF_SIZE]  __attribute__((aligned(4)));
-
-void display_bm_res(uint32_t aclocks, uint32_t abytesize)
+void display_bm_res(uint32_t ausecs, uint32_t abytesize)
 {
-  float ul_ticks = (float)aclocks / (SystemCoreClock / 1000);
-  float ul_rw_speed = (float)abytesize / ul_ticks;
-  TRACE("  Speed: %8.0f K/s\n\r", ul_rw_speed);
+  float ul_rw_speed = ((float)abytesize * 1000.0) / ausecs;
+  TRACE("  Speed: %8.0f kB/s\n\r", ul_rw_speed);
 }
 
 void sdcard_read_single_blocks()
@@ -40,7 +74,7 @@ void sdcard_read_single_blocks()
 
   TRACE("Reading %u single blocks...\r\n", block_count);
 
-  unsigned t0 = CLOCKCNT;
+  unsigned t0 = micros();
 
   while (block_count > 0)
   {
@@ -54,7 +88,7 @@ void sdcard_read_single_blocks()
     --block_count;
   }
 
-  unsigned t1 = CLOCKCNT;
+  unsigned t1 = micros();
 
   TRACE("  Finished, errors = %u\r\n", error_count);
   display_bm_res(t1 - t0, bytesize);
@@ -63,16 +97,15 @@ void sdcard_read_single_blocks()
 void sdcard_read_multiple_blocks()
 {
   unsigned error_count = 0;
-  unsigned multi_blocks = sizeof(databuf) / 512;
+  unsigned multi_blocks = databuf_size / 512;
   unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
+  if (repeat_count < 1)  repeat_count = 1;
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = 0;
 
-  //block_addr += 1;  // +1 makes it unaligned, but for reads it does not matter
-
   TRACE("Reading %u * %u blocks...\r\n", repeat_count, multi_blocks);
 
-  unsigned t0 = CLOCKCNT;
+  unsigned t0 = micros();
 
   while (repeat_count > 0)
   {
@@ -86,7 +119,7 @@ void sdcard_read_multiple_blocks()
     --repeat_count;
   }
 
-  unsigned t1 = CLOCKCNT;
+  unsigned t1 = micros();
 
   TRACE("  Finished, errors = %u\r\n", error_count);
   display_bm_res(t1 - t0, bytesize);
@@ -102,7 +135,7 @@ void sdcard_write_single_blocks()
 
   TRACE("Writing %u single blocks...\r\n", block_count);
 
-  unsigned t0 = CLOCKCNT;
+  unsigned t0 = micros();
 
   while (block_count > 0)
   {
@@ -116,7 +149,7 @@ void sdcard_write_single_blocks()
     --block_count;
   }
 
-  unsigned t1 = CLOCKCNT;
+  unsigned t1 = micros();
 
   TRACE("  Finished, errors = %u\r\n", error_count);
   display_bm_res(t1 - t0, bytesize);
@@ -125,16 +158,15 @@ void sdcard_write_single_blocks()
 void sdcard_write_multiple_blocks()
 {
   unsigned error_count = 0;
-  unsigned multi_blocks = sizeof(databuf) / 512;
+  unsigned multi_blocks = databuf_size / 512;
   unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
+  if (repeat_count < 1)  repeat_count = 1;
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = multi_blocks;
 
-  block_addr += 16; // +1 makes it unaligned, it does matter
-
   TRACE("Writing %u * %u blocks...\r\n", repeat_count, multi_blocks);
 
-  unsigned t0 = CLOCKCNT;
+  unsigned t0 = micros();
 
   while (repeat_count > 0)
   {
@@ -148,7 +180,7 @@ void sdcard_write_multiple_blocks()
     --repeat_count;
   }
 
-  unsigned t1 = CLOCKCNT;
+  unsigned t1 = micros();
 
   TRACE("  Finished, errors = %u\r\n", error_count);
   display_bm_res(t1 - t0, bytesize);
@@ -156,8 +188,9 @@ void sdcard_write_multiple_blocks()
 
 void sdcard_verify_multiple_blocks()
 {
-  unsigned multi_blocks = 8; // 4k puffer
-  unsigned repeat_count = 2 * 1024;
+  unsigned multi_blocks = databuf_size / 512;
+  unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
+  if (repeat_count < 1)  repeat_count = 1;
   unsigned bytesize = repeat_count * multi_blocks * 512;
   unsigned block_addr  = multi_blocks;
   unsigned error_count = 0;
@@ -165,28 +198,52 @@ void sdcard_verify_multiple_blocks()
 
   TRACE("Veryfying %u * %u blocks...\r\n", repeat_count, multi_blocks);
 
-  unsigned t0 = CLOCKCNT;
+  unsigned read_us = 0;
+  unsigned compare_us = 0;
+
+  unsigned t0 = micros();
+  unsigned t1;
 
   while (repeat_count > 0)
   {
     sdcard.StartReadBlocks(block_addr,  &databuf2[0], multi_blocks);
     sdcard.WaitForComplete();
+    t1 = micros();
+    read_us += t1 - t0;
+
     if (sdcard.errorcode)
     {
       ++error_count;
     }
     else
     {
-      if (memcmp(&databuf[0], &databuf2[0], sizeof(databuf)) != 0)
-      {
-        ++mismatch_count;
-      }
+      // this might take very long time using sdram without d-cache!
+      t0 = micros();
+
+      #if 0
+        if (memcmp(&databuf[0], &databuf2[0], databuf_size) != 0)
+        {
+          ++mismatch_count;
+        }
+      #else
+        uint32_t * psrc1 = (uint32_t *)&databuf[0];
+        uint32_t * psrc2 = (uint32_t *)&databuf2[0];
+        uint32_t * psrc1_end = psrc1 + (databuf_size >> 2);
+        while (psrc1 < psrc1_end)
+        {
+          if (*psrc1++ != *psrc2++)
+          {
+            ++mismatch_count;
+            break;
+          }
+        }
+      #endif
+      t1 = micros();
+      compare_us += t1 - t0;
     }
     block_addr += multi_blocks;
     --repeat_count;
   }
-
-  unsigned t1 = CLOCKCNT;
 
   TRACE("  Finished, read errors = %u\r\n", error_count);
   if (mismatch_count)
@@ -197,7 +254,10 @@ void sdcard_verify_multiple_blocks()
   {
     TRACE("  verify ok.\r\n");
   }
-  display_bm_res(t1 - t0, bytesize);
+  TRACE("  Reading");
+  display_bm_res(read_us, bytesize);
+  TRACE("  Compare");
+  display_bm_res(compare_us, bytesize);
 }
 
 void sdcard_init()
@@ -224,7 +284,7 @@ void sdcard_init()
   //sdcard.clockspeed = 25000000;
   //sdcard.clockspeed = 50000000;
   //sdcard.clockspeed = 800000000;
-  //sdcard.forced_clockspeed = 50000000;
+  //sdcard.forced_clockspeed = 25000000;
   //sdcard.bus_width = 4;
 
   TRACE("Waiting for SDCARD initialization...\r\n");
@@ -240,26 +300,64 @@ void test_sdcard()
 {
   int i;
 
+  TRACE("SD Card Test Start\r\n");
+
+  if (hwsdram.initialized)
+  {
+    databuf_size = hwsdram.byte_size / 2;
+    databuf  = (uint8_t *)sdram_alloc(databuf_size);
+    databuf2 = (uint8_t *)sdram_alloc(databuf_size);
+  }
+  else
+  {
+    databuf_size = 16 * 1024;
+    databuf  = (uint8_t *)malloc(databuf_size);
+    databuf2 = (uint8_t *)malloc(databuf_size);
+  }
+
+  TRACE("Test buffer size: %u\r\n", databuf_size);
+
+  if (!databuf or !databuf2)
+  {
+    TRACE("Test buffer allocation failed!\r\n");
+    return;
+  }
+
+
   sdcard_init();
+
+  TRACE("Enabling D-CACHE !\r\n");
+  mcu_enable_dcache();
+
+  //TRACE("SD card test return....\r\n");
+  //return;
 
   #if 1
     TRACE("Read tests...\r\n");
     //sdcard_read_single_blocks();
-    sdcard_read_multiple_blocks();
+    //sdcard_read_multiple_blocks();
   #endif
 
   #if 1
     TRACE("Write tests...\r\n");
 
-    for (i = 0; i < sizeof(databuf); ++i)
+    uint32_t * pu32 = (uint32_t *)databuf;
+    for (i = 0; i < (databuf_size >> 2); ++i)
     {
-      databuf[i] = 0xA0 + i;
+      //*pu32++ = 0x55555555 + i;
+      *pu32++ = 0xAAAAAAAA + i;
+    }
+
+    pu32 = (uint32_t *)databuf2;
+    for (i = 0; i < (databuf_size >> 2); ++i)
+    {
+      *pu32++ = 0x11111111 + i;
     }
 
     //sdcard_write_single_blocks();
     sdcard_write_multiple_blocks();
 
-    #if 0
+    #if 1
       TRACE("Verify written data...\r\n");
       sdcard_verify_multiple_blocks();
     #endif

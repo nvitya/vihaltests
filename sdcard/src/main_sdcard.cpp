@@ -9,6 +9,7 @@
 #include "hwclk.h"
 #include "cppinit.h"
 #include "clockcnt.h"
+#include "hwuscounter.h"
 
 #include "board_pins.h"
 #include "traces.h"
@@ -45,6 +46,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	mcu_enable_icache(); // enable instruction cache if present
 
 	clockcnt_init();
+  uscounter.Init();
 
 	// go on with the hardware initializations
 	board_pins_init();
