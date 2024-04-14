@@ -44,6 +44,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
+  mcu_enable_dcache(); // the SDRAM is very slow without this !
 
 	clockcnt_init();
   uscounter.Init();
@@ -55,6 +56,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("VIHAL SDCARD Test\r\n");
   TRACE("Board: %s\r\n", BOARD_NAME);
   TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
+
+  TRACE("Enabling D-CACHE !\r\n");
 
 	test_sdcard();
 

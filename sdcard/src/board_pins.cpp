@@ -6,6 +6,7 @@
 */
 
 #include "board_pins.h"
+#include "hwmemprot.h"
 
 THwUart   conuart;  // console uart
 unsigned  pin_led_count = 0;
@@ -259,6 +260,13 @@ void board_sdram_init()
   hwsdram.burst_length = 1;  // it does not like when it bigger than 1
 
   hwsdram.Init();
+
+  // On ST platform the cacheing for the SDRAM is inactive by default
+  // the MPU must be programmed to enable proper cacheing.
+  // The SHARED attribute disables the cache on ST platform so it is turned off for maximal performance
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 void board_pins_init()
@@ -381,6 +389,13 @@ void board_sdram_init()
   hwsdram.burst_length = 1;  // it does not like when it bigger than 1
 
   hwsdram.Init();
+
+  // On ST platform the cacheing for the SDRAM is inactive by default
+  // the MPU must be programmed to enable proper cacheing.
+  // The SHARED attribute disables the cache on ST platform so it is turned off for maximal performance
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 void board_pins_init()
@@ -398,6 +413,8 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A,  9,  PINCFG_OUTPUT | PINCFG_AF_7);
   hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_INPUT  | PINCFG_AF_7);
   conuart.Init(1); // USART1
+
+  board_sdram_init();
 
   // SDCARD Pins
   hwpinctrl.PinSetup(PORTNUM_C,  8, PINCFG_AF_12); // SDMMC_D0
@@ -847,6 +864,10 @@ void board_sdram_init()
   hwsdram.burst_length = 1;  // SDRAM does not work properly when larger than 1, but no speed degradation noticed
 
   hwsdram.Init();
+
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 void board_pins_init()
@@ -999,6 +1020,10 @@ void board_sdram_init()
   hwsdram.burst_length = 8;
 
   hwsdram.Init();
+
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 void board_pins_init()

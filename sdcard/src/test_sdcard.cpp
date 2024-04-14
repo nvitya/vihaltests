@@ -7,6 +7,7 @@
 #include "clockcnt.h"
 #include "hwuscounter.h"
 #include "traces.h"
+#include "hwmemprot.h"
 
 uint32_t g_sdram_allocated = 0;
 uint32_t databuf_size = 0;
@@ -296,6 +297,35 @@ void sdcard_init()
   TRACE("SDCARD initialized, size = %u MB\r\n", sdcard.card_megabytes);
 }
 
+void mpu_setup()
+{
+  TRACE("Enabling Caching for the SDRAM\r\n");
+
+  //show_mpu();
+  MPU->CTRL = 0; // disable the MPU
+
+  MPU->RNR = 0;
+  MPU->RBAR = hwsdram.address;
+
+  uint32_t attr = 0
+    | (1 << 0) // shareable
+    | (1 << 1) // inner cache policy(2): 0 = non-cacheable, 1 = Write back, write and Read- Allocate, 2 = Write through, no Write-Allocate, 3 = Write back, no Write-Allocate
+    | (1 << 3) // outer cache policy(2): 0 = non-cacheable, 1 = Write back, write and Read- Allocate, 2 = Write through, no Write-Allocate, 3 = Write back, no Write-Allocate
+    | (1 << 5) // cached region
+  ;
+
+  MPU->RASR = 0
+    | (1  <<  0) // ENABLE
+    | (27 <<  1) // SIZE(5): region size = 2^(1 + SIZE),  2^28 = 256 MByte
+    | (0  <<  8) // SRD(8): subregion disable bits
+    | (attr << 16) // attributes(6), B, S, C, TEX
+    | (3  << 24) // AP(3): permissions, 3 = RW/RW (full access)
+    | (0  << 28) // XN: 1 = code execution disabled
+  ;
+
+  MPU->CTRL = (1 << 0) | (1 << 2); // enable MPU
+}
+
 void test_sdcard()
 {
   int i;
@@ -326,8 +356,14 @@ void test_sdcard()
 
   sdcard_init();
 
-  TRACE("Enabling D-CACHE !\r\n");
-  mcu_enable_dcache();
+  #if 1
+
+    //mpu_setup();
+    //hwmemprot.Init();
+    //hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_NOCACHE, MEMPROT_PERM_RW);
+    //hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED, MEMPROT_PERM_RW);
+    //hwmemprot.Enable();
+  #endif
 
   //TRACE("SD card test return....\r\n");
   //return;
