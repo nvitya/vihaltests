@@ -1,3 +1,9 @@
+/*
+ * test_sdcard_sm.cpp
+ *
+ *  Created on: Apr 17, 2024
+ *      Author: vitya
+ */
 
 #include "string.h"
 
@@ -7,15 +13,21 @@
 #include "clockcnt.h"
 #include "hwuscounter.h"
 #include "traces.h"
-
 #include "test_common.h"
+#include "stormanager.h"
+#include "storman_sdcard.h"
 
 static uint32_t databuf_size = 0;
 
 static uint8_t * databuf;
 static uint8_t * databuf2;
 
-void sdcard_read_single_blocks()
+TStorManSdcard  sm_sdcard;
+int dev_sdcard = -1;
+
+TStorTrans  tra;
+
+void sm_read_single_blocks()
 {
   unsigned block_count = 16 * 1024;  // 8 MByte
   unsigned bytesize = block_count * 512;
@@ -28,9 +40,9 @@ void sdcard_read_single_blocks()
 
   while (block_count > 0)
   {
-    sdcard.StartReadBlocks(block_addr,  &databuf[0], 1);
-    sdcard.WaitForComplete();
-    if (sdcard.errorcode)
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_READ, uint64_t(block_addr) << 9, &databuf[0], 512);
+    g_storman.WaitTransaction(&tra);
+    if (tra.errorcode)
     {
       ++error_count;
     }
@@ -44,7 +56,7 @@ void sdcard_read_single_blocks()
   display_bm_res(t1 - t0, bytesize);
 }
 
-void sdcard_read_multiple_blocks()
+void sm_read_multiple_blocks()
 {
   unsigned error_count = 0;
   unsigned multi_blocks = databuf_size / 512;
@@ -59,9 +71,9 @@ void sdcard_read_multiple_blocks()
 
   while (repeat_count > 0)
   {
-    sdcard.StartReadBlocks(block_addr,  &databuf[0], multi_blocks);
-    sdcard.WaitForComplete();
-    if (sdcard.errorcode)
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_READ, uint64_t(block_addr) << 9, &databuf[0], multi_blocks << 9);
+    g_storman.WaitTransaction(&tra);
+    if (tra.errorcode)
     {
       ++error_count;
     }
@@ -76,7 +88,7 @@ void sdcard_read_multiple_blocks()
 }
 
 
-void sdcard_write_single_blocks()
+void sm_write_single_blocks()
 {
   unsigned block_count = 8 * 1024;  // 4 MByte
   unsigned bytesize = block_count * 512;
@@ -89,9 +101,9 @@ void sdcard_write_single_blocks()
 
   while (block_count > 0)
   {
-    sdcard.StartWriteBlocks(block_addr,  &databuf[0], 1);
-    sdcard.WaitForComplete();
-    if (sdcard.errorcode)
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_WRITE, uint64_t(block_addr) << 9, &databuf[0], 512);
+    g_storman.WaitTransaction(&tra);
+    if (tra.errorcode)
     {
       ++error_count;
     }
@@ -105,7 +117,7 @@ void sdcard_write_single_blocks()
   display_bm_res(t1 - t0, bytesize);
 }
 
-void sdcard_write_multiple_blocks()
+void sm_write_multiple_blocks()
 {
   unsigned error_count = 0;
   unsigned multi_blocks = databuf_size / 512;
@@ -120,9 +132,9 @@ void sdcard_write_multiple_blocks()
 
   while (repeat_count > 0)
   {
-    sdcard.StartWriteBlocks(block_addr,  &databuf[0], multi_blocks);
-    sdcard.WaitForComplete();
-    if (sdcard.errorcode)
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_WRITE, uint64_t(block_addr) << 9, &databuf[0], multi_blocks << 9);
+    g_storman.WaitTransaction(&tra);
+    if (tra.errorcode)
     {
       ++error_count;
     }
@@ -136,7 +148,7 @@ void sdcard_write_multiple_blocks()
   display_bm_res(t1 - t0, bytesize);
 }
 
-void sdcard_verify_multiple_blocks()
+void sm_verify_multiple_blocks()
 {
   unsigned multi_blocks = databuf_size / 512;
   unsigned repeat_count = 16 * 1024 * 1024 / (multi_blocks * 512);
@@ -156,12 +168,12 @@ void sdcard_verify_multiple_blocks()
 
   while (repeat_count > 0)
   {
-    sdcard.StartReadBlocks(block_addr,  &databuf2[0], multi_blocks);
-    sdcard.WaitForComplete();
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_READ, uint64_t(block_addr) << 9, &databuf[0], multi_blocks << 9);
+    g_storman.WaitTransaction(&tra);
     t1 = micros();
     read_us += t1 - t0;
 
-    if (sdcard.errorcode)
+    if (tra.errorcode)
     {
       ++error_count;
     }
@@ -211,11 +223,11 @@ void sdcard_verify_multiple_blocks()
 }
 
 
-void test_sdcard()
+void test_sdcard_sm()
 {
   int i;
 
-  TRACE("SD Card Test Start\r\n");
+  TRACE("SD-Card storage manager test start\r\n");
 
   if (hwsdram.initialized)
   {
@@ -243,13 +255,23 @@ void test_sdcard()
     return;  // error message is already printed.
   }
 
+  sm_sdcard.Init(&sdcard);
+  dev_sdcard = g_storman.AddManager(&sm_sdcard);
+  if (dev_sdcard < 0)
+  {
+    TRACE("Error Adding SD-Card storage manager!\r\n");
+    return;
+  }
+
+  TRACE("SD-Card storage manager initialized.\r\n");
+
   //TRACE("SD card test return....\r\n");
   //return;
 
   #if 1
     TRACE("Read tests...\r\n");
-    //sdcard_read_single_blocks();
-    sdcard_read_multiple_blocks();
+    //sm_read_single_blocks();
+    sm_read_multiple_blocks();
   #endif
 
   #if 0
@@ -268,19 +290,16 @@ void test_sdcard()
       *pu32++ = 0x11111111 + i;
     }
 
-    //sdcard_write_single_blocks();
-    sdcard_write_multiple_blocks();
+    //sm_write_single_blocks();
+    sm_write_multiple_blocks();
 
     #if 1
       TRACE("Verify written data...\r\n");
-      sdcard_verify_multiple_blocks();
+      sm_verify_multiple_blocks();
     #endif
 
   #endif
 
 
-	TRACE("SDCard test finished.\r\n");
+  TRACE("SDCard storage manager test finished.\r\n");
 }
-
-
-

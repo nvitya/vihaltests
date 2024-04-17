@@ -15,6 +15,7 @@
 #include "traces.h"
 
 #include "test_sdcard.h"
+#include "test_sdcard_sm.h"
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -59,7 +60,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
   TRACE("Enabling D-CACHE !\r\n");
 
-	test_sdcard();
+	//test_sdcard();
+	test_sdcard_sm();
 
 	TRACE("Starting main cycle...\r\n");
 

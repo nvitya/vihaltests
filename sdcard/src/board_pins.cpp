@@ -1018,6 +1018,7 @@ void board_sdram_init()
   hwsdram.row_cycle_delay = 9;
 
   hwsdram.burst_length = 8;
+  //hwsdram.burst_length = 1;
 
   hwsdram.Init();
 
