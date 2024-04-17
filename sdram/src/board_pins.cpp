@@ -8,6 +8,7 @@
 
 #include "board_pins.h"
 #include "hwsdram.h"
+#include "hwmemprot.h"
 
 THwUart   conuart;  // console uart
 unsigned  pin_led_count = 1;
@@ -131,6 +132,13 @@ void board_pins_init()
   hwsdram.burst_length = 1;  // it does not like when it bigger than 1
 
   hwsdram.Init();
+
+  // On ST platform the cacheing for the SDRAM is inactive by default
+  // the MPU must be programmed to enable proper cacheing.
+  // The SHARED attribute disables the cache on ST platform so it is turned off for maximal performance
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 #elif defined(BOARD_DISCOVERY_H747)
@@ -238,6 +246,13 @@ void board_pins_init()
   hwsdram.burst_length = 1;  // it does not like when it bigger than 1
 
   hwsdram.Init();
+
+  // On ST platform the cacheing for the SDRAM is inactive by default
+  // the MPU must be programmed to enable proper cacheing.
+  // The SHARED attribute disables the cache on ST platform so it is turned off for maximal performance
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 #elif defined(BOARD_DISCOVERY_F429)
@@ -634,6 +649,12 @@ void board_pins_init()
   hwsdram.burst_length = 8;
 
   hwsdram.Init();
+
+  // The SHARED attribute for the cached region degrades the performance significally (see SDRAM to SDRAM copy)
+  hwmemprot.Init();
+  hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_CACHED_NOSHARE, MEMPROT_PERM_RW);
+  //hwmemprot.AddRegion(hwsdram.address, hwsdram.byte_size, MEMPROT_ATTR_MEM_NOCACHE, MEMPROT_PERM_RW);
+  hwmemprot.Enable();
 }
 
 #elif defined(BOARD_EVK_IMXRT1050) || defined(BOARD_EVK_IMXRT1050A)

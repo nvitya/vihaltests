@@ -85,48 +85,6 @@ uint32_t sdram_test_data = 0;
 
 uint32_t g_checksum;
 
-void show_mpu()
-{
-	TRACE("MPU settings:\r\n");
-	int rcount = (MPU->TYPE >> 8);
-	TRACE("region count = %i\r\n", rcount);
-	for (int i = 0; i < rcount; ++i)
-	{
-		MPU->RNR = i;
-		__DSB();
-		TRACE("%i.: RBAR = %08X, RASR = %08X\r\n", i, MPU->RBAR, MPU->RASR);
-	}
-}
-
-void mpu_setup()
-{
-	TRACE("Enabling Caching for the SDRAM\r\n");
-
-	//show_mpu();
-	MPU->CTRL = 0; // disable the MPU
-
-	MPU->RNR = 0;
-	MPU->RBAR = hwsdram.address;
-
-	uint32_t attr = 0
-		| (1 << 0) // shareable
-	  | (1 << 1) // inner cache policy(2): 0 = non-cacheable, 1 = Write back, write and Read- Allocate, 2 = Write through, no Write-Allocate, 3 = Write back, no Write-Allocate
-	  | (1 << 3) // outer cache policy(2): 0 = non-cacheable, 1 = Write back, write and Read- Allocate, 2 = Write through, no Write-Allocate, 3 = Write back, no Write-Allocate
- 	  | (1 << 5) // cached region
-  ;
-
-	MPU->RASR = 0
-		| (1  <<  0) // ENABLE
-		| (27	<<  1) // SIZE(5): region size = 2^(1 + SIZE),  2^28 = 256 MByte
-		| (0  <<  8) // SRD(8): subregion disable bits
-		| (attr << 16) // attributes(6), B, S, C, TEX
-		| (3  << 24) // AP(3): permissions, 3 = RW/RW (full access)
-		| (0  << 28) // XN: 1 = code execution disabled
-	;
-
-	MPU->CTRL = (1 << 0) | (1 << 2); // enable MPU
-}
-
 void display_bm_res(uint32_t aclocks, uint32_t abytesize, uint32_t trsize)
 {
 	float ul_ticks = (float)aclocks / (SystemCoreClock / 1000);
@@ -140,12 +98,6 @@ void sdram_test1()
 	TRACE("SDRAM test1\r\n");
 
 	TRACE("SDRAM address = %08X\r\n", hwsdram.address);
-
-#if defined(MCUF_STM32) && (defined(MCUSF_F7) || defined(MCUSF_H7))
-	//show_mpu();
-	mpu_setup();
-  //show_mpu();
-#endif
 
 	uint32_t i;
 	uint16_t * startaddr = (uint16_t *)(hwsdram.address);
