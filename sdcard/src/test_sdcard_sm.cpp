@@ -168,7 +168,7 @@ void sm_verify_multiple_blocks()
 
   while (repeat_count > 0)
   {
-    g_storman.AddTransaction(dev_sdcard, &tra, STRA_READ, uint64_t(block_addr) << 9, &databuf[0], multi_blocks << 9);
+    g_storman.AddTransaction(dev_sdcard, &tra, STRA_READ, uint64_t(block_addr) << 9, &databuf2[0], multi_blocks << 9);
     g_storman.WaitTransaction(&tra);
     t1 = micros();
     read_us += t1 - t0;
@@ -218,8 +218,11 @@ void sm_verify_multiple_blocks()
   }
   TRACE("  Reading");
   display_bm_res(read_us, bytesize);
-  TRACE("  Compare");
-  display_bm_res(compare_us, bytesize);
+  if (0 == mismatch_count)
+  {
+    TRACE("  Compare");
+    display_bm_res(compare_us, bytesize);
+  }
 }
 
 
@@ -274,7 +277,7 @@ void test_sdcard_sm()
     sm_read_multiple_blocks();
   #endif
 
-  #if 0
+  #if 1
     TRACE("Write tests...\r\n");
 
     uint32_t * pu32 = (uint32_t *)databuf;

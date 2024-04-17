@@ -252,7 +252,7 @@ void test_sdcard()
     sdcard_read_multiple_blocks();
   #endif
 
-  #if 0
+  #if 1
     TRACE("Write tests...\r\n");
 
     uint32_t * pu32 = (uint32_t *)databuf;
