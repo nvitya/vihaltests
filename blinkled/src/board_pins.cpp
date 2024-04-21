@@ -139,6 +139,18 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_MILKV_DUO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  //hwpinctrl.PadSetup(12, FUNC_GPIOHS0, PINCFG_OUTPUT);
+
+  //pin_led[0].Assign(0, 0, true); // GPIOHS assignment here
+
+  //board_pins_init_leds();
+}
+
 //-------------------------------------------------------------------------------
 // Xtensa (ESP32)
 //-------------------------------------------------------------------------------
