@@ -22,6 +22,7 @@ Original Author: Shay Gal-on
 #include "core_portme.h"
 #include "platform.h"
 #include "clockcnt.h"
+#include "hwuscounter.h"
 
 extern "C"
 {
@@ -67,11 +68,11 @@ barebones_clock()
    increase this value.
         */
 
-#define GETMYTIME(_t)              (*_t = CLOCKCNT)
+#define GETMYTIME(_t)              (*_t = uscounter.Get32())
 #define MYTIMEDIFF(fin, ini)       ((fin) - (ini))
 #define TIMER_RES_DIVIDER          1
 #define SAMPLE_TIME_IMPLEMENTATION 1
-#define EE_TICKS_PER_SEC           (MCU_CLOCK_SPEED / TIMER_RES_DIVIDER)
+#define EE_TICKS_PER_SEC           (1000000)
 
 /** Define Host specific (POSIX), or target specific global time variables. */
 static CORETIMETYPE start_time_val, stop_time_val;
@@ -128,7 +129,7 @@ get_time(void)  // millisecs
 secs_ret
 time_in_secs(CORE_TICKS ticks)
 {
-    secs_ret retval = (secs_ret)(((CORE_TICKS)ticks) / ((CORE_TICKS)SystemCoreClock));
+    secs_ret retval = (secs_ret)(((CORE_TICKS)ticks) / ((CORE_TICKS)1000000));
     return retval;
 }
 

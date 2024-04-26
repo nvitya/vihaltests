@@ -6,6 +6,7 @@
 #include "platform.h"
 #include "cppinit.h"
 #include "clockcnt.h"
+#include "hwuscounter.h"
 
 #include "hwclk.h"
 #include "hwpins.h"
@@ -98,6 +99,22 @@ void setup_board()
   hwpinctrl.PadSetup(5, FUNC_UART3_TX, PINCFG_OUTPUT);
   conuart.Init(3);
 }
+
+#elif defined(BOARD_MILKV_DUO)
+
+#define LED_COUNT 1
+
+TGpioPin  pin_led1(PORTNUM_C, 24, true);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PadFuncSetup(PAD_SD1_GPIO1, FMUX_SD1_GPIO1__UART4_TX, 0);  // Milk-V Duo Board pin 4: UART4_TX
+  hwpinctrl.PadFuncSetup(PAD_SD1_GPIO0, FMUX_SD1_GPIO0__UART4_RX, PINCFG_PULLUP);  // Milk-V Duo Board pin 5: UART4_RX
+  conuart.Init(4);
+}
+
 
 //-------------------------------------------------------------------------------
 // Xtensa (ESP32)
@@ -199,7 +216,7 @@ extern "C" void portable_calculate(unsigned total_ticks, unsigned iterations)
 {
   TRACE("\r\n");
   TRACE("Precise coremark values:\r\n");
-  unsigned t_ms = (total_ticks / (SystemCoreClock / 1000));
+  unsigned t_ms = (total_ticks / 1000);
   unsigned cm_x100 = (100 * 1000 * iterations) / t_ms;
   unsigned mhz = (SystemCoreClock / 1000000);
   TRACE("  total millisecs     = %u\r\n", t_ms);
@@ -243,7 +260,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
-	//mcu_enable_dcache(); // enable data cache if present
+	mcu_enable_dcache(); // enable data cache if present
+	//mcu_disable_dcache();
 
 #if defined(CMCC)
 	// enable cache
@@ -251,6 +269,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 #endif
 
 	clockcnt_init();
+	uscounter.Init();
 
 	// go on with the hardware initializations
 	setup_board();
@@ -259,11 +278,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("VIHAL Coremark\r\n");
 	TRACE("Board: \"%s\"\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
-
-	if (SystemCoreClock > 300000000)
-	{
-	  TRACE("WARNING: the system core clock is too high to track 10 seconds !\r\n");
-	}
 
 	TRACE("Executing the CoreMark...\r\n");
 
