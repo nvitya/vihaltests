@@ -115,6 +115,19 @@ void setup_board()
   conuart.Init(4);
 }
 
+#elif defined(BOARD_LICHEERV_NANO)
+
+#define LED_COUNT 1
+TGpioPin  pin_led1(PORTNUM_A, 14, true);
+
+void setup_board()
+{
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PadFuncSetup(PAD_SD1_D2, FMUX_SD1_D2__UART3_TX, 0);
+  hwpinctrl.PadFuncSetup(PAD_SD1_D1, FMUX_SD1_D1__UART3_RX, PINCFG_PULLUP);
+  conuart.Init(3);
+}
 
 //-------------------------------------------------------------------------------
 // Xtensa (ESP32)
