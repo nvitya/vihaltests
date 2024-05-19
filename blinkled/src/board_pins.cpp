@@ -144,11 +144,20 @@ void board_pins_init()
 void board_pins_init()
 {
   pin_led_count = 1;
-  //hwpinctrl.PadSetup(12, FUNC_GPIOHS0, PINCFG_OUTPUT);
+  //hwpinctrl.PadSetup(PAD_AUD_AOUTR, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);  // = XGPIOC[24]
+  pin_led[0].Assign(PORTNUM_C, 24, true);  // onboard led: PAD_AUD_OUTR (pin 1 on the QFN-68) = XGPIOC[24]
 
-  //pin_led[0].Assign(0, 0, true); // GPIOHS assignment here
+  board_pins_init_leds();
+}
 
-  //board_pins_init_leds();
+#elif defined(BOARD_LICHEERV_NANO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 14, true);  // onboard led: PAD_SDIO0_PWR_EN (pin 15 on the QFN-88) = XGPIOA[14]
+
+  board_pins_init_leds();
 }
 
 //-------------------------------------------------------------------------------
