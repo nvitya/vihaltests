@@ -151,6 +151,33 @@ void board_pins_init()
   conuart.Init(3);
 }
 
+#elif defined(BOARD_MILKV_DUO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  //hwpinctrl.PadSetup(PAD_AUD_AOUTR, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);  // = XGPIOC[24]
+  pin_led[0].Assign(PORTNUM_C, 24, true);
+  board_pins_init_leds();
+
+  hwpinctrl.PadFuncSetup(PAD_SD1_GPIO1, FMUX_SD1_GPIO1__UART4_TX, 0);  // Milk-V Duo Board pin 4: UART4_TX
+  hwpinctrl.PadFuncSetup(PAD_SD1_GPIO0, FMUX_SD1_GPIO0__UART4_RX, PINCFG_PULLUP);  // Milk-V Duo Board pin 5: UART4_RX
+  conuart.Init(4);
+}
+
+#elif defined(BOARD_LICHEERV_NANO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_A, 14, true);  // onboard led: PAD_SDIO0_PWR_EN (pin 15 on the QFN-88) = XGPIOA[14]
+  board_pins_init_leds();
+
+  hwpinctrl.PadFuncSetup(PAD_SD1_D2, FMUX_SD1_D2__UART3_TX, 0);
+  hwpinctrl.PadFuncSetup(PAD_SD1_D1, FMUX_SD1_D1__UART3_RX, PINCFG_PULLUP);
+  conuart.Init(3);
+}
+
 //-------------------------------------------------------------------------------
 // Xtensa (ESP32)
 //-------------------------------------------------------------------------------
