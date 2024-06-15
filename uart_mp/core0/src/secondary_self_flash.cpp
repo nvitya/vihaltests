@@ -11,7 +11,7 @@
 #include "vgboot_utils.h"
 #include "spiflash_updater.h"
 #include "board_pins.h"
-#include "rp_mailbox.h"
+#include "hwmulticore.h"
 #include "traces.h"
 
 bool check_secondary_self_flash() // called regularly from idle loop
@@ -61,40 +61,11 @@ bool check_secondary_self_flash() // called regularly from idle loop
   return true;
 }
 
-// this part is copied from the PICO-SDK (https://github.com/raspberrypi/pico-sdk)
-
-#define PSM_FRCE_OFF_OFFSET _u(0x00000004)
-#define PSM_FRCE_OFF_PROC1_BITS   0x00010000
-
-void multicore_reset_core1()
-{
-  // Use atomic aliases just in case core 1 is also manipulating some PSM state
-  io_rw_32 * power_off     = (io_rw_32 *) (PSM_BASE + PSM_FRCE_OFF_OFFSET);
-  io_rw_32 * power_off_set = hw_set_alias(power_off);
-  io_rw_32 * power_off_clr = hw_clear_alias(power_off);
-
-  // Hard-reset core 1.
-  // Reading back confirms the core 1 reset is in the correct state, but also
-  // forces APB IO bridges to fence on any internal store buffering
-  *power_off_set = PSM_FRCE_OFF_PROC1_BITS;
-  while (!(*power_off & PSM_FRCE_OFF_PROC1_BITS))
-  {
-    __NOP();
-  };
-
-  // Bring core 1 back out of reset. It will drain its own mailbox FIFO, then push
-  // a 0 to our mailbox to tell us it has done this.
-  *power_off_clr = PSM_FRCE_OFF_PROC1_BITS;
-}
-
-TRpMailBox rp_mailbox;
-
 bool load_secondary_core_code()
 {
-  rp_mailbox.Init(0);
 
   // warning: the secondary core might be running
-  multicore_reset_core1();
+  multicore.ResetCore(1);
 
   TAppHeader * papph = (TAppHeader *)(SECONDARY_CODE_ADDR);
 
@@ -130,12 +101,15 @@ bool load_secondary_core_code()
 
   TRACE("Trying to start secondary at %08X...\r\n", papph->addr_entry);
 
-  rp_mailbox.StartSecodaryCore(papph->addr_entry, SECONDARY_STACK_ADDR, 0x21040000);
-
-  //    __isr_vectors void (*[])(void)  0x21020400
-  //SECONDARY_CODE_ADDR + sizeof(TAppHeader));
-
-  TRACE("Secondary started.\r\n");
+  if (multicore.StartCore(1, papph->addr_entry, SECONDARY_STACK_ADDR, SECONDARY_CODE_ADDR))
+  {
+    TRACE("  OK.\r\n");
+  }
+  else
+  {
+    TRACE("  ERROR starting secondary core !\r\n");
+    return false;
+  }
 
   return true;
 }

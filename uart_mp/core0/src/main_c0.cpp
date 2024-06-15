@@ -12,6 +12,7 @@
 #include "hwpins.h"
 #include "hwuart.h"
 #include "traces.h"
+#include "hwmulticore.h"
 
 #include "board_pins.h"
 
@@ -89,6 +90,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	clockcnt_init();
 	uscounter.Init();
+  multicore.Init(0);
 
 	// go on with the hardware initializations
 	board_pins_init();

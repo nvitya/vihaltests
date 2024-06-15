@@ -16,6 +16,7 @@
 #include "board_pins.h"
 
 #include "app_header.h"
+#include "rp_multicore.h"  // RP2040 specific !
 #include "multicore_app.h"
 #include "vgboot_utils.h"
 
