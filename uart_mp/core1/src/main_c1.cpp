@@ -16,8 +16,8 @@
 #include "board_pins.h"
 
 #include "app_header.h"
-#include "rp_multicore.h"  // RP2040 specific !
 #include "multicore_app.h"
+#include "hwmulticore.h"
 #include "vgboot_utils.h"
 
 volatile unsigned hbcounter = 0;
@@ -42,6 +42,32 @@ void request_secondary_self_flashing()
   papph->customdata = SECONDARY_SELF_FLASH_FLAG;  // this will be checked by the Primary core
 }
 
+volatile uint32_t g_ipc_irq_cnt = 0;
+uint32_t prev_ipc_irq_cnt = 0;
+
+extern "C" void IRQ_Handler_16()
+{
+  ++g_ipc_irq_cnt;
+
+  uint32_t data;
+  if (multicore.TryIpcRecv(&data))
+  {
+    //TRACE("C1 IPC IRQ data: %08X\r\n", data);
+  }
+  multicore.IpcIrqAck();
+}
+
+#define IRQPRIO_IPCINT  1
+
+void enable_ipc_irq()
+{
+  int irqnum = SIO_PROC1_IRQn;
+
+  mcu_irq_priority_set(irqnum, IRQPRIO_IPCINT);
+  mcu_irq_pending_clear(irqnum);
+  mcu_irq_enable(irqnum);
+}
+
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
   // after ram setup and region copy the cpu jumps here, with probably RC oscillator
@@ -61,6 +87,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	clockcnt_init();  // check if already initialized !!!
 	uscounter.Init();
+	multicore.Init(1);
 
 	// go on with the hardware initializations
 	board_pins_init();
@@ -77,9 +104,14 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	mcu_interrupts_enable();
 
+	enable_ipc_irq();
+
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 
 	unsigned t0, t1;
+
+  unsigned last_ipc_send_clocks = CLOCKCNT;
+  unsigned ipc_send_interval = SystemCoreClock / 1000000;
 
 	t0 = CLOCKCNT;
 
@@ -90,11 +122,19 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 		++g_core1_counter;
 
+    if (t1 - last_ipc_send_clocks > ipc_send_interval)
+    {
+      multicore.TryIpcSend((uint32_t *)&g_core1_counter);
+      last_ipc_send_clocks = t1;
+    }
+
+#if 0
 		char c;
 		if (conuart.TryRecvChar(&c))
 		{
 		  conuart.printf("you pressed \"%c\"\r\n", c);
 		}
+#endif
 
 		if (t1-t0 > hbclocks)
 		{
@@ -105,7 +145,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-			TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
+      TRACE("hbcounter=%u, ipc_irq_cnt=%u\r\n", hbcounter, g_ipc_irq_cnt - prev_ipc_irq_cnt);
+      prev_ipc_irq_cnt = g_ipc_irq_cnt;
 
 			t0 = t1;
 
