@@ -1,6 +1,6 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
-// created:  2021-10-03
+// file:     main_c1.cpp (uart_mp)
+// brief:    VIHAL Multi-Core UART Test for Secondary core
+// created:  2024-06-15
 // authors:  nvitya
 
 #include "platform.h"
@@ -15,13 +15,32 @@
 
 #include "board_pins.h"
 
-#if SPI_SELF_FLASHING
-  #include "spi_self_flashing.h"
-#endif
+#include "app_header.h"
+#include "multicore_app.h"
+#include "vgboot_utils.h"
 
 volatile unsigned hbcounter = 0;
 
 volatile uint32_t g_core1_counter = 0;
+
+extern const TAppHeader application_header;
+
+void request_secondary_self_flashing()
+{
+  TAppHeader *  papph = (TAppHeader *)&application_header;
+
+  // calculate checksums
+  papph->length = ((3 + papph->length) & 0x0FFFFFFC);  // round up length
+  papph->csum_body = vgboot_checksum(papph + 1, papph->length - sizeof(TAppHeader));
+  papph->csum_head = 0;
+  // the cusomdata will will be changed later to SECONDARY_SELF_FLASH_FLAG
+  // but in order to avoid false data read on the primary we keep this at zero
+  papph->customdata = 0;
+  papph->csum_head = vgboot_checksum(papph, sizeof(TAppHeader)) - SECONDARY_SELF_FLASH_FLAG;
+
+  // set the customdata only when everything was setup perfectly
+  papph->customdata = SECONDARY_SELF_FLASH_FLAG;  // this will be checked by the Primary core
+}
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // self_flashing = 1: self-flashing required for RAM-loaded applications
 {
@@ -46,27 +65,15 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	// go on with the hardware initializations
 	board_pins_init();
 
-	TRACE("\r\n--------------------------------------\r\n");
-	TRACE("VIHAL UART Multi-Core Test, Core-1\r\n");
+	TRACE("\r\n----------------------------------------\r\n");
+	TRACE("VIHAL UART Multi-Core Test on SECONDARY CORE\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-#if SPI_SELF_FLASHING
-
-  if (spiflash.initialized)
-  {
-    TRACE("SPI Flash ID CODE: %08X, size = %u\r\n", spiflash.idcode, spiflash.bytesize);
-  }
-  else
-  {
-    TRACE("Error initializing SPI Flash !\r\n");
-  }
-
   if (self_flashing)
   {
-    spi_self_flashing(&spiflash);
+    request_secondary_self_flashing();
   }
-#endif
 
 	mcu_interrupts_enable();
 
@@ -80,6 +87,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	while (1)
 	{
 		t1 = CLOCKCNT;
+
+		++g_core1_counter;
 
 		char c;
 		if (conuart.TryRecvChar(&c))

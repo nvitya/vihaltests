@@ -1,6 +1,6 @@
-// file:     main.cpp (uart)
-// brief:    VIHAL UART Test
-// created:  2021-10-03
+// file:     main_c0.cpp (uart_mp)
+// brief:    VIHAL Multi-Core UART Test for Primary core
+// created:  2024-06-15
 // authors:  nvitya
 
 #include "platform.h"
@@ -14,6 +14,8 @@
 #include "traces.h"
 
 #include "board_pins.h"
+
+#include "secondary_self_flash.h"
 
 #if SPI_SELF_FLASHING
   #include "spi_self_flashing.h"
@@ -92,7 +94,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	board_pins_init();
 
 	TRACE("\r\n--------------------------------------\r\n");
-	TRACE("VIHAL UART Multi-Core Test\r\n");
+	TRACE("VIHAL UART Multi-Core Test on PRIMARY CORE\r\n");
 	TRACE("Board: %s\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
@@ -118,6 +120,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 
 	mcu_interrupts_enable();
 
+	TRACE("Starting Main Cycle...\r\n");
+
 	unsigned hbclocks = SystemCoreClock / 20;  // start blinking fast
 
 	unsigned t0, t1;
@@ -129,10 +133,12 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
+		check_secondary_self_flash();
+
 		char c;
 		if (conuart.TryRecvChar(&c))
 		{
-		  conuart.printf("you pressed \"%c\"\r\n", c);
+		  //conuart.printf("you pressed \"%c\"\r\n", c);
 		}
 
 		if (t1-t0 > hbclocks)
@@ -144,7 +150,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-			TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
+			//TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
 
 			t0 = t1;
 
