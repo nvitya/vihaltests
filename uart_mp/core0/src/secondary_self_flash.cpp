@@ -116,14 +116,24 @@ bool load_secondary_core_code()
   // load the whole to the destination (including the application header)
   //TRACE("APP LEN=%u\r\n", apphead.length);
   TRACE("Loading secondary core code (%u bytes) ...\r\n", papph->length);
-  spiflash.StartReadMem(SECONDARY_CODE_SPI_ADDR, papph + 1, papph->length);
+  spiflash.StartReadMem(SECONDARY_CODE_SPI_ADDR + sizeof(*papph), papph + 1, papph->length);
   spiflash.WaitForComplete();
+
+  csum = vgboot_checksum(papph + 1, papph->length);  // skip the checksum from the calculation
+  if (papph->csum_body != csum)
+  {
+    TRACE("  Body Checksum error!\r\n");
+    return false;
+  }
 
   TRACE("  OK.\r\n");
 
   TRACE("Trying to start secondary at %08X...\r\n", papph->addr_entry);
 
-  rp_mailbox.StartSecodaryCore(papph->addr_entry, SECONDARY_STACK_ADDR, SECONDARY_CODE_ADDR + sizeof(TAppHeader));
+  rp_mailbox.StartSecodaryCore(papph->addr_entry, SECONDARY_STACK_ADDR, 0x21040000);
+
+  //    __isr_vectors void (*[])(void)  0x21020400
+  //SECONDARY_CODE_ADDR + sizeof(TAppHeader));
 
   TRACE("Secondary started.\r\n");
 

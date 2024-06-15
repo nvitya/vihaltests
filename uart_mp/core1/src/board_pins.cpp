@@ -36,7 +36,7 @@ void board_pins_init_leds()
 void board_pins_init()
 {
   pin_led_count = 1;
-  pin_led[0].Assign(0, 2, false);  // use the GP2 here
+  pin_led[0].Assign(0, 25, false);  // use the on-board led
   board_pins_init_leds();
 
   hwpinctrl.PinSetup(0,  4, PINCFG_OUTPUT | PINCFG_AF_2); // UART1_TX:

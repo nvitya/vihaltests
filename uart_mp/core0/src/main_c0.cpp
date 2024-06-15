@@ -156,7 +156,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
         pin_led[n].SetTo((hbcounter >> n) & 1);
       }
 
-			//TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
+			TRACE("hbcounter=%u, uscounter=%u\r\n", hbcounter, uscounter.Get32()); // = conuart.printf()
 
 			t0 = t1;
 

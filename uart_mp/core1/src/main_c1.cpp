@@ -31,12 +31,11 @@ void request_secondary_self_flashing()
 
   // calculate checksums
   papph->length = ((3 + papph->length) & 0x0FFFFFFC);  // round up length
-  papph->csum_body = vgboot_checksum(papph + 1, papph->length - sizeof(TAppHeader));
-  papph->csum_head = 0;
+  papph->csum_body = vgboot_checksum(papph + 1, papph->length);
   // the cusomdata will will be changed later to SECONDARY_SELF_FLASH_FLAG
   // but in order to avoid false data read on the primary we keep this at zero
   papph->customdata = 0;
-  papph->csum_head = vgboot_checksum(papph, sizeof(TAppHeader)) - SECONDARY_SELF_FLASH_FLAG;
+  papph->csum_head = vgboot_checksum(papph, sizeof(TAppHeader) - 4) - SECONDARY_SELF_FLASH_FLAG;
 
   // set the customdata only when everything was setup perfectly
   papph->customdata = SECONDARY_SELF_FLASH_FLAG;  // this will be checked by the Primary core
