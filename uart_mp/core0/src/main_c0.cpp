@@ -115,6 +115,12 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   }
 #endif
 
+  if (!check_secondary_self_flash())
+  {
+    // try to load the secondary core code
+    load_secondary_core_code();
+  }
+
   //check_us_counter();
   check_us_counter_readout_speed();
 

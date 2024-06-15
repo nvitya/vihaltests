@@ -9,7 +9,7 @@
 #define SRC_SECONDARY_SELF_FLASH_H_
 
 
-void check_secondary_self_flash();
-
+bool check_secondary_self_flash();
+bool load_secondary_core_code();
 
 #endif /* SRC_SECONDARY_SELF_FLASH_H_ */
