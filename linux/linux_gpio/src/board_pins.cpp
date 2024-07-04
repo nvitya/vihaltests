@@ -43,7 +43,7 @@ void board_pins_init()
   pin_led[0].Assign(1, 21, false);
   pin_led[1].Assign(1, 22, false);
   pin_led[2].Assign(1, 23, false);
-  pin_led[4].Assign(1, 24, false);
+  pin_led[3].Assign(1, 24, false);
   board_pins_init_leds();
 }
 
