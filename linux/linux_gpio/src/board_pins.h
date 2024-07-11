@@ -16,13 +16,5 @@ extern TGpioPin  pin_led[MAX_LEDS];
 extern unsigned  pin_led_count;
 
 void board_pins_init();
-void board_display_init();
-
-#define DISP_SPI
-#define SPI_DISPLAY_WIDTH    128  // for 128x160
-
-#include "tftlcd_spi.h"
-
-extern TTftLcd_spi  disp;
 
 #endif /* SRC_BOARD_PINS_H_ */

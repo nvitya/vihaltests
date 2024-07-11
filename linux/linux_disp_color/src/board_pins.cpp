@@ -19,22 +19,62 @@ void board_pins_init_leds()
   }
 }
 
-TTftLcd_spi  disp;
+#if 0  // to use elif everywhere
 
-void init_spi_display()
+//-------------------------------------------------------------------------------
+// RV64G
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_MILKV_DUO)
+
+TTftLcd_sg_spinor  disp;
+
+void board_display_init()
 {
   //lcd.mirrorx = true;
   disp.Init(LCD_CTRL_ST7735R, 128, 160);
   disp.SetRotation(1);
 }
 
-#if 0  // to use elif everywhere
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 24, true);  // onboard led: PAD_AUD_OUTR (pin 1 on the QFN-68) = XGPIOC[24]
+  board_pins_init_leds();
+
+  SystemCoreClock = 1000000000;
+
+  // LCD control
+
+  disp.pin_cs.Assign(PORTNUM_A, 24, false);    // PAD_SPINOR_CS_X
+  disp.pin_cs.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  disp.pin_cd.Assign(PORTNUM_A, 23, false);    // PAD_SPINOR_MISO
+  disp.pin_cd.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+  disp.pin_reset.Assign(PORTNUM_A, 27, false); // PAD_SPINOR_WP_X
+  disp.pin_reset.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  hwpinctrl.PadFuncSetup(PAD_SPINOR_MOSI,  FMUX_SPINOR_MOSI__SPINOR_MOSI, 0);
+  hwpinctrl.PadFuncSetup(PAD_SPINOR_SCK,   FMUX_SPINOR_SCK__SPINOR_SCK, 0);
+
+  disp.speed = 16000000;
+  disp.Init(LCD_CTRL_ST7735R, 128, 160);
+  disp.SetRotation(1);
+}
 
 //-------------------------------------------------------------------------------
 // ARM Cortex-A
 //-------------------------------------------------------------------------------
 
 #elif defined(BOARD_BEAGLEB_BLACK)
+
+TTftLcd_spi  disp;
+
+void board_display_init()
+{
+  //lcd.mirrorx = true;
+  disp.Init(LCD_CTRL_ST7735R, 128, 160);
+  disp.SetRotation(1);
+}
 
 void board_pins_init()
 {
@@ -70,13 +110,6 @@ void board_pins_init()
   disp.spi.Init(0);
 }
 
-void board_display_init()
-{
-  init_spi_display();
-}
-
 #else
   #error "Define board_pins_init here"
 #endif
-
-

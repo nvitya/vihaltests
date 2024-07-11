@@ -21,8 +21,18 @@ void board_display_init();
 #define DISP_SPI
 #define SPI_DISPLAY_WIDTH    128  // for 128x160
 
-#include "tftlcd_spi.h"
+#if defined(BOARD_MILKV_DUO)
 
-extern TTftLcd_spi  disp;
+	#include "tftlcd_sg_spinor.h"
+
+	extern TTftLcd_sg_spinor  disp;
+
+#else
+
+  #include "tftlcd_spi.h"
+
+  extern TTftLcd_spi  disp;
+
+#endif
 
 #endif /* SRC_BOARD_PINS_H_ */

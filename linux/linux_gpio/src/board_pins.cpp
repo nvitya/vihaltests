@@ -32,6 +32,22 @@ void board_pins_init_leds()
 #if 0  // to use elif everywhere
 
 //-------------------------------------------------------------------------------
+// RV64G
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_MILKV_DUO)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(PORTNUM_C, 24, true);  // onboard led: PAD_AUD_OUTR (pin 1 on the QFN-68) = XGPIOC[24]
+  board_pins_init_leds();
+
+  SystemCoreClock = 1000000000;
+}
+
+
+//-------------------------------------------------------------------------------
 // ARM Cortex-A
 //-------------------------------------------------------------------------------
 
