@@ -13,10 +13,12 @@
 #include "hwuart.h"
 #include "traces.h"
 
+#include "fpbenchmark.h"
+
 THwUart   conuart;  // console uart
 
 //-------------------------------------------------------------------------------
-// RISC-V
+// RISC-V: RV32I
 //-------------------------------------------------------------------------------
 
 #if defined(BOARD_VRV1_103) || defined(BOARD_VRV1_104) || defined(BOARD_VRV1_241) \
@@ -145,6 +147,29 @@ void setup_board()
   hwpinctrl.PadSetup(PAD_U0RXD, U0RXD_IN_IDX,  PINCFG_INPUT  | PINCFG_AF_0);  // with AF_0 there is a direct routing mode
   conuart.Init(0);
 }
+
+//-------------------------------------------------------------------------------
+// ARM Cortex-R
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_LP_AM2434)
+
+TGpioPin  pin_led1(0, 22, false);  // led green
+TGpioPin  pin_led2(1, 55, false);  // led red
+
+#define LED_COUNT 2
+
+void setup_board()
+{
+  // nucleo board leds
+  pin_led1.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  pin_led2.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+
+  hwpinctrl.PadSetup(PAD_UART0_TXD,  PINCFG_AF_0);
+  hwpinctrl.PadSetup(PAD_UART0_RXD,  PINCFG_AF_0 | PINCFG_INPUT | PINCFG_PULLUP);
+  conuart.Init(0);
+}
+
 
 //-------------------------------------------------------------------------------
 // ARM Cortex-M
@@ -292,13 +317,17 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	TRACE("Board: \"%s\"\r\n", BOARD_NAME);
 	TRACE("SystemCoreClock: %u\r\n", SystemCoreClock);
 
-	TRACE("Executing the CoreMark...\r\n");
 
 	//SysTick_Config(SystemCoreClock / 50);  // slow tick for a few interrupt
 	//mcu_interrupts_enable();
 
   pin_led1.Set1();
-	main(0, nullptr);
+
+  TRACE("Executing FP Benchmark...\r\n");
+  fpbenchmark_run(10000000);
+
+  TRACE("Executing the CoreMark...\r\n");
+	main(0, nullptr);  // execute the CoreMark Main Code
 
 	//TRACE("WARNING: for precise coremark value take the \"Total Ticks\" divide it with %u
 
