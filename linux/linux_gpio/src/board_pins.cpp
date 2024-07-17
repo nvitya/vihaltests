@@ -63,6 +63,19 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+//-------------------------------------------------------------------------------
+// 64-bit ARM-A
+//-------------------------------------------------------------------------------
+
+#elif defined(BOARD_RPI_4)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 16, false);
+  board_pins_init_leds();
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
