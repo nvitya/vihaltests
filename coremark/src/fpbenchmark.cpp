@@ -54,7 +54,7 @@ void fpbenchmark_run(int iterations)
   tstart = uscounter.Get32();
   ans = fpbench_f32(f1, f2, iterations);
   tend = uscounter.Get32();
-  elapsed_ms = (tend - tstart) / 1000;
+  elapsed_ms = (tend - tstart) / 1000.0;
   TRACE("  ans = %f, time = %.3f ms\r\n", ans, elapsed_ms);
   TRACE("  %d loop/msec\r\n", (int)(iterations/elapsed_ms));
 
@@ -62,7 +62,7 @@ void fpbenchmark_run(int iterations)
   tstart = uscounter.Get32();
   ans = fpbench_f64(f1, f2, iterations);
   tend = uscounter.Get32();
-  elapsed_ms = (tend - tstart) / 1000;
+  elapsed_ms = (tend - tstart) / 1000.0;
   TRACE("  ans = %f, time = %.3f ms\r\n", ans, elapsed_ms);
   TRACE("  %d loop/msec\r\n", (int)(iterations/elapsed_ms));
 }
