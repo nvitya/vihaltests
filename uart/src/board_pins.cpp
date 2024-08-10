@@ -233,6 +233,23 @@ void board_pins_init()
   conuart.Init(3); // USART3
 }
 
+#elif defined(BOARD_NUCLEO_H7S3)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_D, 10, false);  // PA5 as alternative
+  pin_led[1].Assign(PORTNUM_D, 13, false);
+  pin_led[2].Assign(PORTNUM_B,  7, false);
+  board_pins_init_leds();
+
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
+}
+
+
 #elif defined(BOARD_NUCLEO_G474RE)
 
 void board_pins_init()
