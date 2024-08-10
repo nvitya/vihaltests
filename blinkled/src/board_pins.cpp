@@ -205,6 +205,17 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_NUCLEO_H7S3)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_D, 10, false);  // PA5 as alternative
+  pin_led[1].Assign(PORTNUM_D, 13, false);
+  pin_led[2].Assign(PORTNUM_B,  7, false);
+  board_pins_init_leds();
+}
+
 #elif defined(BOARD_NUCLEO_G474RE)
 
 void board_pins_init()
