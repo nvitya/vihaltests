@@ -321,6 +321,7 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	mcu_enable_fpu();    // enable coprocessor if present
 	mcu_enable_icache(); // enable instruction cache if present
 	mcu_enable_dcache(); // enable data cache if present
+
 	//mcu_disable_dcache();
 
 #if defined(CMCC)
