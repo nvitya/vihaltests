@@ -118,6 +118,56 @@ void board_pins_init()
   eth.phy_address = 0;
 }
 
+#elif defined(BOARD_NUCLEO_H7S3)
+
+void board_pins_init()
+{
+  pin_led_count = 3;
+  pin_led[0].Assign(PORTNUM_D, 10, false);  // PA5 as alternative
+  pin_led[1].Assign(PORTNUM_D, 13, false);
+  pin_led[2].Assign(PORTNUM_B,  7, false);
+  board_pins_init_leds();
+
+  // USART3: Stlink USB / Serial converter
+  hwpinctrl.PinSetup(PORTNUM_D, 8,  PINCFG_OUTPUT | PINCFG_AF_7);  // USART3_TX: PD.8
+  hwpinctrl.PinSetup(PORTNUM_D, 9,  PINCFG_INPUT  | PINCFG_AF_7);  // USART3_RX: Pd.9
+  conuart.Init(3); // USART3
+
+  /* Ethernet pins configuration ************************************************
+
+          RMII_REF_CLK ----------------------> PB6
+          RMII_MDIO -------------------------> PA2
+          RMII_MDC --------------------------> PG6
+          RMII_MII_CRS_DV -------------------> PA7
+          RMII_MII_RXD0 ---------------------> PG4
+          RMII_MII_RXD1 ---------------------> PG5
+          RMII_MII_RXER ---------------------> -
+          RMII_MII_TX_EN --------------------> PG11
+          RMII_MII_TXD0 ---------------------> PG13
+          RMII_MII_TXD1 ---------------------> PG12
+  */
+
+  uint32_t pinfl = PINCFG_SPEED_FAST | PINCFG_AF_11;  // do not use PINCFG_SPEED_VERYFAST !
+
+  hwpinctrl.PinSetup(PORTNUM_B,  6, pinfl); // REF CLK
+  hwpinctrl.PinSetup(PORTNUM_A,  2, pinfl); // MDIO
+  hwpinctrl.PinSetup(PORTNUM_G,  6, pinfl); // MDC
+  hwpinctrl.PinSetup(PORTNUM_A,  7, pinfl); // CRS_DV
+  hwpinctrl.PinSetup(PORTNUM_G,  4, pinfl); // RXD0
+  hwpinctrl.PinSetup(PORTNUM_G,  5, pinfl); // RXD1
+  //hwpinctrl.PinSetup(PORTNUM_G,  2, pinfl); // RXER
+  hwpinctrl.PinSetup(PORTNUM_G, 11, pinfl); // TX_EN
+  hwpinctrl.PinSetup(PORTNUM_G, 13, pinfl); // TXD0
+  hwpinctrl.PinSetup(PORTNUM_G, 12, pinfl); // TXD1
+
+  /* Enable the Ethernet global Interrupt */
+  //HAL_NVIC_SetPriority(ETH_IRQn, 0x7, 0);
+  //HAL_NVIC_EnableIRQ(ETH_IRQn);
+
+  eth.phy_address = 0;
+}
+
+
 #elif defined(BOARD_DISCOVERY_F746) || defined(BOARD_DISCOVERY_F750)
 
 void board_pins_init()
