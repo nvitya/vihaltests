@@ -93,6 +93,7 @@ SECTIONS
   
 	/* end of the bootloader image: */
 	__image_end = LOADADDR(.data) + SIZEOF(.data);  
+	__app_image_end = LOADADDR(.data) + SIZEOF(.data);  
   
   .bss (NOLOAD) : ALIGN(4)
   {

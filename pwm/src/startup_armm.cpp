@@ -18,7 +18,7 @@
 
 extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing);
 
-extern "C" __attribute__((section(".startup"), used, noreturn))
+extern "C" __attribute__((section(".startup"), naked, used, noreturn))
 void soft_entry()  // used at development of RAM-loaded (self-flashing) applications
 {
   mcu_preinit_code(); // inline code for preparing the MCU, RAM regions. Without this even the stack does not work on some MCUs.
@@ -32,7 +32,7 @@ void soft_entry()  // used at development of RAM-loaded (self-flashing) applicat
   _start(1);
 }
 
-extern "C" __attribute__((section(".startup"), used, noreturn))
+extern "C" __attribute__((section(".startup"), naked, used, noreturn))
 void cold_entry()  // power on start using integrated bootloaders and non volatile flash memory
 {
   mcu_preinit_code(); // inline code for preparing the MCU, RAM regions. Without this even the stack does not work on some MCUs.
