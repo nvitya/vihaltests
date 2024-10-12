@@ -220,7 +220,7 @@ void setup_board()
 
 // RP
 
-#elif defined(BOARD_RPI_PICO)
+#elif defined(BOARD_RPI_PICO) || defined(BOARD_RPI_PICO2)
 
 TGpioPin  pin_led1(0, 25, false);
 
