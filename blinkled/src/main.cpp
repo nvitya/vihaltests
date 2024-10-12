@@ -13,6 +13,9 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
   // Set the interrupt vector table offset, so that the interrupts and exceptions work
   mcu_init_vector_table();
 
+  mcu_enable_fpu();    // enable coprocessor if present
+  mcu_enable_icache(); // enable instruction cache if present
+
 	// run the C/C++ initialization (variable initializations, constructors)
 	cppinit();
 
@@ -31,9 +34,6 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	}
 
 #endif
-
-	mcu_enable_fpu();    // enable coprocessor if present
-	mcu_enable_icache(); // enable instruction cache if present
 
 	clockcnt_init();
 
