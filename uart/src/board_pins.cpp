@@ -647,6 +647,8 @@ void board_pins_init()
 
 #elif defined(BOARD_RPI_PICO2)
 
+THwQspi    fl_qspi;
+
 void board_pins_init()
 {
   pin_led_count = 1;
@@ -656,6 +658,18 @@ void board_pins_init()
   hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
   hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
   conuart.Init(0);
+
+  // because of the transfers are unidirectional the same DMA channel can be used here:
+  fl_qspi.txdmachannel = 7;
+  fl_qspi.rxdmachannel = 6;
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = SystemCoreClock / 2;  // maximal speed
+  fl_qspi.rx_delay = 2;
+  fl_qspi.Init();
+
+  spiflash.qspi = &fl_qspi;
+  spiflash.has4kerase = true;
+  spiflash.Init();
 }
 
 #elif defined(BOARD_RPI_PICOW)
