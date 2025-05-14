@@ -145,22 +145,33 @@ void test_ro()
 void test_simple_rw()
 {
 	int i;
+	unsigned testlen = sizeof(databuf);
 
 	TRACE("Testing simple Read, Erase, Write\r\n");
 
+	//testlen = 16;
+	//readlen = testlen;
+
 	TRACE("Reading memory...\r\n");
 
-	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
+	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], testlen);
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
 
 	show_mem(&databuf[0], readlen);
 
+#if 1
 	TRACE("Erase sector...\r\n");
-	spiflash.StartEraseMem(nvsaddr_test_start, sizeof(databuf));
+	spiflash.StartEraseMem(nvsaddr_test_start, testlen);
 	spiflash.WaitForComplete();
 	TRACE("Erase complete.\r\n");
+
+  //spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], testlen);
+  //spiflash.WaitForComplete();
+  //show_mem(&databuf[0], readlen);
+
+#endif
 
 #if 1
 	TRACE("Writing memory...\r\n");
@@ -170,7 +181,7 @@ void test_simple_rw()
 		databuf[i] = uint8_t(0xF0 + i);
 	}
 
-	spiflash.StartWriteMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
+	spiflash.StartWriteMem(nvsaddr_test_start, &databuf[0], testlen);
 	spiflash.WaitForComplete();
 #endif
 
@@ -179,10 +190,10 @@ void test_simple_rw()
 	// set the memory contents to some invalid one
   for (i = 0; i < sizeof(databuf); ++i)
   {
-    databuf[i] = uint8_t(0x55 + i);
+    databuf[i] = uint8_t(0x55); // + i);
   }
 
-	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], sizeof(databuf));
+	spiflash.StartReadMem(nvsaddr_test_start, &databuf[0], testlen);
 	spiflash.WaitForComplete();
 
 	TRACE("Memory read finished\r\n");
@@ -299,6 +310,19 @@ void test_spiflash()
 
   TRACE("driver = %s, speed = %u, lanes = %u\r\n", driver, spispeed, lanes);
 
+#if 0 // low level driver check
+  if (spiflash.qspi)
+  {
+    TRACE("Testing QSPI read\r\n");
+    spiflash.qspi->StartReadData(0x9F, 0, &databuf[0], 4);
+    spiflash.qspi->WaitFinish();
+
+    show_mem(&databuf[0],  4);
+
+    return;
+  }
+#endif
+
   //test_dma();
   //test_dma();
   //return;
@@ -314,6 +338,7 @@ void test_spiflash()
     return;
   }
 
+
   TRACE("SPI Flash initialized, ID CODE = %06X, kbyte size = %u\r\n", spiflash.idcode, (spiflash.bytesize >> 10));
   TRACE("Test flash address: 0x%08X\r\n", nvsaddr_test_start);
   TRACE("Test buffer size: %u\r\n", sizeof(databuf));
@@ -321,6 +346,7 @@ void test_spiflash()
 
   //TRACE("TESTS deactivated !!!!!!!!!!!!\r\n");
   //return;
+
 
 #if 0
   test_ro();

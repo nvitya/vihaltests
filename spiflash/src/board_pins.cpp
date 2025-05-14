@@ -667,9 +667,33 @@ void board_pins_init()
   fl_qspi.speed = 66000000;     // this is preatty high speed, but seems to work
   fl_qspi.Init();
 
-  nvsaddr_test_start = 0x100000;  // start at 1M, bitstream is about 512k
+  nvsaddr_test_start = 0x100000;  // start at 1M
 }
 
+#elif defined(BOARD_RPI_PICO2)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(0, 25, false);
+  board_pins_init_leds();
+
+  hwpinctrl.PinSetup(0,  0, PINCFG_OUTPUT | PINCFG_AF_2); // UART0_TX:
+  hwpinctrl.PinSetup(0,  1, PINCFG_INPUT  | PINCFG_AF_2); // UART0_RX:
+  conuart.Init(0);
+
+  fl_qspi.txdmachannel = 7;
+  fl_qspi.rxdmachannel = 6;
+
+  // works only in multi_line_count = 4, otherwise the WP pin will be LOW !
+
+  fl_qspi.multi_line_count = 4;
+  fl_qspi.speed = SystemCoreClock / 2;  // maximal speed
+  fl_qspi.rx_delay = 2;
+  fl_qspi.Init();
+
+  nvsaddr_test_start = 0x100000;  // start at 1M
+}
 
 #else
   #error "Define board_pins_init here"
