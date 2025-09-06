@@ -63,11 +63,22 @@ void board_pins_init()
   board_pins_init_leds();
 }
 
+#elif defined(BOARD_LUCKFOX_LYRA_PLUS)
+
+void board_pins_init()
+{
+#if 0
+  pin_led_count = 1;
+  pin_led[0].Assign(1,  0, false);
+  board_pins_init_leds();
+#endif
+}
+
 //-------------------------------------------------------------------------------
 // 64-bit ARM-A
 //-------------------------------------------------------------------------------
 
-#elif defined(BOARD_RPI_4)
+#elif defined(BOARD_RPI4_2G)
 
 void board_pins_init()
 {

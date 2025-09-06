@@ -42,7 +42,7 @@ int main()
 	TRACE("  t0=%u, t1=%u\n", t0, t1);
 #endif
 
-#if 1
+#if 0
 
 	TRACE("Testing fast GPIO toggling...\r\n");
 	TGpioPin * pin = &pin_led[0];

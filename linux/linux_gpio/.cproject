@@ -171,7 +171,7 @@
 								<option id="gnu.cpp.compiler.option.optimization.level.1766572280" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option defaultValue="gnu.cpp.compiler.debugging.level.max" id="gnu.cpp.compiler.option.debugging.level.1783125230" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.1012201816" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="BOARD_RPI_4"/>
+									<listOptionValue builtIn="false" value="BOARD_RPI4_2G"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1794159184" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
@@ -197,10 +197,135 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.240115054.2137469857" name="/" resourcePath="vihal/arma64/core">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.431324212" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug" unusedChildren="">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.319537397.815090848" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.319537397"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.1145971931.1682049146" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.1145971931"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.314872806" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.473795738">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2140538657" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1960203264" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.28512539">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1453030795" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1198827644" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.1210467715"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.619057913" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.832267627"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1026250158" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.1924438352"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.2046262161" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.1223221645">
+								<option defaultValue="gnu.asm.debugging.level.default" id="gnu.asm.option.debugging.level.162830014" name="Debug Level" superClass="gnu.asm.option.debugging.level" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2112117676" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
 						<entry excluding="vihal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/arma64/bcm/src"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/arma64/core"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/core/linux"/>
+						<entry excluding="system.cpp|cppinit.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/core/src"/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+		<cconfiguration id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528" moduleId="org.eclipse.cdt.core.settings" name="BOARD_LUCKFOX_LYRA_PLUS">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528" name="BOARD_LUCKFOX_LYRA_PLUS" optionalBuildProperties="org.eclipse.cdt.docker.launcher.containerbuild.property.selectedvolumes=,org.eclipse.cdt.docker.launcher.containerbuild.property.volumes=" parent="cdt.managedbuild.config.gnu.cross.exe.debug">
+					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.1037601433" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.448808793" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix" value="arm-linux-gnueabihf-" valueType="string"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.625065515" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path" value="/usr/bin" valueType="string"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross.2038256524" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
+							<builder buildPath="${workspace_loc:/linux_gpio}/Debug" id="cdt.managedbuild.builder.gnu.cross.1243576117" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.builder.gnu.cross"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.135946876" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler">
+								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.option.optimization.level.1074240707" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
+								<option defaultValue="gnu.c.debugging.level.max" id="gnu.c.compiler.option.debugging.level.1904777230" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.dialect.std.450762824" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.c99" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.841225132" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1031526408" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
+								<option id="gnu.cpp.compiler.option.optimization.level.725835010" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
+								<option defaultValue="gnu.cpp.compiler.debugging.level.max" id="gnu.cpp.compiler.option.debugging.level.1514842508" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.197975311" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="BOARD_LUCKFOX_LYRA_PLUS"/>
+								</option>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.15132973" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/core/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/core/linux}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/arma/core}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/arma/RK/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vihal/arma/RK/3506}&quot;"/>
+								</option>
+								<option id="gnu.cpp.compiler.option.dialect.std.455756600" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.c++11" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1590971361" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.87497446" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.43987580" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1852469569" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1526526891" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1496856239" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.844643677" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528.1025437805" name="/" resourcePath="vihal/arma/RK/src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.672750909" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug" unusedChildren="">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.448808793.1397049685" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.448808793"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.625065515.287287194" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.625065515"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.790352866" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.135946876">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1809158562" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.395093269" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1031526408">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1404807282" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.650098131" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.87497446"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.252642119" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.43987580"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.188148863" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.1526526891"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1230887089" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.1496856239">
+								<option defaultValue="gnu.asm.debugging.level.default" id="gnu.asm.option.debugging.level.388995701" superClass="gnu.asm.option.debugging.level" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1434901281" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528.426153716" name="/" resourcePath="vihal/arma/AM/src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.debug.1252751270" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.debug" unusedChildren="">
+							<option id="cdt.managedbuild.option.gnu.cross.prefix.448808793.755820371" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.448808793"/>
+							<option id="cdt.managedbuild.option.gnu.cross.path.625065515.1034807700" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.625065515"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1878176775" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.135946876">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2125312594" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.618447904" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1031526408">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.968709243" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.54221322" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.87497446"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.175063417" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.43987580"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1681844258" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.1526526891"/>
+							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.390038162" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.1496856239">
+								<option defaultValue="gnu.asm.debugging.level.default" id="gnu.asm.option.debugging.level.1950571578" name="Debug Level" superClass="gnu.asm.option.debugging.level" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.830551325" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry excluding="vihal" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/arma/RK/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/arma/core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/core/linux"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="vihal/core/src"/>
 					</sourceEntries>
@@ -242,7 +367,13 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.240115054;cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.240115054.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.28512539;cdt.managedbuild.tool.gnu.cpp.compiler.input.763820803">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528;cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.1031526408;cdt.managedbuild.tool.gnu.cpp.compiler.input.1590971361">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.240115054;cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.240115054.;cdt.managedbuild.tool.gnu.cross.c.compiler.473795738;cdt.managedbuild.tool.gnu.c.compiler.input.352651963">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528;cdt.managedbuild.config.gnu.cross.exe.debug.1770128861.221376528.;cdt.managedbuild.tool.gnu.cross.c.compiler.135946876;cdt.managedbuild.tool.gnu.c.compiler.input.841225132">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
