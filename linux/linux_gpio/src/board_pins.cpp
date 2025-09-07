@@ -67,11 +67,9 @@ void board_pins_init()
 
 void board_pins_init()
 {
-#if 0
   pin_led_count = 1;
   pin_led[0].Assign(1,  0, false);
   board_pins_init_leds();
-#endif
 }
 
 //-------------------------------------------------------------------------------
