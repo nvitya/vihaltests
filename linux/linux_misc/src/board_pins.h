@@ -11,6 +11,7 @@
 #include "hwpins.h"
 #include "hwuart.h"
 #include "hwpwm.h"
+#include "hwspi.h"
 
 #define MAX_LEDS  4
 

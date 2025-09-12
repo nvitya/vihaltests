@@ -57,7 +57,8 @@ void board_pins_init()
 
 #elif defined(BOARD_LUCKFOX_LYRA_PLUS)
 
-THwPwmChannel pwm;
+THwPwmChannel  pwm;
+THwSpi         spi;
 
 void board_pins_init()
 {
@@ -71,17 +72,32 @@ void board_pins_init()
   conuart.baudrate = 1500000; // the highest baudrate from the 24 MHz Oscillator
   conuart.Init(4);
 
+  // PWM
   hwpinctrl.PinSetupRmio(1, PINNUM_B1, RMIO_PWM1_CH0, 0);
   pwm.frequency = 10000;
   pwm.Init(1, 0);
-  pwm.SetOnClocks(pwm.periodclocks >> 2);
+  pwm.SetOnClocks(pwm.periodclocks >> 1);
   pwm.Enable();
 
-  // to test if the pin is properly monitored:
-  //hwpinctrl.PinSetup(1, PINNUM_B1, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
-  //hwpinctrl.PinSetup(1, PINNUM_B1, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
-  //hwpinctrl.PinSetup(1, PINNUM_B1, PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
-  //hwpinctrl.PinSetup(1, PINNUM_B1, PINCFG_OUTPUT | PINCFG_GPIO_INIT_1);
+  // SPI
+  hwpinctrl.PinSetupRmio(1, PINNUM_D3, RMIO_SPI0_CLK,  0);
+  hwpinctrl.PinSetupRmio(1, PINNUM_D2, RMIO_SPI0_MOSI, 0);
+  hwpinctrl.PinSetupRmio(1, PINNUM_D1, RMIO_SPI0_CSN0, 0);
+  spi.speed = 10000000;
+  spi.Init(0);
+
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+  spi.TrySendData(0x55);
+
 }
 
 //-------------------------------------------------------------------------------
