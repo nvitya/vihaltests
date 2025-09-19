@@ -755,6 +755,23 @@ void board_pins_init()
   conuart.Init(1); // UART1
 }
 
+// RK (Rockchip)
+
+#elif defined(BOARD_LUCKFOX_LYRA_PLUS)
+
+void board_pins_init()
+{
+  pin_led_count = 1;
+  pin_led[0].Assign(1, PINNUM_A0, false);
+  board_pins_init_leds();
+
+  // using the same pins as the MCU Example from Rockchip
+  hwpinctrl.PinSetupRmio(1, PINNUM_C2, RMIO_UART4_TX, 0);
+  hwpinctrl.PinSetupRmio(1, PINNUM_C3, RMIO_UART4_RX, PINCFG_PULLUP);
+  conuart.baudrate = 1500000; // the highest baudrate from the 24 MHz Oscillator
+  conuart.Init(4);
+}
+
 #else
   #error "Define board_pins_init here"
 #endif
