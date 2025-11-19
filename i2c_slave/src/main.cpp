@@ -73,6 +73,8 @@ extern "C" __attribute__((noreturn)) void _start(unsigned self_flashing)  // sel
 	{
 		t1 = CLOCKCNT;
 
+		tracebuf.Run();
+
 		if (t1-t0 > hbclocks)
 		{
 			++hbcounter;
