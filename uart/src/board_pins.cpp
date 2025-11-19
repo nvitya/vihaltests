@@ -701,6 +701,26 @@ void board_pins_init()
 
 }
 
+// TI
+
+#elif defined(BOARD_LP_MSPM0G3507)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_A,  0, false);  // LED1
+
+  pin_led[1].Assign(PORTNUM_B, 22, false);  // LED2-B
+  pin_led[2].Assign(PORTNUM_B, 27, false);  // LED2-G
+  pin_led[3].Assign(PORTNUM_B, 26, false);  // LED2-R
+  board_pins_init_leds();
+
+  // UART0: embedded USB-UART
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_2);  // USART0_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 11,  PINCFG_INPUT  | PINCFG_AF_2);  // USART0_RX
+  conuart.Init(0); // UART0
+}
+
 // IMXRT
 
 #elif defined(BOARD_EVK_IMXRT1020)
