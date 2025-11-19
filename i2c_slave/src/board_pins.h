@@ -18,6 +18,7 @@
 #define MAX_LEDS  4
 
 extern TGpioPin   pin_led[MAX_LEDS];
+extern TGpioPin   pin_i2c_irq;
 extern unsigned   pin_led_count;
 
 extern THwUart    conuart;  // console uart

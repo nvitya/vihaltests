@@ -20,15 +20,7 @@ TGpioPin  pin_led[MAX_LEDS] =
   TGpioPin()
 };
 
-/* NOTE:
-     for direct GPIO pin definitions is simpler to define with port and pin number:
-
-       TGpioPin  pin_mygpio(PORTNUM_C, 13, false);
-
-     but don't forget to initialize it in the setup code:
-
-       pin_mygpio.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
-*/
+TGpioPin   pin_i2c_irq;
 
 void board_pins_init_leds()
 {
@@ -138,6 +130,29 @@ void board_pins_init()
   hwpinctrl.PinSetup(PORTNUM_A, 4, PINCFG_OUTPUT | PINCFG_AF_3);  // PAD[0] = TX
   hwpinctrl.PinSetup(PORTNUM_A, 5, PINCFG_INPUT  | PINCFG_AF_3);  // PAD[1] = RX
   conuart.Init(0);
+}
+
+// TI
+
+#elif defined(BOARD_LP_MSPM0G3507)
+
+void board_pins_init()
+{
+  pin_led_count = 4;
+  pin_led[0].Assign(PORTNUM_A,  0, false);  // LED1
+
+  pin_led[1].Assign(PORTNUM_B, 22, false);  // LED2-B
+  pin_led[2].Assign(PORTNUM_B, 27, false);  // LED2-G
+  pin_led[3].Assign(PORTNUM_B, 26, false);  // LED2-R
+  board_pins_init_leds();
+
+  pin_i2c_irq.Assign(PORTNUM_A, 27, false);
+  pin_i2c_irq.Setup(PINCFG_OUTPUT | PINCFG_GPIO_INIT_0);
+
+  // UART0: embedded USB-UART
+  hwpinctrl.PinSetup(PORTNUM_A, 10,  PINCFG_OUTPUT | PINCFG_AF_2);  // USART0_TX
+  hwpinctrl.PinSetup(PORTNUM_A, 11,  PINCFG_INPUT  | PINCFG_AF_2);  // USART0_RX
+  conuart.Init(0); // UART0
 }
 
 #else

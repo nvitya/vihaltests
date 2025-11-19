@@ -104,6 +104,24 @@ void init_i2c_pins()
   #define I2C_IRQ_HANDLER   IRQ_Handler_31
 }
 
+// TI
+
+#elif defined(BOARD_LP_MSPM0G3507)
+
+void init_i2c_pins()
+{
+  // I2C1
+  // open drain mode have to be used, otherwise it won't work
+  hwpinctrl.PinSetup(PORTNUM_B,  2, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SCL
+  hwpinctrl.PinSetup(PORTNUM_B,  3, PINCFG_OUTPUT | PINCFG_AF_4 | PINCFG_OPENDRAIN); // I2C1_SDA
+
+  i2capp.devnum = 1;
+
+  #define I2C_IRQ_NUM                   25
+  #define I2C_IRQ_HANDLER   IRQ_Handler_25
+}
+
+
 // ATSAM
 
 #elif defined(BOARD_ARDUINO_DUE)
@@ -179,7 +197,11 @@ extern "C" void IRQ_Handler_65() // SERCOM4_3_7: ERROR
 
 extern "C" void I2C_IRQ_HANDLER()
 {
+  pin_i2c_irq.Set1();
+
   i2capp.HandleIrq();
+
+  pin_i2c_irq.Set0();
 }
 
 #else
